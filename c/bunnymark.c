@@ -15,7 +15,7 @@
 
 #include <stdlib.h>                 // Required for: malloc(), free()
 
-#define MAX_BUNNIES        50000    // 50K bunnies limit
+#define MAX_BUNNIES 150000    // 50K bunnies limit
 
 // This is the maximum amount of elements (quads) per batch
 // NOTE: This value is defined in [rlgl] module and can be changed there
@@ -40,7 +40,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "raylib [textures] example - bunnymark");
 
     // Load bunny texture
-    Texture2D texBunny = LoadTexture("res/wabbit_alpha.png");
+    Texture2D texBunny = LoadTexture("../res/wabbit_alpha.png");
 
     Bunny *bunnies = (Bunny *)malloc(MAX_BUNNIES*sizeof(Bunny));    // Bunnies array
 
