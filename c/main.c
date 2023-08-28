@@ -18,13 +18,13 @@ int main(void) {
 	SetTargetFPS(60);
 
 	const int texWidth = 64;
-	struct gemType amethyst =	{ .clr = VIOLET,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/amethyst.png") };
-	struct gemType crystal =	{ .clr = YELLOW,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/crystalize.png") };
-	struct gemType diamond =	{ .clr = WHITE,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/cut-diamond.png") };
-	struct gemType emerald =	{ .clr = GREEN,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/emerald.png") };
-	struct gemType rupee =		{ .clr = RED,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/rupee.png") };
-	struct gemType sapphire =	{ .clr = BLUE,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/saphir.png") };
-	struct gemType topaz =		{ .clr = ORANGE,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("res/topaz.png") };
+	struct gemType amethyst =	{ .clr = VIOLET,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/amethyst.png") };
+	struct gemType crystal =	{ .clr = YELLOW,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/crystalize.png") };
+	struct gemType diamond =	{ .clr = WHITE,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/cut-diamond.png") };
+	struct gemType emerald =	{ .clr = GREEN,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/emerald.png") };
+	struct gemType rupee =		{ .clr = RED,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/rupee.png") };
+	struct gemType sapphire =	{ .clr = BLUE,		.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/saphir.png") };
+	struct gemType topaz =		{ .clr = ORANGE,	.rot = 0.0f,	.scl = 1.0f,	.tex = LoadTexture("../res/topaz.png") };
 	struct gemType gemTypes[] = { amethyst, crystal, diamond, emerald, rupee, sapphire, topaz };
 	int gemTypesLength = *(&gemTypes + 1) - gemTypes;
 
