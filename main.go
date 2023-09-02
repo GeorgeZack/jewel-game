@@ -54,7 +54,7 @@ func drawDebugText() {
 	strSelect := fmt.Sprintf("%+v", cellSelected)
 	margin := int32(10)
 	rl.DrawText(strHover, int32(CELL_WIDTH * GRID_LENGTH) + margin, margin, int32(20), rl.Black)
-	rl.DrawText(strSelect, int32(CELL_WIDTH * GRID_LENGTH) + margin, margin + 20, int32(20), rl.Black)
+	rl.DrawText(strSelect, int32(CELL_WIDTH * GRID_LENGTH) + margin, margin * 2 + 20, int32(20), rl.Black)
 }
 
 func (cell *Cell) drawGem() {
@@ -77,6 +77,22 @@ func generateGrid(gemTypes []GemType) Grid {
 		}
 	}
 	return rows
+}
+
+func getCell(grid Grid) *Cell {
+	mouse := rl.GetMousePosition()
+	for x := range grid {
+		for y := range grid[x] {
+			cell := grid[x][y]
+			xx := cell.cords.X
+			yy := cell.cords.Y
+			if (mouse.X >= xx * CELL_WIDTH && mouse.X < xx * CELL_WIDTH + CELL_WIDTH &&
+				mouse.Y >= yy * CELL_WIDTH && mouse.Y < yy * CELL_WIDTH + CELL_WIDTH) {
+				return &cell
+			}
+		}
+	}
+	return nil
 }
 
 func unloadGemTextures(gemTypes []GemType) {
@@ -105,22 +121,27 @@ func main() {
 	defer unloadGemTextures(gemTypes)
 
 	for !rl.WindowShouldClose() {
+		mouse := rl.GetMousePosition()
+		curCell := getCell(grid)
+		if rl.IsMouseButtonDown(rl.MouseLeftButton) {
+			cellSelected = curCell
+		}
+		cellHovered = curCell
+
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
-		mouse := rl.GetMousePosition()
 		for x := range grid {
 			for y := range grid[x] {
 				cell := grid[x][y]
 				cell.drawCell()
 				cell.drawGem()
-				xx := cell.cords.X
-				yy := cell.cords.Y
-				if (mouse.X >= xx * CELL_WIDTH && mouse.X < xx * CELL_WIDTH + CELL_WIDTH &&
-					mouse.Y >= yy * CELL_WIDTH && mouse.Y < yy * CELL_WIDTH + CELL_WIDTH) {
-					cell.drawCellBorder()
-					cellHovered = &cell
-				}
 			}
+		}
+		if (cellHovered != nil) {
+			cellHovered.drawCellBorder()
+		}
+		if (cellSelected != nil) {
+			cellSelected.drawCellBorder()
 		}
 		if (mouse.X > CELL_WIDTH * GRID_LENGTH || mouse.Y > CELL_WIDTH * GRID_LENGTH) {
 			cellHovered = nil
