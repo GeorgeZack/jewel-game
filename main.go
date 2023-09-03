@@ -53,8 +53,8 @@ func (cell *Cell) drawCellBorder() {
 }
 
 func drawDebugText() {
-	strHover := fmt.Sprintf("%+v", cellHovered)
-	strSelect := fmt.Sprintf("%+v", cellSelected)
+	strHover := fmt.Sprintf("Hover: %+v", cellHovered)
+	strSelect := fmt.Sprintf("Select: %+v", cellSelected)
 	margin := int32(30)
 	rl.DrawText(strHover, margin, int32(rl.GetScreenHeight()) - margin - 20 * 2, int32(20), rl.Black)
 	rl.DrawText(strSelect, margin, int32(rl.GetScreenHeight()) - margin - 20, int32(20), rl.Black)
@@ -64,7 +64,9 @@ func (cell *Cell) drawGem() {
 	xCord := cell.cords.X
 	yCord := cell.cords.Y
 	gem := cell.gem
-	rl.DrawTexture(gem.gemType.texture, int32(xCord * CELL_WIDTH + cell.grid.screenPos.X), int32(yCord * CELL_WIDTH + cell.grid.screenPos.Y), gem.gemType.color)
+	if (Gem{} != gem) {
+		rl.DrawTexture(gem.gemType.texture, int32(xCord * CELL_WIDTH + cell.grid.screenPos.X), int32(yCord * CELL_WIDTH + cell.grid.screenPos.Y), gem.gemType.color)
+	}
 }
 
 func generateGrid() Grid {
@@ -77,8 +79,9 @@ func generateGrid() Grid {
 		rows[x] = make([]Cell, GRID_LENGTH)
 		for y := range rows[x] {
 			// var gemType GemType = gemTypes[rl.GetRandomValue(0, int32(len(gemTypes) - 1))]
-			var gemType GemType
-			gem := Gem{ gemType: &gemType }
+			// var gemType GemType
+			// gem := Gem{ gemType: &gemType }
+			gem := Gem{}
 			cords := rl.Vector2{ X: float32(x), Y: float32(y) }
 			rows[x][y] = Cell{ cords, gem, &grid }
 		}
@@ -106,8 +109,8 @@ func (grid *Grid) getCell() *Cell {
 func (grid *Grid) populateGrid() {
 	for x := range grid.data {
 		for y := range grid.data[x] {
-			var gemType GemType = GEM_TYPES[rl.GetRandomValue(0, int32(len(GEM_TYPES) - 1))]
-			newGem := Gem{ gemType: &gemType }
+			var gemType *GemType = &GEM_TYPES[rl.GetRandomValue(0, int32(len(GEM_TYPES) - 1))]
+			newGem := Gem{ gemType: gemType }
 			grid.data[x][y].gem = newGem
 		}
 	}
@@ -144,11 +147,14 @@ func main() {
 
 	for !rl.WindowShouldClose() {
 		mouse := rl.GetMousePosition()
-		curCell := grid.getCell()
-		if rl.IsMouseButtonDown(rl.MouseLeftButton) {
-			cellSelected = curCell
+		cellCurrent := grid.getCell()
+		if (rl.IsMouseButtonDown(rl.MouseLeftButton)) {
+			if (cellSelected != cellCurrent && cellSelected != nil) {
+				fmt.Println(cellSelected.gem)
+			}
+			cellSelected = cellCurrent
 		}
-		cellHovered = curCell
+		cellHovered = cellCurrent
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
