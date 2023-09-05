@@ -11,11 +11,13 @@ const CELL_WIDTH = 64
 const GRID_LENGTH = 8
 var GEM_TYPES []GemType
 var cellHovered *Cell
-var cellSelected *Cell
+var cellStart *Cell
+var cellEnd *Cell
+var isMouseButtonPressed bool
 
 type Cell struct {
 	cords			rl.Vector2
-	gem				Gem
+	gem				*Gem
 	grid			*Grid
 }
 
@@ -32,6 +34,11 @@ type GemType struct {
 type Grid struct {
 	data			[][]Cell
 	screenPos		rl.Vector2
+}
+
+func (cell *Cell) destroyGem() {
+	println("Destroy gem", cell, cell.gem);
+	cell.gem = nil
 }
 
 func (cell *Cell) drawCell() {
@@ -53,18 +60,20 @@ func (cell *Cell) drawCellBorder() {
 }
 
 func drawDebugText() {
+	strStart := fmt.Sprintf("Start: %+v", cellStart)
+	strEnd := fmt.Sprintf("End: %+v", cellEnd)
 	strHover := fmt.Sprintf("Hover: %+v", cellHovered)
-	strSelect := fmt.Sprintf("Select: %+v", cellSelected)
 	margin := int32(30)
-	rl.DrawText(strHover, margin, int32(rl.GetScreenHeight()) - margin - 20 * 2, int32(20), rl.Black)
-	rl.DrawText(strSelect, margin, int32(rl.GetScreenHeight()) - margin - 20, int32(20), rl.Black)
+	rl.DrawText(strHover, margin, int32(rl.GetScreenHeight()) - margin - 20, int32(20), rl.Black)
+	rl.DrawText(strStart, margin, int32(rl.GetScreenHeight()) - margin - 20 * 2, int32(20), rl.Black)
+	rl.DrawText(strEnd, margin, int32(rl.GetScreenHeight()) - margin - 20 * 3, int32(20), rl.Black)
 }
 
 func (cell *Cell) drawGem() {
 	xCord := cell.cords.X
 	yCord := cell.cords.Y
 	gem := cell.gem
-	if (Gem{} != gem) {
+	if gem != nil {
 		rl.DrawTexture(gem.gemType.texture, int32(xCord * CELL_WIDTH + cell.grid.screenPos.X), int32(yCord * CELL_WIDTH + cell.grid.screenPos.Y), gem.gemType.color)
 	}
 }
@@ -78,12 +87,9 @@ func generateGrid() Grid {
 	for x := range rows {
 		rows[x] = make([]Cell, GRID_LENGTH)
 		for y := range rows[x] {
-			// var gemType GemType = gemTypes[rl.GetRandomValue(0, int32(len(gemTypes) - 1))]
-			// var gemType GemType
-			// gem := Gem{ gemType: &gemType }
 			gem := Gem{}
 			cords := rl.Vector2{ X: float32(x), Y: float32(y) }
-			rows[x][y] = Cell{ cords, gem, &grid }
+			rows[x][y] = Cell{ cords, &gem, &grid }
 		}
 	}
 	grid.data = rows
@@ -97,8 +103,8 @@ func (grid *Grid) getCell() *Cell {
 			cell := grid.data[x][y]
 			xx := cell.cords.X
 			yy := cell.cords.Y
-			if (mouse.X >= xx * CELL_WIDTH + cell.grid.screenPos.X && mouse.X < xx * CELL_WIDTH + cell.grid.screenPos.X + CELL_WIDTH &&
-				mouse.Y >= yy * CELL_WIDTH + cell.grid.screenPos.Y && mouse.Y < yy * CELL_WIDTH + cell.grid.screenPos.Y + CELL_WIDTH) {
+			if (mouse.X >= xx * CELL_WIDTH + cell.grid.screenPos.X && mouse.X < xx * CELL_WIDTH + cell.grid.screenPos.X + CELL_WIDTH) &&
+				(mouse.Y >= yy * CELL_WIDTH + cell.grid.screenPos.Y && mouse.Y < yy * CELL_WIDTH + cell.grid.screenPos.Y + CELL_WIDTH) {
 				return &cell
 			}
 		}
@@ -107,11 +113,11 @@ func (grid *Grid) getCell() *Cell {
 }
 
 func (grid *Grid) populateGrid() {
+	println("populateGrid...")
 	for x := range grid.data {
 		for y := range grid.data[x] {
-			var gemType *GemType = &GEM_TYPES[rl.GetRandomValue(0, int32(len(GEM_TYPES) - 1))]
-			newGem := Gem{ gemType: gemType }
-			grid.data[x][y].gem = newGem
+			newGem := Gem{ gemType: &GEM_TYPES[rl.GetRandomValue(0, int32(len(GEM_TYPES) - 1))] }
+			grid.data[x][y].gem = &newGem
 		}
 	}
 }
@@ -146,19 +152,29 @@ func main() {
 	defer unloadGemTextures()
 
 	for !rl.WindowShouldClose() {
-		mouse := rl.GetMousePosition()
-		cellCurrent := grid.getCell()
-		if (rl.IsMouseButtonDown(rl.MouseLeftButton)) {
-			if (cellSelected != cellCurrent && cellSelected != nil) {
-				fmt.Println(cellSelected.gem)
-			}
-			cellSelected = cellCurrent
-		}
-		cellHovered = cellCurrent
-
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 		rl.DrawTexture(bkg, 0, -1200, color.RGBA{ 255, 255, 255, 205 })
+
+		// Check if the left mouse button is pressed
+		if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			isMouseButtonPressed = true
+			cellStart = grid.getCell()
+		}
+
+		// Check if the left mouse button is released
+		if rl.IsMouseButtonReleased(rl.MouseLeftButton) && isMouseButtonPressed {
+			isMouseButtonPressed = false
+			cellEnd = grid.getCell()
+
+			if cellStart != nil && cellEnd != nil && cellStart != cellEnd {
+				// "Empty" the gems in the selected cells
+				cellStart.destroyGem()
+				cellEnd.destroyGem()
+			}
+		}
+		cellHovered = grid.getCell()
+
 		for x := range grid.data {
 			for y := range grid.data[x] {
 				cell := grid.data[x][y]
@@ -166,15 +182,17 @@ func main() {
 				cell.drawGem()
 			}
 		}
-		if (cellHovered != nil) {
+
+		if cellHovered != nil {
 			cellHovered.drawCellBorder()
 		}
-		if (cellSelected != nil) {
-			cellSelected.drawCellBorder()
+		if cellStart != nil {
+			cellStart.drawCellBorder()
 		}
-		if (mouse.X > CELL_WIDTH * GRID_LENGTH + grid.screenPos.X || mouse.Y > CELL_WIDTH * GRID_LENGTH + grid.screenPos.Y) {
-			cellHovered = nil
+		if cellEnd != nil {
+			cellEnd.drawCellBorder()
 		}
+
 		drawDebugText()
 		rl.EndDrawing()
 	}
