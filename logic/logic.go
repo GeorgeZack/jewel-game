@@ -73,8 +73,8 @@ func InitGemTypes() []types.GemType {
 	return []types.GemType { amethyst, crystal, diamond, emerald, rupee, sapphire, topaz }
 }
 
-func InitGlobals() (globals types.Globals) {
-	return globals
+func InitStates() (states types.States) {
+	return states
 }
 
 func InitGrid(gemTypes []types.GemType) (grid types.Grid) {
@@ -111,44 +111,72 @@ func InitGrid(gemTypes []types.GemType) (grid types.Grid) {
 	return grid
 }
 
-func GameLoop(grid *types.Grid, gl *types.Globals) {
-	// Check if the left mouse button is pressed
-	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-		gl.IsMouseButtonPressed = true
-		gl.CS = grid.GetCell()
+func GameLoop(grid *types.Grid, states *types.States) {
+	if states.AnimationStarted && states.AnimationTimeout > 0 {
+		states.AnimationTimeout--
+	} else if states.AnimationTimeout == 0 {
+		states.AnimationStarted = false
 	}
+	// Only accept interactions when no move is occurring
+	if !states.MoveStarted {
+		// Check if the left mouse button is pressed
+		if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			states.IsMouseButtonPressed = true
+			states.CellStart = grid.GetCell()
+			if states.CurrCell != nil || states.CellStart != states.PrevCell {
+				states.PrevCell = states.CurrCell
+			}
+		}
 
-	// Check if the left mouse button is released
-	if rl.IsMouseButtonReleased(rl.MouseLeftButton) && gl.IsMouseButtonPressed {
-		gl.IsMouseButtonPressed = false
-		gl.CE = grid.GetCell()
+		// Check if the left mouse button is released
+		if rl.IsMouseButtonReleased(rl.MouseLeftButton) && states.IsMouseButtonPressed {
+			states.IsMouseButtonPressed = false
+			states.CellEnd = grid.GetCell()
 
-		if gl.CS != nil && gl.CE != nil {
-			rangeOfCells := GetRangeOfCells(gl.CS, gl.CE)
-			if gl.CS != gl.CE && rangeOfCells == 1 {
-				// "Empty" the gems in the selected cells
-				tmpS := gl.CS.Gem
-				tmpE := gl.CE.Gem
-				gl.CS.DestroyGem()
-				gl.CE.DestroyGem()
-				gl.CS.Gem = tmpE
-				gl.CE.Gem = tmpS
+			if states.CellStart != nil && states.CellEnd != nil {
+				states.CurrCell = grid.GetCell()
+
+				if states.CellStart != states.CellEnd {
+					dragRange := GetRangeOfCells(states.CellStart, states.CellEnd)
+					if dragRange == 1 {
+						states.CellStart.MoveGem(states.CellEnd)
+						// TODO move to func
+						states.MoveStarted = true
+						states.AnimationStarted = true
+						states.AnimationTimeout = 100
+					}
+				} else if states.CurrCell != nil && states.PrevCell != nil {
+					clickRange := GetRangeOfCells(states.CurrCell, states.PrevCell)
+					if clickRange == 1 {
+						states.CurrCell.MoveGem(states.PrevCell)
+						// TODO move to func
+						states.MoveStarted = true
+						states.AnimationStarted = true
+						states.AnimationTimeout = 100
+					}
+				}
 			}
 		}
 	}
-	gl.CH = grid.GetCell()
+	states.CellHover = grid.GetCell()
 	grid.Redraw()
 
-	if gl.CH != nil {
-		gl.CH.DrawCellBorder()
+	if states.CellHover != nil {
+		states.CellHover.DrawCellBorder()
 	}
-	if gl.CS != nil {
-		gl.CS.DrawCellBorder()
+	if states.CellStart != nil {
+		states.CellStart.DrawCellBorder()
 	}
-	if gl.CE != nil {
-		gl.CE.DrawCellBorder()
+	if states.CellEnd != nil {
+		states.CellEnd.DrawCellBorder()
 	}
 
-	ui.UpdateUI(gl)
+	ui.UpdateUI(states)
+	if states.MoveStarted && !states.AnimationStarted {
+		states.MoveStarted = false
+		states.CurrCell = nil
+		states.CellStart = nil
+		states.CellEnd = nil
+	}
 }
 

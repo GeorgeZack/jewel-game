@@ -9,9 +9,17 @@ import (
 const CELL_WIDTH = 64
 const GRID_LENGTH = 8
 
-type Globals struct {
-	CH, CS, CE				*Cell
+type States struct {
+	AnimationStarted		bool
+	AnimationTimeout		int
+	CellHover				*Cell
+	CellStart				*Cell
+	CellEnd					*Cell
+	CurrCell				*Cell
 	IsMouseButtonPressed	bool
+	MonoSpaceFont			rl.Font
+	MoveStarted				bool
+	PrevCell				*Cell
 }
 
 type Grid struct {
@@ -46,10 +54,12 @@ func (grid *Grid) Redraw() {
 	}
 }
 
+// TODO AnimatedGem, figure how it will move/work; maybe as a copy it is sent through the grid to other cell
 type Cell struct {
-	Cords	rl.Vector2
-	Gem		Gem
-	Grid	*Grid
+	AnimatedGem	Gem
+	Cords		rl.Vector2
+	Gem			Gem
+	Grid		*Grid
 }
 
 func (cell *Cell) DestroyGem() {
@@ -82,6 +92,15 @@ func (cell *Cell) DrawGem() {
 	yCord := cell.Cords.Y
 	if cell.Gem.Valid {
 		rl.DrawTexture(cell.Gem.GemType.Texture, int32(xCord * CELL_WIDTH + cell.Grid.ScreenPos.X), int32(yCord * CELL_WIDTH + cell.Grid.ScreenPos.Y), cell.Gem.GemType.Color)
+	}
+}
+
+func (cell *Cell) MoveGem(otherCell *Cell) {
+	if cell != otherCell {
+		tempCurrent := cell.Gem
+		tempOther := otherCell.Gem
+		cell.Gem = tempOther
+		otherCell.Gem = tempCurrent
 	}
 }
 
