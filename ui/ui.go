@@ -17,7 +17,7 @@ func drawDebugText(states *types.States) {
 	strStart := fmt.Sprintf("Start: %+v", states.CellStart)
 	strEnd := fmt.Sprintf("End:   %+v", states.CellEnd)
 	strMoved := fmt.Sprintf("Moved: %+v", states.MoveStarted)
-	strAnim := fmt.Sprintf("Anim.: %+v", states.AnimationStarted)
+	strAnim := fmt.Sprintf("Anim.: %+v", states.Animating)
 	strAnimTime := fmt.Sprintf("A.Tim: %+v", states.AnimationTimeout)
 	fontSize := float32(16)
 	spacing := float32(1)
