@@ -16,7 +16,6 @@ func main() {
 	rl.SetWindowPosition(0, 0)
 	rl.SetTargetFPS(60)
 	bkg := rl.LoadTexture("res/bkg.jpg")
-	// rl.SetTextLineSpacing(16)
 	defer rl.CloseWindow()
 
 	gemTypes := logic.InitGemTypes()

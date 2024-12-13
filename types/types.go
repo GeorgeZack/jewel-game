@@ -10,7 +10,7 @@ const CELL_WIDTH = 64
 const GRID_LENGTH = 8
 
 type States struct {
-	AnimationStarted		bool
+	Animating				bool
 	AnimationTimeout		int
 	CellHover				*Cell
 	CellStart				*Cell
@@ -22,13 +22,34 @@ type States struct {
 	PrevCell				*Cell
 }
 
+func InitializeStates() (*States) {
+	return &States{
+		Animating:				false,
+		AnimationTimeout:		60,
+		CellHover:				nil,
+		CellStart:				nil,
+		CellEnd:				nil,
+		CurrCell:				nil,
+		IsMouseButtonPressed:	false,
+		MonoSpaceFont:			rl.Font{},
+		MoveStarted: 			false,
+		PrevCell:				nil,
+	}
+}
+
+func (states *States) BeginGemMovement() {
+	states.MoveStarted = true
+	states.Animating = true
+	states.AnimationTimeout = 30
+}
+
 type Grid struct {
 	Data		[][]Cell
 	ScreenPos	rl.Vector2
 	GemTypes	[]GemType
 }
 
-func (grid *Grid) GetCell() *Cell {
+func (grid *Grid) GetCell() (*Cell) {
 	mouse := rl.GetMousePosition()
 	for x := range grid.Data {
 		for y := range grid.Data[x] {

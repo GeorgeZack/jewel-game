@@ -112,17 +112,22 @@ func InitGrid(gemTypes []types.GemType) (grid types.Grid) {
 }
 
 func GameLoop(grid *types.Grid, states *types.States) {
-	if states.AnimationStarted && states.AnimationTimeout > 0 {
+	if states.Animating && states.AnimationTimeout > 0 {
 		states.AnimationTimeout--
 	} else if states.AnimationTimeout == 0 {
-		states.AnimationStarted = false
+		states.Animating = false
 	}
 	// Only accept interactions when no move is occurring
-	if !states.MoveStarted {
+	if !states.Animating {
 		// Check if the left mouse button is pressed
 		if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			states.IsMouseButtonPressed = true
-			states.CellStart = grid.GetCell()
+			if states.CellStart == nil {
+				if states.PrevCell != nil {
+					states.PrevCell = nil
+				}
+				states.CellStart = grid.GetCell()
+			}
 			if states.CurrCell != nil || states.CellStart != states.PrevCell {
 				states.PrevCell = states.CurrCell
 			}
@@ -140,19 +145,13 @@ func GameLoop(grid *types.Grid, states *types.States) {
 					dragRange := GetRangeOfCells(states.CellStart, states.CellEnd)
 					if dragRange == 1 {
 						states.CellStart.MoveGem(states.CellEnd)
-						// TODO move to func
-						states.MoveStarted = true
-						states.AnimationStarted = true
-						states.AnimationTimeout = 100
+						states.BeginGemMovement()
 					}
 				} else if states.CurrCell != nil && states.PrevCell != nil {
 					clickRange := GetRangeOfCells(states.CurrCell, states.PrevCell)
 					if clickRange == 1 {
 						states.CurrCell.MoveGem(states.PrevCell)
-						// TODO move to func
-						states.MoveStarted = true
-						states.AnimationStarted = true
-						states.AnimationTimeout = 100
+						states.BeginGemMovement()
 					}
 				}
 			}
@@ -172,7 +171,7 @@ func GameLoop(grid *types.Grid, states *types.States) {
 	}
 
 	ui.UpdateUI(states)
-	if states.MoveStarted && !states.AnimationStarted {
+	if states.MoveStarted && !states.Animating {
 		states.MoveStarted = false
 		states.CurrCell = nil
 		states.CellStart = nil
