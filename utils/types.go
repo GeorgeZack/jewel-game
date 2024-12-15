@@ -1,4 +1,4 @@
-package types
+package utils
 
 import (
 	"image/color"
@@ -9,44 +9,10 @@ import (
 const CELL_WIDTH = 64
 const GRID_LENGTH = 8
 
-type States struct {
-	Animating				bool
-	AnimationTimeout		int
-	CellHover				*Cell
-	CellStart				*Cell
-	CellEnd					*Cell
-	CurrCell				*Cell
-	IsMouseButtonPressed	bool
-	MonoSpaceFont			rl.Font
-	MoveStarted				bool
-	PrevCell				*Cell
-}
-
-func InitializeStates() (*States) {
-	return &States{
-		Animating:				false,
-		AnimationTimeout:		60,
-		CellHover:				nil,
-		CellStart:				nil,
-		CellEnd:				nil,
-		CurrCell:				nil,
-		IsMouseButtonPressed:	false,
-		MonoSpaceFont:			rl.Font{},
-		MoveStarted: 			false,
-		PrevCell:				nil,
-	}
-}
-
-func (states *States) BeginGemMovement() {
-	states.MoveStarted = true
-	states.Animating = true
-	states.AnimationTimeout = 30
-}
-
 type Grid struct {
 	Data		[][]Cell
-	ScreenPos	rl.Vector2
 	GemTypes	[]GemType
+	ScreenPos	rl.Vector2
 }
 
 func (grid *Grid) GetCell() (*Cell) {
@@ -75,12 +41,14 @@ func (grid *Grid) Redraw() {
 	}
 }
 
-// TODO AnimatedGem, figure how it will move/work; maybe as a copy it is sent through the grid to other cell
 type Cell struct {
 	AnimatedGem	Gem
 	Cords		rl.Vector2
 	Gem			Gem
 	Grid		*Grid
+}
+
+func (cell *Cell) AnimateGem(otherCell *Cell) {
 }
 
 func (cell *Cell) DestroyGem() {
@@ -122,6 +90,10 @@ func (cell *Cell) MoveGem(otherCell *Cell) {
 		tempOther := otherCell.Gem
 		cell.Gem = tempOther
 		otherCell.Gem = tempCurrent
+		if !cell.AnimatedGem.Valid {
+			cell.AnimatedGem = cell.Gem
+			cell.DestroyGem()
+		}
 	}
 }
 

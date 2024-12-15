@@ -2,26 +2,26 @@ package ui
 
 import (
 	"fmt"
-	"jewel-game/types"
+	"jewel-game/utils"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var messages []string
 
-func drawDebugText(states *types.States) {
-	font := states.MonoSpaceFont
-	strHover := fmt.Sprintf("Hover: %+v", states.CellHover)
-	strCurr := fmt.Sprintf("Curr:  %+v", states.CurrCell)
-	strPrev := fmt.Sprintf("Prev:  %+v", states.PrevCell)
-	strStart := fmt.Sprintf("Start: %+v", states.CellStart)
-	strEnd := fmt.Sprintf("End:   %+v", states.CellEnd)
-	strMoved := fmt.Sprintf("Moved: %+v", states.MoveStarted)
-	strAnim := fmt.Sprintf("Anim.: %+v", states.Animating)
-	strAnimTime := fmt.Sprintf("A.Tim: %+v", states.AnimationTimeout)
+func drawDebugText(dm *utils.DataManager) {
+	font := dm.Consts.DebugFont
 	fontSize := float32(16)
 	spacing := float32(1)
 	margin := float32(20)
+	strAnim :=		fmt.Sprintf("Anim.: %+v", dm.Animating)
+	strAnimTime :=	fmt.Sprintf("A.Tim: %+v", dm.AnimationTimeout)
+	strCurr :=		fmt.Sprintf("Curr:  %+v", dm.CellCur)
+	strEnd :=		fmt.Sprintf("End:   %+v", dm.CellEnd)
+	strHover :=		fmt.Sprintf("Hover: %+v", dm.CellHover)
+	strMoved :=		fmt.Sprintf("Moved: %+v", dm.MoveStarted)
+	strPrev :=		fmt.Sprintf("Prev:  %+v", dm.CellPrev)
+	strStart :=		fmt.Sprintf("Start: %+v", dm.CellStart)
 	inc := float32(0)
 	hPos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * inc }
 	rl.DrawTextEx(font, strHover, hPos, fontSize, spacing, rl.Black)
@@ -59,13 +59,13 @@ func AddMessage(format string, a ...any) {
 	messages = append(messages, fmt.Sprintf(format, a...))
 }
 
-func UnloadGemTextures(gemTypes []types.GemType) {
+func UnloadGemTextures(gemTypes []utils.GemType) {
 	for _, g := range gemTypes {
 		rl.UnloadTexture(g.Texture)
 	}
 }
 
-func UpdateUI(states *types.States) {
-	drawDebugText(states)
+func UpdateUI(dm *utils.DataManager) {
+	drawDebugText(dm)
 }
 
