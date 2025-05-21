@@ -1,0 +1,22 @@
+- name: Amethyst
+  color: "#8A2BE2"
+  texturePath: _res/amethyst.png
+- name: Crystal
+  color: "#FFFF00"
+  texturePath: _res/crystalize.png
+- name: Diamond
+  color: "#FFFFFF"
+  texturePath: _res/cut-diamond.png
+- name: Emerald
+  color: "#00FF00"
+  texturePath: _res/emerald.png
+- name: Rupee
+  color: "#FF0000"
+  texturePath: _res/rupee.png
+- name: Sapphire
+  color: "#0000FF"
+  texturePath: _res/saphir.png
+- name: Topaz
+  color: "#FFA500"
+  texturePath: _res/topaz.png
+
