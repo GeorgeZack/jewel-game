@@ -1,10 +1,7 @@
 package main
 
 import (
-	"image/color"
-	"jewel-game/states"
-	"jewel-game/utils"
-	"jewel-game/ui"
+	"jewel-game/game"
 
 	"github.com/gen2brain/raylib-go/raylib"
 )
@@ -16,23 +13,13 @@ func main() {
 	rl.SetWindowSize(screenWidth, screenHeight)
 	rl.SetWindowPosition(0, 0)
 	rl.SetTargetFPS(60)
-	bkg := rl.LoadTexture("res/bkg.jpg")
 	defer rl.CloseWindow()
 
-	dm := utils.NewDataManager()
-	defer rl.UnloadFont(dm.Consts.DebugFont)
-
-	gemTypes := states.InitGemTypes()
-	grid := states.InitGrid(gemTypes, dm)
-	defer ui.UnloadGemTextures(gemTypes)
+	gc := game.NewGameController()
+	defer gc.Unload()
 
 	for !rl.WindowShouldClose() {
-		rl.BeginDrawing()
-		rl.ClearBackground(rl.RayWhite)
-		rl.DrawTexture(bkg, 0, -1200, color.RGBA{ 255, 255, 255, 205 })
-		// other game states go here, like Menu() or Score()
-		states.GameLoop(&grid, dm)
-		rl.EndDrawing()
+		gc.Update()
+		gc.Draw()
 	}
 }
-
