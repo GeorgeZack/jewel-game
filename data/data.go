@@ -98,9 +98,11 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 
 	newGemTypes := make(map[string]*entities.GemType)
 	for name, oldGem := range dm.gemTypes {
+		debug.AddMessage("Old Gem: %+v", oldGem.Color)
 		found := false
 		for _, newDef := range tempGemTypes {
 			if newDef.Name == name && filepath.Clean(newDef.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
+				debug.AddMessage("Found difference in %s type", name)
 				found = true
 				break
 			}
@@ -137,9 +139,11 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Texture: texture,
 			TexturePath: texturePath,
 		}
+		debug.AddMessage("New Gem: %+v", newGemTypes[temp.Name].Color)
 	}
 
 	dm.gemTypes = newGemTypes
+	debug.AddMessage("%+v", dm.gemTypes)
 	debug.AddMessage("Gem types reloaded successfully.")
 }
 

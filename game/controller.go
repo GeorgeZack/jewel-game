@@ -8,7 +8,7 @@ import (
 	"jewel-game/tiles"
 	"jewel-game/ui"
 	"jewel-game/utils"
-	"math/rand"
+	"log"
 
 	"github.com/fsnotify/fsnotify"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -21,34 +21,59 @@ type GameController struct {
 	TileManager			tiles.TileManager
 	TileStates			[]tiles.TileState
 	bkg					rl.Texture2D
+	watcherEvents		chan fsnotify.Event
+	watcherErrors		chan error
+	watcher				*fsnotify.Watcher
 }
 
-func NewGameController() GameController {
+func NewGameController() *GameController {
 	reload := make(chan struct{}, 100)
 	dm := data.NewDataManager(reload)
-	tm := tiles.NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH)
+	tm := tiles.NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, &dm)
+	tm.PopulateRandomGems();
 	states := InitTileStates()
-	gemTypes := dm.GetAllGemTypes()
-
-	for _, grid := range tm.Grid {
-		for _, t := range grid {
-			randomGemTypeIndex := rand.Intn(len(gemTypes))
-			selectedGemType := gemTypes[randomGemTypeIndex]
-			newGemEntity := entities.NewGem(selectedGemType)
-			t.AddEntity(newGemEntity)
-		}
-	}
-
 	bkg := rl.LoadTexture("_res/bkg.jpg")
 
-	return GameController{
+	gc := &GameController{
 		AvailalbleGemTypes:	dm.GetAllGemTypes(),
 		DataManager:		&dm,
 		ReloadChannel:		reload,
 		TileManager:		tm,
 		TileStates:			states,
 		bkg:				bkg,
+		watcherEvents:		make(chan fsnotify.Event, 10),
+		watcherErrors:		make(chan error, 1),
 	}
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatalf("Failed to create file watcher: %v", err)
+	}
+	gc.watcher = watcher
+
+	watchDir := "assets"
+	if err := gc.watcher.Add(watchDir); err != nil {
+		log.Fatalf("Failed to add directory %s to watcher: %v", watchDir, err)
+	}
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return // Channel closed
+				}
+				gc.watcherEvents <- event // Forward event to GameController's channel
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return // Channel closed
+				}
+				gc.watcherErrors <- err // Forward error to GameController's channel
+			}
+		}
+	}()
+
+	return gc
 }
 
 func (c *GameController) Unload() {
@@ -57,6 +82,13 @@ func (c *GameController) Unload() {
 	for _, g := range c.AvailalbleGemTypes {
 		defer rl.UnloadTexture(g.Texture)
 	}
+
+	if c.watcher != nil {
+		c.watcher.Close()
+		close(c.watcherEvents)
+		close(c.watcherErrors)
+	}
+	debug.AddMessage("GameController resources unloaded.")
 }
 
 func (c *GameController) Update() {
@@ -64,13 +96,21 @@ func (c *GameController) Update() {
 	case event, ok := <-c.watcherEvents:
 		if !ok {
 			debug.AddMessage("Watcher events channel closed.")
-			c.water = nil
+			c.watcher = nil
 			return
 		}
 		if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
-			debug.AddMessage("Detected change in %s, reloading gemt types...", event.Name)
-			// TODO: Implement these changes:https://gemini.google.com/app/62bd52abc01c2077
+			debug.AddMessage("Detected change in %s, reloading gem types...", event.Name)
+			c.DataManager.LoadGemTypes("assets/gemtypes.yaml")
+			c.TileManager.PopulateRandomGems()
 		}
+	case err, ok := <-c.watcherErrors:
+		if !ok {
+			debug.AddMessage("Watcher errors channel closed.")
+			return
+		}
+		debug.AddMessage("File watcher error: %v", err)
+	default:
 	}
 	c.TileManager.Update()
 }
@@ -78,7 +118,7 @@ func (c *GameController) Update() {
 func (c *GameController) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.RayWhite)
-	rl.DrawTexture(c.bkg, 0, -1200, color.RGBA{ 255, 255, 255, 205 })
+	rl.DrawTexture(c.bkg, 0, -1200, color.RGBA{ 255, 255, 255, 105 })
 	c.TileManager.Draw()
 	ui.Draw(c.DataManager)
 	rl.EndDrawing()
