@@ -7,21 +7,30 @@ import (
 )
 
 type TileManager struct {
-	Grid			[][]*Tile
-	Width, Height	int
-	DataManager		*DataManager
+	Grid				[][]*Tile
+	Width, Height		int
+	ScreenX, ScreenY	int
+	DataManager			*DataManager
 }
 
-func NewTileManager(w, h int, dm *DataManager) TileManager {
+func NewTileManager(w, h, screenX, screenY int, dm *DataManager) TileManager {
+	tm := TileManager{
+		Width: w,
+		Height: h,
+		ScreenX: screenX,
+		ScreenY: screenY,
+		DataManager: dm,
+	}
 	grid := make([][]*Tile, h)
 	for y := 0; y < h; y++ {
 		grid[y] = make([]*Tile, w)
 		for x := 0; x < w; x++ {
-			grid[y][x] = NewTile(x, y)
+			grid[y][x] = NewTile(x, y, &tm)
 		}
 	}
-	ui.AddMessage("NewTileManager created")
-	return TileManager{ Grid: grid, Width: w, Height: h, DataManager: dm }
+	tm.Grid = grid
+	ui.AddMessage("New TileManager created: %+v", tm)
+	return tm
 }
 
 func (tm *TileManager) Draw() {
@@ -43,10 +52,6 @@ func (tm *TileManager) PopulateRandomGems() {
 			t.AddEntity(newGemEntity)
 		}
 	}
-
-}
-
-func (tm *TileManager) Reset() {
 
 }
 

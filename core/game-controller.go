@@ -17,16 +17,16 @@ type GameController struct {
 	ReloadChannel		chan struct{}
 	TileManager			TileManager
 	TileStates			[]TileState
+	Watcher				*fsnotify.Watcher
+	WatcherErrors		chan error
+	WatcherEvents		chan fsnotify.Event
 	bkg					rl.Texture2D
-	watcherEvents		chan fsnotify.Event
-	watcherErrors		chan error
-	watcher				*fsnotify.Watcher
 }
 
 func NewGameController() *GameController {
 	reload := make(chan struct{}, 100)
 	dm := NewDataManager(reload)
-	tm := NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, &dm)
+	tm := NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, 500, 500, &dm)
 	tm.PopulateRandomGems();
 	states := InitTileStates()
 	bkg := rl.LoadTexture("_res/bkg.jpg")
@@ -37,19 +37,19 @@ func NewGameController() *GameController {
 		ReloadChannel:		reload,
 		TileManager:		tm,
 		TileStates:			states,
+		WatcherErrors:		make(chan error, 1),
+		WatcherEvents:		make(chan fsnotify.Event, 10),
 		bkg:				bkg,
-		watcherEvents:		make(chan fsnotify.Event, 10),
-		watcherErrors:		make(chan error, 1),
 	}
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalf("Failed to create file watcher: %v", err)
 	}
-	gc.watcher = watcher
+	gc.Watcher = watcher
 
 	watchDir := "assets"
-	if err := gc.watcher.Add(watchDir); err != nil {
+	if err := gc.Watcher.Add(watchDir); err != nil {
 		log.Fatalf("Failed to add directory %s to watcher: %v", watchDir, err)
 	}
 
@@ -60,12 +60,12 @@ func NewGameController() *GameController {
 				if !ok {
 					return // Channel closed
 				}
-				gc.watcherEvents <- event // Forward event to GameController's channel
+				gc.WatcherEvents <- event // Forward event to GameController's channel
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return // Channel closed
 				}
-				gc.watcherErrors <- err // Forward error to GameController's channel
+				gc.WatcherErrors <- err // Forward error to GameController's channel
 			}
 		}
 	}()
@@ -80,20 +80,20 @@ func (c *GameController) Unload() {
 		defer rl.UnloadTexture(g.Texture)
 	}
 
-	if c.watcher != nil {
-		c.watcher.Close()
-		close(c.watcherEvents)
-		close(c.watcherErrors)
+	if c.Watcher != nil {
+		c.Watcher.Close()
+		close(c.WatcherEvents)
+		close(c.WatcherErrors)
 	}
 	ui.AddMessage("GameController resources unloaded.")
 }
 
 func (c *GameController) Update() {
 	select {
-	case event, ok := <-c.watcherEvents:
+	case event, ok := <-c.WatcherEvents:
 		if !ok {
 			ui.AddMessage("Watcher events channel closed.")
-			c.watcher = nil
+			c.Watcher = nil
 			return
 		}
 		if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
@@ -101,7 +101,7 @@ func (c *GameController) Update() {
 			c.DataManager.LoadGemTypes("assets/gemtypes.yaml")
 			c.TileManager.PopulateRandomGems()
 		}
-	case err, ok := <-c.watcherErrors:
+	case err, ok := <-c.WatcherErrors:
 		if !ok {
 			ui.AddMessage("Watcher errors channel closed.")
 			return
