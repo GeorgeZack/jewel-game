@@ -8,14 +8,15 @@ import (
 )
 
 type Tile struct {
-	X, Y		int
-	state		*TileState
-	entities	[]TileEntity
-	// dirty	bool
+	X, Y				int
+	Parent				*TileManager
+	ScreenX, ScreenY	int
+	state				*TileState
+	entities			[]TileEntity
 }
 
-func NewTile(x, y int) *Tile {
-	return &Tile{X: x, Y: y}
+func NewTile(x, y int, parent *TileManager) *Tile {
+	return &Tile{ X: x, Y: y, Parent: parent }
 }
 
 func (t *Tile) AddEntity(entity TileEntity) {
@@ -23,8 +24,8 @@ func (t *Tile) AddEntity(entity TileEntity) {
 }
 
 func (t *Tile) Contains(p rl.Vector2) bool {
-	x := float32(t.X * utils.CELL_WIDTH)
-	y := float32(t.Y * utils.CELL_WIDTH)
+	x := float32(t.X * utils.CELL_WIDTH + t.Parent.ScreenX)
+	y := float32(t.Y * utils.CELL_WIDTH + t.Parent.ScreenY)
 	w := float32(utils.CELL_WIDTH)
 	return p.X >= x && p.X <= x+w && p.Y >= y && p.Y <= y+w
 }

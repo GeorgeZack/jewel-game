@@ -18,20 +18,20 @@ type Consts struct {
 }
 
 type DataManager struct {
-	Animating				bool
 	// AnimationQueue			[]*types.Cell
-	AnimationTimeout		int
 	// CellCur					*types.Cell
 	// CellEnd					*types.Cell
 	// CellHover				*types.Cell
 	// CellPrev				*types.Cell
 	// CellStart				*types.Cell
+	Animating				bool
+	AnimationTimeout		int
 	Consts					*Consts
-	gemTypes				map[string]*entities.GemType
+	GemTypes				map[string]*entities.GemType
 	IsMouseButtonPressed	bool
 	MoveStarted				bool
 	ReloadChannel			chan struct{}
-	watcher					*fsnotify.Watcher
+	Watcher					*fsnotify.Watcher
 }
 
 func NewDataManager(reload chan struct{}) DataManager {
@@ -39,30 +39,30 @@ func NewDataManager(reload chan struct{}) DataManager {
 		DebugFont: rl.LoadFontEx("_res/NotoMono-Regular.ttf", 16, nil),
 	}
 	dm := DataManager{
-		Animating:				false,
 		// AnimationQueue:			make([]*types.Cell, 0),
-		AnimationTimeout:		0,
 		// CellCur:				nil,
 		// CellEnd:				nil,
 		// CellHover:				nil,
 		// CellPrev:				nil,
 		// CellStart:				nil,
+		Animating:				false,
+		AnimationTimeout:		0,
 		Consts:					consts,
-		gemTypes: 				make(map[string]*entities.GemType),
+		GemTypes: 				make(map[string]*entities.GemType),
 		IsMouseButtonPressed:	false,
 		MoveStarted: 			false,
 		ReloadChannel: 			reload,
 	}
 	dm.LoadGemTypes("assets/gemtypes.yaml")
 
-	watcher, err := fsnotify.NewWatcher()
+	Watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
-	dm.watcher = watcher
+	dm.Watcher = Watcher
 
 	watchDir := "assets"
-	if err := dm.watcher.Add(watchDir); err != nil {
+	if err := dm.Watcher.Add(watchDir); err != nil {
 		log.Fatal(err)
 	}
 
@@ -72,8 +72,8 @@ func NewDataManager(reload chan struct{}) DataManager {
 }
 
 func (dm *DataManager) GetAllGemTypes() []*entities.GemType {
-	types := make([]*entities.GemType, 0, len(dm.gemTypes))
-	for _, gt := range dm.gemTypes {
+	types := make([]*entities.GemType, 0, len(dm.GemTypes))
+	for _, gt := range dm.GemTypes {
 		types = append(types, gt)
 	}
 	return types
@@ -97,8 +97,7 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 	}
 
 	newGemTypes := make(map[string]*entities.GemType)
-	for name, oldGem := range dm.gemTypes {
-		ui.AddMessage("Old Gem: %+v", oldGem.Color)
+	for name, oldGem := range dm.GemTypes {
 		found := false
 		for _, newDef := range tempGemTypes {
 			if newDef.Name == name && filepath.Clean(newDef.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
@@ -118,7 +117,7 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		color := rl.Color{ R: r, G: g, B: b, A: a }
 		var texture rl.Texture2D
 		var texturePath string
-		if oldGem, ok := dm.gemTypes[temp.Name]; ok && filepath.Clean(temp.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
+		if oldGem, ok := dm.GemTypes[temp.Name]; ok && filepath.Clean(temp.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
 			texture = oldGem.Texture
 			texturePath = oldGem.TexturePath
 		} else {
@@ -139,18 +138,17 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Texture: texture,
 			TexturePath: texturePath,
 		}
-		ui.AddMessage("New Gem: %+v", newGemTypes[temp.Name].Color)
 	}
 
-	dm.gemTypes = newGemTypes
-	ui.AddMessage("%+v", dm.gemTypes)
+	dm.GemTypes = newGemTypes
+	ui.AddMessage("%+v", dm.GemTypes)
 	ui.AddMessage("Gem types reloaded successfully.")
 }
 
 func (dm *DataManager) watchForChanges() {
 	for {
 		select {
-		case event, ok := <-dm.watcher.Events:
+		case event, ok := <-dm.Watcher.Events:
 			if !ok {
 				return
 			}
@@ -163,7 +161,7 @@ func (dm *DataManager) watchForChanges() {
 				// e.g., send a channel message, or call a callback.
 				dm.ReloadChannel <- struct{}{}
 			}
-		case err, ok := <-dm.watcher.Errors:
+		case err, ok := <-dm.Watcher.Errors:
 			if !ok {
 				return
 			}

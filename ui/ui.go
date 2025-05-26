@@ -1,8 +1,12 @@
 package ui
 
 import (
+	"fmt"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
+
+var messages []string
 
 func drawDebugText(font rl.Font) {
 	fontSize := float32(16)
@@ -43,13 +47,23 @@ func drawDebugText(font rl.Font) {
 	// inc++
 	for i, a := range GetMessages() {
 		pos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * (inc + float32(i)) }
+		// Use this for word wrapping
+		// https://github.com/raysan5/raylib/blob/master/examples/text/text_rectangle_bounds.c
 		if pos.Y > 0 {
 			rl.DrawTextEx(font, a, pos, fontSize, spacing, rl.Black)
 		}
 	}
 }
 
+func AddMessage(format string, a ...any) {
+	messages = append([]string{fmt.Sprintf(format, a...)}, messages...)
+}
+
 func Draw(font rl.Font) {
 	drawDebugText(font)
+}
+
+func GetMessages() []string {
+	return messages
 }
 
