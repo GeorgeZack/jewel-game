@@ -1,8 +1,7 @@
-package tiles
+package core
 
 import (
-	"jewel-game/data"
-	"jewel-game/debug"
+	"jewel-game/ui"
 	"jewel-game/entities"
 	"math/rand"
 )
@@ -10,10 +9,10 @@ import (
 type TileManager struct {
 	Grid			[][]*Tile
 	Width, Height	int
-	DataManager		*data.DataManager
+	DataManager		*DataManager
 }
 
-func NewTileManager(w, h int, dm *data.DataManager) TileManager {
+func NewTileManager(w, h int, dm *DataManager) TileManager {
 	grid := make([][]*Tile, h)
 	for y := 0; y < h; y++ {
 		grid[y] = make([]*Tile, w)
@@ -21,7 +20,7 @@ func NewTileManager(w, h int, dm *data.DataManager) TileManager {
 			grid[y][x] = NewTile(x, y)
 		}
 	}
-	debug.AddMessage("NewTileManager created")
+	ui.AddMessage("NewTileManager created")
 	return TileManager{ Grid: grid, Width: w, Height: h, DataManager: dm }
 }
 

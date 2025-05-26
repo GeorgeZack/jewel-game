@@ -1,7 +1,7 @@
-package data
+package core
 
 import (
-	"jewel-game/debug"
+	"jewel-game/ui"
 	"jewel-game/entities"
 	"jewel-game/utils"
 	"log"
@@ -82,7 +82,7 @@ func (dm *DataManager) GetAllGemTypes() []*entities.GemType {
 func (dm *DataManager) LoadGemTypes(fileName string) {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
-		debug.AddMessage("Error reading gem types file %s: %v", fileName, err)
+		ui.AddMessage("Error reading gem types file %s: %v", fileName, err)
 		return
 	}
 
@@ -92,24 +92,24 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		TexturePath	string	`yaml:"texturePath"`
 	}
 	if err := yaml.Unmarshal(data, &tempGemTypes); err != nil {
-		debug.AddMessage("Error unmarshaling gem types: %v", err)
+		ui.AddMessage("Error unmarshaling gem types: %v", err)
 		return
 	}
 
 	newGemTypes := make(map[string]*entities.GemType)
 	for name, oldGem := range dm.gemTypes {
-		debug.AddMessage("Old Gem: %+v", oldGem.Color)
+		ui.AddMessage("Old Gem: %+v", oldGem.Color)
 		found := false
 		for _, newDef := range tempGemTypes {
 			if newDef.Name == name && filepath.Clean(newDef.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
-				debug.AddMessage("Found difference in %s type", name)
+				ui.AddMessage("Found difference in %s type", name)
 				found = true
 				break
 			}
 		}
 		if !found && oldGem.Texture.ID != 0 {
 			rl.UnloadTexture(oldGem.Texture)
-			debug.AddMessage("Unloaded old texture for gem: %s", name)
+			ui.AddMessage("Unloaded old texture for gem: %s", name)
 		}
 	}
 
@@ -125,9 +125,9 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			texture = rl.LoadTexture(temp.TexturePath)
 			texturePath = temp.TexturePath
 			if texture.ID == 0 {
-				debug.AddMessage("Warning: Failed to load texture for gem %s at %s", temp.Name, temp.TexturePath)
+				ui.AddMessage("Warning: Failed to load texture for gem %s at %s", temp.Name, temp.TexturePath)
 			} else {
-				debug.AddMessage("Loaded new texture for gem: %s from %s", temp.Name, temp.TexturePath)
+				ui.AddMessage("Loaded new texture for gem: %s from %s", temp.Name, temp.TexturePath)
 			}
 		}
 
@@ -139,12 +139,12 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Texture: texture,
 			TexturePath: texturePath,
 		}
-		debug.AddMessage("New Gem: %+v", newGemTypes[temp.Name].Color)
+		ui.AddMessage("New Gem: %+v", newGemTypes[temp.Name].Color)
 	}
 
 	dm.gemTypes = newGemTypes
-	debug.AddMessage("%+v", dm.gemTypes)
-	debug.AddMessage("Gem types reloaded successfully.")
+	ui.AddMessage("%+v", dm.gemTypes)
+	ui.AddMessage("Gem types reloaded successfully.")
 }
 
 func (dm *DataManager) watchForChanges() {
@@ -157,7 +157,7 @@ func (dm *DataManager) watchForChanges() {
 			// Filter for relevant events (Write, Create, Remove, Rename) on the specific file
 			// Note: Some editors write to a temp file and then rename/move, so watching the directory is often safer.
 			if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
-				debug.AddMessage("Detected change in %s, reloading...", event.Name)
+				ui.AddMessage("Detected change in %s, reloading...", event.Name)
 				dm.LoadGemTypes(event.Name)
 				// Here, you would also trigger an update in the GameController/TileManager
 				// e.g., send a channel message, or call a callback.
@@ -167,7 +167,7 @@ func (dm *DataManager) watchForChanges() {
 			if !ok {
 				return
 			}
-			debug.AddMessage("Watcher error: %v", err)
+			ui.AddMessage("Watcher error: %v", err)
 		}
 	}
 }

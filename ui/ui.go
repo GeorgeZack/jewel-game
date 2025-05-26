@@ -1,14 +1,10 @@
 package ui
 
 import (
-	"jewel-game/data"
-	"jewel-game/debug"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-func drawDebugText(dm *data.DataManager) {
-	font := dm.Consts.DebugFont
+func drawDebugText(font rl.Font) {
 	fontSize := float32(16)
 	spacing := float32(1)
 	margin := float32(20)
@@ -45,7 +41,7 @@ func drawDebugText(dm *data.DataManager) {
 	// tPos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * inc }
 	// rl.DrawTextEx(font, strAnimTime, tPos, fontSize, spacing, rl.Black)
 	// inc++
-	for i, a := range debug.GetMessages() {
+	for i, a := range GetMessages() {
 		pos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * (inc + float32(i)) }
 		if pos.Y > 0 {
 			rl.DrawTextEx(font, a, pos, fontSize, spacing, rl.Black)
@@ -53,7 +49,7 @@ func drawDebugText(dm *data.DataManager) {
 	}
 }
 
-func Draw(dm *data.DataManager) {
-	drawDebugText(dm)
+func Draw(font rl.Font) {
+	drawDebugText(font)
 }
 

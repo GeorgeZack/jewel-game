@@ -1,11 +1,8 @@
-package game
+package core
 
 import (
 	"image/color"
-	"jewel-game/data"
-	"jewel-game/debug"
 	"jewel-game/entities"
-	"jewel-game/tiles"
 	"jewel-game/ui"
 	"jewel-game/utils"
 	"log"
@@ -16,10 +13,10 @@ import (
 
 type GameController struct {
 	AvailalbleGemTypes	[]*entities.GemType
-	DataManager			*data.DataManager
+	DataManager			*DataManager
 	ReloadChannel		chan struct{}
-	TileManager			tiles.TileManager
-	TileStates			[]tiles.TileState
+	TileManager			TileManager
+	TileStates			[]TileState
 	bkg					rl.Texture2D
 	watcherEvents		chan fsnotify.Event
 	watcherErrors		chan error
@@ -28,8 +25,8 @@ type GameController struct {
 
 func NewGameController() *GameController {
 	reload := make(chan struct{}, 100)
-	dm := data.NewDataManager(reload)
-	tm := tiles.NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, &dm)
+	dm := NewDataManager(reload)
+	tm := NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, &dm)
 	tm.PopulateRandomGems();
 	states := InitTileStates()
 	bkg := rl.LoadTexture("_res/bkg.jpg")
@@ -88,28 +85,28 @@ func (c *GameController) Unload() {
 		close(c.watcherEvents)
 		close(c.watcherErrors)
 	}
-	debug.AddMessage("GameController resources unloaded.")
+	ui.AddMessage("GameController resources unloaded.")
 }
 
 func (c *GameController) Update() {
 	select {
 	case event, ok := <-c.watcherEvents:
 		if !ok {
-			debug.AddMessage("Watcher events channel closed.")
+			ui.AddMessage("Watcher events channel closed.")
 			c.watcher = nil
 			return
 		}
 		if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
-			debug.AddMessage("Detected change in %s, reloading gem types...", event.Name)
+			ui.AddMessage("Detected change in %s, reloading gem types...", event.Name)
 			c.DataManager.LoadGemTypes("assets/gemtypes.yaml")
 			c.TileManager.PopulateRandomGems()
 		}
 	case err, ok := <-c.watcherErrors:
 		if !ok {
-			debug.AddMessage("Watcher errors channel closed.")
+			ui.AddMessage("Watcher errors channel closed.")
 			return
 		}
-		debug.AddMessage("File watcher error: %v", err)
+		ui.AddMessage("File watcher error: %v", err)
 	default:
 	}
 	c.TileManager.Update()
@@ -120,15 +117,15 @@ func (c *GameController) Draw() {
 	rl.ClearBackground(rl.RayWhite)
 	rl.DrawTexture(c.bkg, 0, -1200, color.RGBA{ 255, 255, 255, 105 })
 	c.TileManager.Draw()
-	ui.Draw(c.DataManager)
+	ui.Draw(c.DataManager.Consts.DebugFont)
 	rl.EndDrawing()
 }
 
-func InitTileStates() []tiles.TileState {
-	blank := tiles.NewTileState("_blank", color.RGBA{ 55, 55, 55, 128 })
-	grass := tiles.NewTileState("Grass", color.RGBA{ 0, 102, 0, 255 })
-	forest := tiles.NewTileState("Forest", color.RGBA{ 0, 51, 0, 255 })
-	water := tiles.NewTileState("Water", color.RGBA{ 0, 0, 185, 255 })
-	return []tiles.TileState{ blank, grass, forest, water }
+func InitTileStates() []TileState {
+	blank := NewTileState("_blank", color.RGBA{ 55, 55, 55, 128 })
+	grass := NewTileState("Grass", color.RGBA{ 0, 102, 0, 255 })
+	forest := NewTileState("Forest", color.RGBA{ 0, 51, 0, 255 })
+	water := NewTileState("Water", color.RGBA{ 0, 0, 185, 255 })
+	return []TileState{ blank, grass, forest, water }
 }
 

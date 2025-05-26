@@ -1,7 +1,7 @@
-package tiles
+package core
 
 import (
-	"jewel-game/debug"
+	"jewel-game/ui"
 	"jewel-game/utils"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -55,7 +55,7 @@ func (t *Tile) Update() {
 	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 		mouse := rl.GetMousePosition()
 		if t.Contains(mouse) {
-			debug.AddMessage("Tile clicked: (%d, %d)", t.X, t.Y)
+			ui.AddMessage("Tile clicked: (%d, %d)", t.X, t.Y)
 		}
 	}
 }
