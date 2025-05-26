@@ -39,6 +39,10 @@ func (t *Tile) Draw() {
 	}
 }
 
+func (t *Tile) RemoveAllEntities() {
+	t.entities = nil
+}
+
 func (t *Tile) SetEntities(entities []TileEntity) {
 	t.entities = entities
 }
