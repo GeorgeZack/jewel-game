@@ -1,7 +1,7 @@
 package main
 
 import (
-	"jewel-game/game"
+	"jewel-game/core"
 
 	"github.com/gen2brain/raylib-go/raylib"
 )
@@ -15,7 +15,7 @@ func main() {
 	rl.SetTargetFPS(60)
 	defer rl.CloseWindow()
 
-	gc := game.NewGameController()
+	gc := core.NewGameController()
 	defer gc.Unload()
 
 	for !rl.WindowShouldClose() {

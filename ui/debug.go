@@ -1,4 +1,4 @@
-package debug
+package ui
 
 import "fmt"
 
