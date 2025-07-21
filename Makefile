@@ -6,11 +6,11 @@ LDFLAGS = -L./raylib-5.5_linux_amd64/lib -Wl,-rpath=./raylib-5.5_linux_amd64/lib
 all: game game_logic.so
 
 game: main.c
-	$(CC) $(CFLAGS) -o game main.c -ldl $(LDFLAGS)
+	$(CC) $(CFLAGS) -o jewel-game main.c -ldl $(LDFLAGS)
 
-game_logic.so: game_logic.c
-	$(CC) $(CFLAGS) -o $@.tmp game_logic.c $(LDFLAGS) -shared
+game_logic.so: ./game/game_logic.c
+	$(CC) $(CFLAGS) -o $@.tmp ./game/game_logic.c $(LDFLAGS) -shared
 	mv $@.tmp $@
 
 clean:
-	rm -f game game_logic.so
+	rm -f jewel-game game_logic.so

@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "game_logic.h"
+#include "./game/game_logic.h"
 
 typedef void (*game_init_fn)();
 typedef void (*game_update_fn)(float);
