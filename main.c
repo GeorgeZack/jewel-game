@@ -14,24 +14,23 @@
 
 #include "./game/game_logic.h"
 
-typedef void (*game_init_fn)();
-typedef void (*game_update_fn)(float);
-typedef void (*game_render_fn)();
-typedef void (*game_cleanup_fn)();
+typedef void (*gameInitFn)();
+typedef void (*gameUpdateFn)();
+typedef void (*gameRenderFn)();
+typedef void (*gameCleanupFn)();
 
 struct GameLib {
 	void *handle;
-	game_init_fn init;
-	game_update_fn update;
-	game_render_fn render;
-	game_cleanup_fn cleanup;
+	gameInitFn init;
+	gameUpdateFn update;
+	gameRenderFn render;
+	gameCleanupFn cleanup;
 	time_t last_mtime;
 };
 
 bool reloading = false;
 
-bool load_game_lib(struct GameLib *lib, const char *path) {
-	printf("load_game_lib initiated...\n%s\n", path);
+bool loadGameLib(struct GameLib *lib, const char *path) {
 	struct stat attr;
 	if (stat(path, &attr) != 0) {
 		printf("stat failed\n");
@@ -45,10 +44,10 @@ bool load_game_lib(struct GameLib *lib, const char *path) {
 	}
 
 	lib->handle = handle;
-	lib->init = dlsym(handle, "init");
-	lib->update = dlsym(handle, "update");
-	lib->render = dlsym(handle, "render");
-	lib->cleanup = dlsym(handle, "cleanup");
+	lib->init = dlsym(handle, "GameLoopInit");
+	lib->update = dlsym(handle, "GameLoopUpdate");
+	lib->render = dlsym(handle, "GameLoopRender");
+	lib->cleanup = dlsym(handle, "GameLoopCleanup");
 	lib->last_mtime = attr.st_mtime;
 
 	if (!lib->init || !lib->update || !lib->render || !lib->cleanup) {
@@ -60,19 +59,19 @@ bool load_game_lib(struct GameLib *lib, const char *path) {
 	return true;
 }
 
-void unload_game_lib(struct GameLib *lib) {
+void unloadGameLib(struct GameLib *lib) {
 	if (lib->cleanup) lib->cleanup();
 	if (lib->handle) dlclose(lib->handle);
 	lib->handle = NULL;
 }
 
-bool check_for_reload(struct GameLib *lib, const char *path) {
+bool checkForReload(struct GameLib *lib, const char *path) {
 	struct stat attr;
 	if (stat(path, &attr) != 0) return false;
 
 	if (attr.st_mtime != lib->last_mtime) {
-		unload_game_lib(lib);
-		if (load_game_lib(lib, path)) {
+		unloadGameLib(lib);
+		if (loadGameLib(lib, path)) {
 			printf("Reloaded %s\n", path);
 			reloading = true;
 			return true;
@@ -90,7 +89,7 @@ int main() {
 
 	struct GameLib game = {0};
 	const char *lib_path = "./game_logic.so";
-	if (!load_game_lib(&game, lib_path)) {
+	if (!loadGameLib(&game, lib_path)) {
 		printf("Failed to load game logic.\n");
 		return 1;
 	}
@@ -98,23 +97,23 @@ int main() {
 	while (!WindowShouldClose()) {
 		float delta = GetFrameTime();
 		reloading = false;
-		check_for_reload(&game, lib_path);
+		checkForReload(&game, lib_path);
 
 		if (!reloading) {
-			game.update(delta);
+			game.update();
 			BeginDrawing();
-			ClearBackground(BLACK);
+			ClearBackground(DARKGRAY);
 			game.render();
 			EndDrawing();
 		} else {
 			BeginDrawing();
-			ClearBackground(BLACK);
+			ClearBackground(DARKGRAY);
 			DrawText("RELOADING GAME LOGIC...", 2, 2, 10, WHITE);
 			EndDrawing();
 		}
 	}
 
-	unload_game_lib(&game);
+	unloadGameLib(&game);
 	CloseWindow();
 
 	return 0;
