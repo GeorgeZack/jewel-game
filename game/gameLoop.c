@@ -1,4 +1,4 @@
-#include "game_logic.h"
+#include "gameLoop.h"
 #include "ui.c"
 #include <raylib.h>
 #include <stdlib.h>

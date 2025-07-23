@@ -1,8 +1,3 @@
-/*
- * Simple Bejeweled Clone Scaffold with Hot Module Reloading (Raylib Version)
- * (Generated from ChatGPT on 07/19/25)
- */
-
 #include <raylib.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
@@ -12,7 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "./game/game_logic.h"
+#include "./game/gameLoop.h"
 
 typedef void (*gameInitFn)();
 typedef void (*gameUpdateFn)();
@@ -88,7 +83,7 @@ int main() {
 	SetTargetFPS(60);
 
 	struct GameLib game = {0};
-	const char *lib_path = "./game_logic.so";
+	const char *lib_path = "./gameLoop.so";
 	if (!loadGameLib(&game, lib_path)) {
 		printf("Failed to load game logic.\n");
 		return 1;
