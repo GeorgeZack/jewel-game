@@ -16,7 +16,8 @@ void addDebugLine(const char *text, Color color) {
 		debugLineCapacity *= 2;
 		debugLines = realloc(debugLines, debugLineCapacity * sizeof(DebugLine));
 	}
-	debugLines[debugLineCount].text = text;
+	strncpy(debugLines[debugLineCount].text, text, DEBUG_LINE_TEXT_MAX - 1);
+	debugLines[debugLineCount].text[DEBUG_LINE_TEXT_MAX - 1] = '\0';
 	debugLines[debugLineCount].color = color;
 	debugLineCount++;
 }
@@ -24,24 +25,27 @@ void addDebugLine(const char *text, Color color) {
 void drawDebugLines() {
 	Color bkg = BLACK;
 	bkg.a = 180;
-	DrawRectangle(0, 0, GetScreenWidth(), debugLineCount * fontSize, bkg);
+	DrawRectangle(0, 0, GetScreenWidth(), (debugLineCount * fontSize) + 2, bkg);
 	for (int i = 0; i < debugLineCount; i++) {
 		DrawText(debugLines[i].text, 2, i * fontSize, fontSize, debugLines[i].color);
 	}
-	debugLineCount = 0;
 }
 
 void drawMessageLines() {
-	int baseY = GetScreenHeight() - fontSize * (messageLineCount + 1);
+	int baseY = GetScreenHeight() - fontSize * messageLineCount;
 
 	for (int i = 0; i < messageLineCount; i++) {
+		int debugHeight = debugLineCount * fontSize;
+		if (baseY + (i * fontSize) < debugHeight) {
+			continue;
+		}
 		// Outlines
-		DrawText(messageLines[i].text, 1, baseY + i * fontSize - 1, fontSize, BLACK);
-		DrawText(messageLines[i].text, 3, baseY + i * fontSize - 1, fontSize, BLACK);
-		DrawText(messageLines[i].text, 1, baseY + i * fontSize + 1, fontSize, BLACK);
-		DrawText(messageLines[i].text, 3, baseY + i * fontSize + 1, fontSize, BLACK);
+		DrawText(messageLines[i].text, 1, baseY + (i * fontSize - 1), fontSize, BLACK);
+		DrawText(messageLines[i].text, 3, baseY + (i * fontSize - 1), fontSize, BLACK);
+		DrawText(messageLines[i].text, 1, baseY + (i * fontSize + 1), fontSize, BLACK);
+		DrawText(messageLines[i].text, 3, baseY + (i * fontSize + 1), fontSize, BLACK);
 		// Text
-		DrawText(messageLines[i].text, 2, baseY + i * fontSize, fontSize, messageLines[i].color);
+		DrawText(messageLines[i].text, 2, baseY + (i * fontSize), fontSize, messageLines[i].color);
 	}
 }
 
@@ -62,7 +66,8 @@ void AddMessageLine(const char *text, Color color) {
 		messageLineCapacity *= 2;
 		messageLines = realloc(messageLines, messageLineCapacity * sizeof(MessageLine));
 	}
-	messageLines[messageLineCount].text = strdup(text);
+	strncpy(messageLines[messageLineCount].text, text, MESSAGE_LINE_TEXT_MAX - 1);
+	messageLines[messageLineCount].text[MESSAGE_LINE_TEXT_MAX - 1] = '\0';
 	messageLines[messageLineCount].color = color;
 	messageLineCount++;
 }
@@ -73,13 +78,15 @@ void InitUI() {
 }
 
 void DrawUI() {
+	debugLineCount = 0;
+	addDebugLine(TextFormat("FPS: %i", GetFPS()), DARKGREEN);
+	addDebugLine(TextFormat("Objects: %i", gemCount), GREEN);
+	addDebugLine(TextFormat("Objects (Batched): %i", 1 + gemCount / MAX_BATCH_ELEMENTS), MAROON);
+	addDebugLine(TextFormat("X: %i", GetMouseX()), GREEN);
+	addDebugLine(TextFormat("Y: %i", GetMouseY()), GREEN);
+	addDebugLine(TextFormat("baseY: %i", GetScreenHeight() - fontSize * messageLineCount), GREEN);
+	addDebugLine(TextFormat("Debug Lines: %i (%ipx)", debugLineCount + 1, (debugLineCount + 1) * fontSize), GREEN);
 	drawMessageLines();
-	addDebugLine(strdup(TextFormat("FPS: %i", GetFPS())), DARKGREEN);
-	addDebugLine(strdup(TextFormat("Objects: %i", gemCount)), GREEN);
-	addDebugLine(strdup(TextFormat("Objects (Batched): %i", 1 + gemCount / MAX_BATCH_ELEMENTS)), MAROON);
-	addDebugLine(strdup(TextFormat("X: %i", GetMouseX())), GREEN);
-	addDebugLine(strdup(TextFormat("Y: %i", GetMouseY())), GREEN);
-	addDebugLine(strdup(TextFormat("Test: %i", 2)), GREEN);
 	drawDebugLines();
 }
 

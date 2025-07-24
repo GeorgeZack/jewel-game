@@ -4,9 +4,11 @@
 #include <raylib.h>
 #include <string.h>
 
+#define DEBUG_LINE_TEXT_MAX 128
 #define MAX_BATCH_ELEMENTS 8192
 #define MAX_GEMS 100000
 #define MAX_TEXTURES 7
+#define MESSAGE_LINE_TEXT_MAX 256
 #define TIMER_START 5000 / 60.0f
 
 typedef struct Gem {
@@ -18,12 +20,12 @@ typedef struct Gem {
 } Gem;
 
 typedef struct DebugLine {
-	const char *text;
+	char text[DEBUG_LINE_TEXT_MAX];
 	Color color;
 } DebugLine;
 
 typedef struct MessageLine {
-	const char *text;
+	char text[MESSAGE_LINE_TEXT_MAX];
 	Color color;
 } MessageLine;
 

@@ -110,7 +110,6 @@ void GameLoopUpdate() {
 		for (int i = 0; i < 100 && gemCount < MAX_GEMS; i++) {
 			gems[gemCount] = createNewGem(true);
 		}
-		AddMessageLine(strdup(TextFormat("Click %i", gemCount)), WHITE);
 	}
 
 	for (int i = 0; i < gemCount; i++) {
