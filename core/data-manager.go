@@ -4,17 +4,16 @@ import (
 	"jewel-game/ui"
 	"jewel-game/entities"
 	"jewel-game/utils"
-	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/fsnotify/fsnotify"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"gopkg.in/yaml.v3"
 )
 
 type Consts struct {
 	DebugFont	rl.Font
+	UIFont		rl.Font
 }
 
 type DataManager struct {
@@ -28,17 +27,20 @@ type DataManager struct {
 	AnimationTimeout		int
 	Consts					*Consts
 	GemTypes				map[string]*entities.GemType
+	GemTypeOrder			[]string	// YAML order, so a gem's color index is stable
 	IsMouseButtonPressed	bool
 	MoveStarted				bool
-	ReloadChannel			chan struct{}
-	Watcher					*fsnotify.Watcher
 }
 
-func NewDataManager(reload chan struct{}) DataManager {
+// NewDataManager must be called on the main thread after the window exists, since it loads textures.
+// Hot reloading is driven by the GameController's watcher so textures are only touched on the main thread.
+func NewDataManager() *DataManager {
 	consts := &Consts{
 		DebugFont: rl.LoadFontEx("_res/NotoMono-Regular.ttf", 16, nil),
+		UIFont: rl.LoadFontEx("_res/NotoMono-Regular.ttf", 64, nil),
 	}
-	dm := DataManager{
+	rl.SetTextureFilter(consts.UIFont.Texture, rl.FilterBilinear)
+	dm := &DataManager{
 		// AnimationQueue:			make([]*types.Cell, 0),
 		// CellCur:				nil,
 		// CellEnd:				nil,
@@ -51,32 +53,39 @@ func NewDataManager(reload chan struct{}) DataManager {
 		GemTypes: 				make(map[string]*entities.GemType),
 		IsMouseButtonPressed:	false,
 		MoveStarted: 			false,
-		ReloadChannel: 			reload,
 	}
-	dm.LoadGemTypes("assets/gemtypes.yaml")
-
-	Watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	dm.Watcher = Watcher
-
-	watchDir := "assets"
-	if err := dm.Watcher.Add(watchDir); err != nil {
-		log.Fatal(err)
-	}
-
-	go dm.watchForChanges()
+	dm.LoadGemTypes(utils.GEM_TYPES_FILE)
 
 	return dm
 }
 
 func (dm *DataManager) GetAllGemTypes() []*entities.GemType {
-	types := make([]*entities.GemType, 0, len(dm.GemTypes))
-	for _, gt := range dm.GemTypes {
-		types = append(types, gt)
+	types := make([]*entities.GemType, 0, len(dm.GemTypeOrder))
+	for _, name := range dm.GemTypeOrder {
+		types = append(types, dm.GemTypes[name])
 	}
 	return types
+}
+
+// PrismTexture is drawn rainbow-tinted for colorless prism gems.
+func (dm *DataManager) PrismTexture() rl.Texture2D {
+	if gt, ok := dm.GemTypes[utils.PRISM_GEM_TYPE]; ok {
+		return gt.Texture
+	}
+	if len(dm.GemTypeOrder) > 0 {
+		return dm.GemTypes[dm.GemTypeOrder[0]].Texture
+	}
+	return rl.Texture2D{}
+}
+
+func (dm *DataManager) Unload() {
+	rl.UnloadFont(dm.Consts.DebugFont)
+	rl.UnloadFont(dm.Consts.UIFont)
+	for _, gt := range dm.GemTypes {
+		if gt.Texture.ID != 0 {
+			rl.UnloadTexture(gt.Texture)
+		}
+	}
 }
 
 func (dm *DataManager) LoadGemTypes(fileName string) {
@@ -96,7 +105,13 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		return
 	}
 
+	if len(tempGemTypes) < 3 {
+		ui.AddMessage("Need at least 3 gem types in %s, found %d; keeping the old ones", fileName, len(tempGemTypes))
+		return
+	}
+
 	newGemTypes := make(map[string]*entities.GemType)
+	newOrder := make([]string, 0, len(tempGemTypes))
 	for name, oldGem := range dm.GemTypes {
 		found := false
 		for _, newDef := range tempGemTypes {
@@ -126,6 +141,7 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			if texture.ID == 0 {
 				ui.AddMessage("Warning: Failed to load texture for gem %s at %s", temp.Name, temp.TexturePath)
 			} else {
+				rl.SetTextureFilter(texture, rl.FilterBilinear)
 				ui.AddMessage("Loaded new texture for gem: %s from %s", temp.Name, temp.TexturePath)
 			}
 		}
@@ -138,35 +154,10 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Texture: texture,
 			TexturePath: texturePath,
 		}
+		newOrder = append(newOrder, temp.Name)
 	}
 
 	dm.GemTypes = newGemTypes
-	ui.AddMessage("%+v", dm.GemTypes)
-	ui.AddMessage("Gem types reloaded successfully.")
+	dm.GemTypeOrder = newOrder
+	ui.AddMessage("Gem types loaded: %v", newOrder)
 }
-
-func (dm *DataManager) watchForChanges() {
-	for {
-		select {
-		case event, ok := <-dm.Watcher.Events:
-			if !ok {
-				return
-			}
-			// Filter for relevant events (Write, Create, Remove, Rename) on the specific file
-			// Note: Some editors write to a temp file and then rename/move, so watching the directory is often safer.
-			if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
-				ui.AddMessage("Detected change in %s, reloading...", event.Name)
-				dm.LoadGemTypes(event.Name)
-				// Here, you would also trigger an update in the GameController/TileManager
-				// e.g., send a channel message, or call a callback.
-				dm.ReloadChannel <- struct{}{}
-			}
-		case err, ok := <-dm.Watcher.Errors:
-			if !ok {
-				return
-			}
-			ui.AddMessage("Watcher error: %v", err)
-		}
-	}
-}
-

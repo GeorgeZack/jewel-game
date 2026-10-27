@@ -2,11 +2,19 @@ package ui
 
 import (
 	"fmt"
+	"log"
+	"sync"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var messages []string
+const MAX_MESSAGES = 200
+
+var (
+	messages	[]string
+	messagesMu	sync.Mutex
+	ShowDebug	bool
+)
 
 func drawDebugText(font rl.Font) {
 	fontSize := float32(16)
@@ -45,6 +53,7 @@ func drawDebugText(font rl.Font) {
 	// tPos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * inc }
 	// rl.DrawTextEx(font, strAnimTime, tPos, fontSize, spacing, rl.Black)
 	// inc++
+	rl.DrawRectangle(0, 0, int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight()), rl.Fade(rl.RayWhite, 0.85))
 	for i, a := range GetMessages() {
 		pos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * (inc + float32(i)) }
 		// Use this for word wrapping
@@ -56,14 +65,25 @@ func drawDebugText(font rl.Font) {
 }
 
 func AddMessage(format string, a ...any) {
-	messages = append([]string{fmt.Sprintf(format, a...)}, messages...)
+	msg := fmt.Sprintf(format, a...)
+	log.Println(msg)
+	messagesMu.Lock()
+	defer messagesMu.Unlock()
+	messages = append([]string{ msg }, messages...)
+	if len(messages) > MAX_MESSAGES {
+		messages = messages[:MAX_MESSAGES]
+	}
 }
 
 func Draw(font rl.Font) {
-	drawDebugText(font)
+	if ShowDebug {
+		drawDebugText(font)
+	}
 }
 
 func GetMessages() []string {
-	return messages
+	messagesMu.Lock()
+	defer messagesMu.Unlock()
+	return append([]string(nil), messages...)
 }
 

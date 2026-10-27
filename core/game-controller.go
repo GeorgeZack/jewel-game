@@ -1,57 +1,69 @@
 package core
 
 import (
+	"fmt"
 	"image/color"
-	"jewel-game/entities"
+	"jewel-game/board"
 	"jewel-game/ui"
 	"jewel-game/utils"
-	"log"
+	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+type Mode int
+
+const (
+	ModeClassic Mode = iota
+	ModeSandbox
+)
+
 type GameController struct {
-	AvailalbleGemTypes	[]*entities.GemType
-	DataManager			*DataManager
-	ReloadChannel		chan struct{}
-	TileManager			TileManager
-	TileStates			[]TileState
-	Watcher				*fsnotify.Watcher
-	WatcherErrors		chan error
-	WatcherEvents		chan fsnotify.Event
-	bkg					rl.Texture2D
+	DataManager		*DataManager
+	Mode			Mode
+	Classic			*TileManager
+	Sandbox			*TileManager
+	Quit			bool
+	Watcher			*fsnotify.Watcher
+	WatcherErrors	chan error
+	WatcherEvents	chan fsnotify.Event
+	bkg				rl.Texture2D
 }
 
 func NewGameController() *GameController {
-	reload := make(chan struct{}, 100)
-	dm := NewDataManager(reload)
-	tm := NewTileManager(utils.GRID_LENGTH, utils.GRID_LENGTH, 500, 500, &dm)
-	tm.PopulateRandomGems();
-	states := InitTileStates()
-	bkg := rl.LoadTexture("_res/bkg.jpg")
+	dm := NewDataManager()
+	ui.Font = dm.Consts.UIFont
+
+	sandbox := NewTileManager(Presets()[1].Settings, dm)
+	sandbox.UndoEnabled = true
 
 	gc := &GameController{
-		AvailalbleGemTypes:	dm.GetAllGemTypes(),
-		DataManager:		&dm,
-		ReloadChannel:		reload,
-		TileManager:		tm,
-		TileStates:			states,
-		WatcherErrors:		make(chan error, 1),
-		WatcherEvents:		make(chan fsnotify.Event, 10),
-		bkg:				bkg,
+		DataManager:	dm,
+		Classic:		NewTileManager(board.DefaultSettings(), dm),
+		Sandbox:		sandbox,
+		WatcherErrors:	make(chan error, 1),
+		WatcherEvents:	make(chan fsnotify.Event, 10),
+		bkg:			rl.LoadTexture("_res/bkg.jpg"),
+	}
+	if gc.bkg.ID == 0 {
+		ui.AddMessage("Background missing or not an image (git lfs pull?), using a gradient")
 	}
 
+	// Watch for gem type edits; events are forwarded here and handled in Update so
+	// textures are only ever loaded on the main (OpenGL) thread.
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatalf("Failed to create file watcher: %v", err)
+		ui.AddMessage("Hot reload disabled, failed to create file watcher: %v", err)
+		return gc
+	}
+	watchDir := filepath.Dir(utils.GEM_TYPES_FILE)
+	if err := watcher.Add(watchDir); err != nil {
+		ui.AddMessage("Hot reload disabled, failed to watch %s: %v", watchDir, err)
+		watcher.Close()
+		return gc
 	}
 	gc.Watcher = watcher
-
-	watchDir := "assets"
-	if err := gc.Watcher.Add(watchDir); err != nil {
-		log.Fatalf("Failed to add directory %s to watcher: %v", watchDir, err)
-	}
 
 	go func() {
 		for {
@@ -73,59 +85,214 @@ func NewGameController() *GameController {
 	return gc
 }
 
-func (c *GameController) Unload() {
-	rl.UnloadTexture(c.bkg)
-	rl.UnloadFont(c.DataManager.Consts.DebugFont)
-	for _, g := range c.AvailalbleGemTypes {
-		defer rl.UnloadTexture(g.Texture)
+func (c *GameController) Active() *TileManager {
+	if c.Mode == ModeSandbox {
+		return c.Sandbox
 	}
+	return c.Classic
+}
 
+func (c *GameController) Unload() {
+	if c.bkg.ID != 0 {
+		rl.UnloadTexture(c.bkg)
+	}
+	c.DataManager.Unload()
 	if c.Watcher != nil {
+		// closing the watcher ends the forwarding goroutine
 		c.Watcher.Close()
-		close(c.WatcherEvents)
-		close(c.WatcherErrors)
 	}
 	ui.AddMessage("GameController resources unloaded.")
 }
 
 func (c *GameController) Update() {
 	select {
-	case event, ok := <-c.WatcherEvents:
-		if !ok {
-			ui.AddMessage("Watcher events channel closed.")
-			c.Watcher = nil
-			return
-		}
-		if event.Name == "assets/gemtypes.yaml" && (event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create) {
+	case event := <-c.WatcherEvents:
+		if filepath.Clean(event.Name) == filepath.Clean(utils.GEM_TYPES_FILE) && event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
 			ui.AddMessage("Detected change in %s, reloading gem types...", event.Name)
-			c.DataManager.LoadGemTypes("assets/gemtypes.yaml")
-			c.TileManager.PopulateRandomGems()
+			// boards keep their state; gems pick up the new looks on the next frame
+			c.DataManager.LoadGemTypes(utils.GEM_TYPES_FILE)
 		}
-	case err, ok := <-c.WatcherErrors:
-		if !ok {
-			ui.AddMessage("Watcher errors channel closed.")
-			return
-		}
+	case err := <-c.WatcherErrors:
 		ui.AddMessage("File watcher error: %v", err)
 	default:
 	}
-	c.TileManager.Update()
+
+	c.handleKeys()
+	tm := c.Active()
+	tm.Layout(c.boardArea())
+	tm.Update()
+}
+
+func (c *GameController) handleKeys() {
+	tm := c.Active()
+	switch {
+	case rl.IsKeyPressed(rl.KeyF1):
+		ui.ShowDebug = !ui.ShowDebug
+	case rl.IsKeyPressed(rl.KeyTab):
+		c.Mode = 1 - c.Mode
+	case rl.IsKeyPressed(rl.KeyH):
+		tm.ShowHint()
+	case rl.IsKeyPressed(rl.KeySpace):
+		tm.ReleaseLocks()
+	case rl.IsKeyPressed(rl.KeyEnter):
+		tm.Resolve()
+	case rl.IsKeyPressed(rl.KeyR):
+		tm.Reset(tm.Board.Settings)
+	case rl.IsKeyPressed(rl.KeyZ), rl.IsKeyPressed(rl.KeyBackspace):
+		tm.Undo()
+	case rl.IsKeyPressed(rl.KeyEscape):
+		if tm.Brush != nil {
+			tm.Brush = nil
+		} else if !tm.ClearSelection() {
+			c.Quit = true
+		}
+	}
+}
+
+const MARGIN = 20
+const DESIGN_HEIGHT = 1058	// side panels are laid out for this height and scaled down in smaller windows
+
+// uiScale shrinks the side panels so they always fit the window height.
+func uiScale() float32 {
+	return max(0.55, min(1, float32(rl.GetScreenHeight())/DESIGN_HEIGHT))
+}
+
+// leftPanel and rightPanel are in panel space, which is screen space divided by uiScale.
+func (c *GameController) leftPanel() rl.Rectangle {
+	h := float32(rl.GetScreenHeight()) / uiScale()
+	return rl.Rectangle{ X: MARGIN, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN }
+}
+
+func (c *GameController) rightPanel() rl.Rectangle {
+	w, h := float32(rl.GetScreenWidth())/uiScale(), float32(rl.GetScreenHeight())/uiScale()
+	return rl.Rectangle{ X: w - MARGIN - utils.SIDE_PANEL_WIDTH, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN }
+}
+
+// boardArea is in screen space.
+func (c *GameController) boardArea() rl.Rectangle {
+	s := uiScale()
+	l, r := c.leftPanel(), c.rightPanel()
+	x := (l.X+l.Width)*s + 60
+	return rl.Rectangle{ X: x, Y: 70, Width: r.X*s - 60 - x, Height: float32(rl.GetScreenHeight()) - 140 }
 }
 
 func (c *GameController) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.RayWhite)
-	rl.DrawTexture(c.bkg, 0, -1200, color.RGBA{ 255, 255, 255, 105 })
-	c.TileManager.Draw()
+	c.drawBackground()
+	tm := c.Active()
+	tm.Draw()
+
+	// draw panels scaled, and scale the mouse to match so the widgets' hit tests line up
+	s := uiScale()
+	rl.BeginMode2D(rl.Camera2D{ Zoom: s })
+	rl.SetMouseScale(1/s, 1/s)
+	c.drawLeftPanel(tm)
+	if c.Mode == ModeSandbox {
+		DrawSandboxPanel(tm, c.DataManager, c.rightPanel())
+	} else {
+		c.drawGuide(c.rightPanel())
+	}
+	rl.SetMouseScale(1, 1)
+	rl.EndMode2D()
+
 	ui.Draw(c.DataManager.Consts.DebugFont)
 	rl.EndDrawing()
 }
 
-func InitTileStates() []TileState {
-	blank := NewTileState("_blank", color.RGBA{ 55, 55, 55, 128 })
-	grass := NewTileState("Grass", color.RGBA{ 0, 102, 0, 255 })
-	forest := NewTileState("Forest", color.RGBA{ 0, 51, 0, 255 })
-	water := NewTileState("Water", color.RGBA{ 0, 0, 185, 255 })
-	return []TileState{ blank, grass, forest, water }
+func (c *GameController) drawBackground() {
+	w, h := int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight())
+	rl.DrawRectangleGradientV(0, 0, w, h, color.RGBA{ 38, 22, 70, 255 }, color.RGBA{ 8, 10, 28, 255 })
+	if c.bkg.ID == 0 {
+		return
+	}
+	// cover the window, keeping the photo's aspect ratio
+	scale := max(float32(w)/float32(c.bkg.Width), float32(h)/float32(c.bkg.Height))
+	dw, dh := float32(c.bkg.Width)*scale, float32(c.bkg.Height)*scale
+	src := rl.Rectangle{ Width: float32(c.bkg.Width), Height: float32(c.bkg.Height) }
+	dst := rl.Rectangle{ X: (float32(w) - dw) / 2, Y: (float32(h) - dh) / 2, Width: dw, Height: dh }
+	rl.DrawTexturePro(c.bkg, src, dst, rl.Vector2{}, 0, color.RGBA{ 255, 255, 255, 105 })
 }
 
+func (c *GameController) drawLeftPanel(tm *TileManager) {
+	r := c.leftPanel()
+	ui.Panel(r)
+	col := ui.Column{ X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6 }
+	title := col.Next(44)
+	ui.Text("JEWEL GAME", title.X, title.Y, 40, ui.Accent)
+
+	tabs := ui.Row(col.Next(36), 2, 8)
+	if ui.Button(tabs[0], "Classic", c.Mode == ModeClassic) {
+		c.Mode = ModeClassic
+	}
+	if ui.Button(tabs[1], "Sandbox", c.Mode == ModeSandbox) {
+		c.Mode = ModeSandbox
+	}
+
+	b := tm.Board
+	col.Heading("Score")
+	score := col.Next(50)
+	ui.Text(fmt.Sprint(b.Score), score.X, score.Y, 48, ui.TextColor)
+	col.Line(fmt.Sprintf("Moves      %d", b.Moves), 18, ui.TextColor)
+	col.Line(fmt.Sprintf("Chain      %d  (best %d)", b.Chain, b.BestChain), 18, ui.TextColor)
+	col.Line(fmt.Sprintf("Cleared    %d", b.Cleared), 18, ui.TextColor)
+	locks := fmt.Sprintf("Locks      %d / %s", b.LockCount(), lockLabel(b.Settings.MaxLocks))
+	col.Line(locks, 18, ui.TextColor)
+	if b.Settings.Gravity != board.Down || b.Settings.ChaosGravity {
+		col.Line(fmt.Sprintf("Gravity    %s", b.Settings.Gravity), 18, ui.Accent)
+	}
+
+	col.Heading("Actions")
+	if ui.Button(col.Next(32), "Release locks  [Space]", false) {
+		tm.ReleaseLocks()
+	}
+	if ui.Button(col.Next(32), "Hint  [H]", false) {
+		tm.ShowHint()
+	}
+	if ui.Button(col.Next(32), "New board  [R]", false) {
+		tm.Reset(b.Settings)
+	}
+	if c.Mode == ModeSandbox {
+		if ui.Button(col.Next(32), fmt.Sprintf("Undo  [Z]  (%d)", len(tm.undo)), false) {
+			tm.Undo()
+		}
+		if ui.Button(col.Next(32), "Clear matches  [Enter]", false) {
+			tm.Resolve()
+		}
+	}
+
+	col.Heading("Controls")
+	for _, line := range []string{
+		"Left drag   swap gems",
+		"Left click  select, click to swap",
+		"Right click lock / unlock a gem",
+		"Tab         Classic <-> Sandbox",
+		"F1          debug log    Esc  quit",
+	} {
+		col.Line(line, 15, ui.DimText)
+	}
+}
+
+func (c *GameController) drawGuide(r rl.Rectangle) {
+	ui.Panel(r)
+	col := ui.Column{ X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 4 }
+	para := func(s string) {
+		col.Paragraph(s, 16, ui.TextColor)
+		col.Y += 6
+	}
+	col.Heading("Specials")
+	para("4 in a row makes a Bolt. It clears its whole row or column.")
+	para("An L or T shape makes a Bomb. It blasts the 3x3 around it.")
+	para("5 in a row makes a Prism. Swap it with any gem to clear that color.")
+	col.Heading("Combos")
+	para("Swap two specials into each other:")
+	para("Bolt + Bolt: a full cross.")
+	para("Bolt + Bomb: a cross three lines wide.")
+	para("Bomb + Bomb: a 5x5 blast.")
+	para("Prism + Bolt/Bomb: every gem of that color turns into one and goes off.")
+	para("Prism + Prism: clears the board.")
+	col.Heading("Locks")
+	para("Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them.")
+	para("Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus.")
+	col.Y += 8
+	col.Paragraph("Tab opens the Sandbox, where every rule is up for grabs.", 16, ui.Accent)
+}

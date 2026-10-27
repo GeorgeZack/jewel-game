@@ -1,63 +1,85 @@
 package core
 
 import (
-	"jewel-game/ui"
-	"jewel-game/utils"
+	"jewel-game/board"
+	"jewel-game/entities"
+	"math"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+const (
+	FALL_ACCEL	= 70	// cells per second squared
+	START_SPEED	= 4		// cells per second
+	POP_SPEED	= 5		// scale per second for gems appearing in place
+	DIE_SPEED	= 4		// scale per second for gems being cleared
+)
+
+// Tile is the on-screen sprite for one gem. It's keyed by gem ID, so it glides to wherever
+// the board puts that gem: swaps, falls, shuffles and undo all animate for free.
 type Tile struct {
-	X, Y				int
-	Parent				*TileManager
-	ScreenX, ScreenY	int
-	state				*TileState
-	entities			[]TileEntity
+	ID		int
+	Pos		rl.Vector2	// in board cells, fractional mid-move, off-board while spawning
+	Target	rl.Vector2
+	Vel		float32
+	Scale	float32
+	Alpha	float32
+	Flash	float32
+	Gem		board.Gem	// last seen state, so cleared gems can still be drawn while they vanish
+	Dying	bool
 }
 
-func NewTile(x, y int, parent *TileManager) *Tile {
-	return &Tile{ X: x, Y: y, Parent: parent }
+func NewTile(g *board.Gem, pos rl.Vector2, scale float32) *Tile {
+	return &Tile{ ID: g.ID, Pos: pos, Target: pos, Scale: scale, Alpha: 1, Gem: *g }
 }
 
-func (t *Tile) AddEntity(entity TileEntity) {
-	t.entities = append(t.entities, entity)
-}
-
-func (t *Tile) Contains(p rl.Vector2) bool {
-	x := float32(t.X * utils.CELL_WIDTH + t.Parent.ScreenX)
-	y := float32(t.Y * utils.CELL_WIDTH + t.Parent.ScreenY)
-	w := float32(utils.CELL_WIDTH)
-	return p.X >= x && p.X <= x+w && p.Y >= y && p.Y <= y+w
-}
-
-func (t *Tile) Draw() {
-	posX := int32(t.X * utils.CELL_WIDTH)
-	posY := int32(t.Y * utils.CELL_WIDTH)
-	rl.DrawRectangle(posX, posY, utils.CELL_WIDTH, utils.CELL_WIDTH, rl.LightGray)
-	rl.DrawRectangleLines(posX, posY, utils.CELL_WIDTH, utils.CELL_WIDTH, rl.DarkGray)
-	for _, a := range t.entities {
-		a.Draw(posX, posY)
+// Update moves the tile toward its target and reports whether it has come to rest.
+func (t *Tile) Update(dt float32) bool {
+	if t.Dying {
+		t.Flash = min(1, t.Flash+dt*8)
+		t.Scale -= dt * DIE_SPEED * 0.5
+		t.Alpha = max(0, t.Scale)
+		return t.Scale <= 0
 	}
-}
-
-func (t *Tile) RemoveAllEntities() {
-	t.entities = nil
-}
-
-func (t *Tile) SetEntities(entities []TileEntity) {
-	t.entities = entities
-}
-
-func (t *Tile) SetState(state *TileState) {
-	t.state = state
-}
-
-func (t *Tile) Update() {
-	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-		mouse := rl.GetMousePosition()
-		if t.Contains(mouse) {
-			ui.AddMessage("Tile clicked: (%d, %d)", t.X, t.Y)
-		}
+	if t.Scale < 1 {
+		t.Scale = min(1, t.Scale+dt*POP_SPEED)
 	}
+	dx, dy := t.Target.X-t.Pos.X, t.Target.Y-t.Pos.Y
+	dist := float32(math.Hypot(float64(dx), float64(dy)))
+	if dist < 0.001 {
+		t.Pos, t.Vel = t.Target, 0
+		return t.Scale >= 1
+	}
+	if t.Vel == 0 {
+		t.Vel = START_SPEED
+	}
+	t.Vel += FALL_ACCEL * dt
+	step := t.Vel * dt
+	if step >= dist {
+		t.Pos, t.Vel = t.Target, 0
+		return t.Scale >= 1
+	}
+	t.Pos.X += dx / dist * step
+	t.Pos.Y += dy / dist * step
+	return false
 }
 
+func (t *Tile) Draw(tm *TileManager, offset rl.Vector2) {
+	types := tm.DataManager.GetAllGemTypes()
+	var gt *entities.GemType
+	if t.Gem.Color >= 0 && len(types) > 0 {
+		gt = types[t.Gem.Color%len(types)]
+	}
+	c := tm.CellCenter(t.Pos)
+	entities.DrawGem(entities.GemLook{
+		Type:	gt,
+		Prism:	tm.DataManager.PrismTexture(),
+		Gem:	t.Gem,
+		Center:	rl.Vector2{ X: c.X + offset.X, Y: c.Y + offset.Y },
+		Size:	tm.CellSize,
+		Scale:	t.Scale,
+		Alpha:	t.Alpha,
+		Flash:	t.Flash,
+		Time:	tm.time,
+	})
+}
