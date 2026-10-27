@@ -43,6 +43,10 @@ type TileManager struct {
 	Speed				float32
 	UndoEnabled			bool
 	Brush				*Brush
+	Paused				bool						// ignore board input, e.g. during the enemy's turn
+	OnStep				func(*board.StepResult)		// called for every cascade step
+	OnMoveDone			func()						// called when a swap has fully resolved
+	moving				bool
 	selected			*board.Point
 	dragFrom			*board.Point
 	swapA, swapB		board.Point
@@ -76,6 +80,7 @@ func (tm *TileManager) Reset(settings board.Settings) {
 	tm.selected, tm.dragFrom, tm.hint = nil, nil, nil
 	tm.undo = nil
 	tm.spawns = nil
+	tm.moving = false
 	// new boards drop in from above
 	for y, row := range tm.Board.Cells {
 		for x, g := range row {
@@ -124,7 +129,7 @@ func (tm *TileManager) Busy() bool { return tm.Phase != PhaseIdle }
 func (tm *TileManager) Update() {
 	dt := rl.GetFrameTime() * tm.Speed
 	tm.time += float64(rl.GetFrameTime())
-	if tm.Phase == PhaseIdle {
+	if tm.Phase == PhaseIdle && !tm.Paused {
 		tm.handleInput()
 	}
 	tm.syncTiles()
@@ -192,6 +197,7 @@ func (tm *TileManager) step(dt float32) {
 		}
 		if tm.swapValid {
 			tm.Board.BeginMove(tm.swapA, tm.swapB)
+			tm.moving = true
 			tm.Phase = PhaseResolving
 		} else {
 			tm.Board.Swap(tm.swapA, tm.swapB)
@@ -209,6 +215,9 @@ func (tm *TileManager) step(dt float32) {
 			return
 		}
 		tm.showStep(res)
+		if tm.OnStep != nil {
+			tm.OnStep(res)
+		}
 		tm.clearTimer = CLEAR_TIME
 		tm.Phase = PhaseClearing
 	case PhaseClearing:
@@ -234,6 +243,12 @@ func (tm *TileManager) finishResolve() {
 	}
 	tm.shuffled = false
 	tm.Phase = PhaseIdle
+	if tm.moving {
+		tm.moving = false
+		if tm.OnMoveDone != nil {
+			tm.OnMoveDone()
+		}
+	}
 }
 
 // showStep turns a cascade step into vanishing sprites, flashes, and score popups.
@@ -474,7 +489,7 @@ func (tm *TileManager) Draw() {
 		}
 	}
 
-	if tm.Phase == PhaseIdle {
+	if tm.Phase == PhaseIdle && !tm.Paused {
 		if p, ok := tm.CellAt(rl.GetMousePosition()); ok {
 			rl.DrawRectangleRec(tm.cellRect(p, off), rl.Fade(rl.White, 0.08))
 		}

@@ -99,6 +99,7 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		Name		string	`yaml:"name"`
 		ColorHex	string	`yaml:"color"`
 		TexturePath	string	`yaml:"texturePath"`
+		Role		string	`yaml:"role"`
 	}
 	if err := yaml.Unmarshal(data, &tempGemTypes); err != nil {
 		ui.AddMessage("Error unmarshaling gem types: %v", err)
@@ -153,6 +154,7 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Scale: 1,
 			Texture: texture,
 			TexturePath: texturePath,
+			Role: temp.Role,
 		}
 		newOrder = append(newOrder, temp.Name)
 	}

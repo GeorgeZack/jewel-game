@@ -10,12 +10,15 @@
 - name: Emerald
   color: "#00FF00"
   texturePath: _res/emerald.png
+  role: heal
 - name: Rupee
   color: "#FF0000"
   texturePath: _res/rupee.png
+  role: attack
 - name: Sapphire
   color: "#0000FF"
   texturePath: _res/saphir.png
+  role: mana
 - name: Topaz
   color: "#FFA500"
   texturePath: _res/topaz.png
