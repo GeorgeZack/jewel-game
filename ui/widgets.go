@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -62,6 +63,36 @@ func Button(r rl.Rectangle, label string, on bool) bool {
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, TextColor)
 	return clicked(r)
+}
+
+// ButtonIf is a Button that greys out and ignores clicks when disabled.
+func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
+	if enabled {
+		return Button(r, label, false)
+	}
+	rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.5))
+	size := min(r.Height*0.55, 22)
+	for size > 10 && TextWidth(label, size) > r.Width-8 {
+		size--
+	}
+	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, rl.Fade(DimText, 0.6))
+	return false
+}
+
+// Bar draws a meter like an HP bar, with "label  value/max" on it.
+func Bar(r rl.Rectangle, label string, value, maxValue int, col rl.Color) {
+	rl.DrawRectangleRounded(r, 0.4, 6, rl.Color{ R: 0, G: 0, B: 0, A: 140 })
+	if maxValue > 0 && value > 0 {
+		fill := r
+		fill.Width = r.Width * float32(min(value, maxValue)) / float32(maxValue)
+		rl.DrawRectangleRounded(fill, 0.4, 6, col)
+	}
+	rl.DrawRectangleRoundedLines(r, 0.4, 6, 1.5, PanelEdge)
+	size := min(r.Height*0.62, 18)
+	y := r.Y + (r.Height-size)/2
+	Text(label, r.X+10, y, size, TextColor)
+	v := fmt.Sprintf("%d / %d", value, maxValue)
+	Text(v, r.X+r.Width-10-TextWidth(v, size), y, size, TextColor)
 }
 
 // Toggle draws a labelled switch and returns its new value.

@@ -14,6 +14,7 @@ type GemType struct {
 	Rotation, Scale	float32
 	Texture			rl.Texture2D
 	TexturePath		string
+	Role			string	// battle role: attack, mana, heal, or empty
 }
 
 var lockColor = rl.Color{ R: 140, G: 210, B: 255, A: 255 }

@@ -17,6 +17,8 @@ type Mode int
 const (
 	ModeClassic Mode = iota
 	ModeSandbox
+	ModeBattle
+	MODE_COUNT
 )
 
 type GameController struct {
@@ -24,6 +26,7 @@ type GameController struct {
 	Mode			Mode
 	Classic			*TileManager
 	Sandbox			*TileManager
+	Battle			*BattleView
 	Quit			bool
 	Watcher			*fsnotify.Watcher
 	WatcherErrors	chan error
@@ -42,6 +45,7 @@ func NewGameController() *GameController {
 		DataManager:	dm,
 		Classic:		NewTileManager(board.DefaultSettings(), dm),
 		Sandbox:		sandbox,
+		Battle:			NewBattleView(dm),
 		WatcherErrors:	make(chan error, 1),
 		WatcherEvents:	make(chan fsnotify.Event, 10),
 		bkg:			rl.LoadTexture("_res/bkg.jpg"),
@@ -86,8 +90,11 @@ func NewGameController() *GameController {
 }
 
 func (c *GameController) Active() *TileManager {
-	if c.Mode == ModeSandbox {
+	switch c.Mode {
+	case ModeSandbox:
 		return c.Sandbox
+	case ModeBattle:
+		return c.Battle.TM
 	}
 	return c.Classic
 }
@@ -118,6 +125,9 @@ func (c *GameController) Update() {
 	}
 
 	c.handleKeys()
+	if c.Mode == ModeBattle {
+		c.Battle.Update()
+	}
 	tm := c.Active()
 	tm.Layout(c.boardArea())
 	tm.Update()
@@ -129,7 +139,7 @@ func (c *GameController) handleKeys() {
 	case rl.IsKeyPressed(rl.KeyF1):
 		ui.ShowDebug = !ui.ShowDebug
 	case rl.IsKeyPressed(rl.KeyTab):
-		c.Mode = 1 - c.Mode
+		c.Mode = (c.Mode + 1) % MODE_COUNT
 	case rl.IsKeyPressed(rl.KeyH):
 		tm.ShowHint()
 	case rl.IsKeyPressed(rl.KeySpace):
@@ -137,7 +147,10 @@ func (c *GameController) handleKeys() {
 	case rl.IsKeyPressed(rl.KeyEnter):
 		tm.Resolve()
 	case rl.IsKeyPressed(rl.KeyR):
-		tm.Reset(tm.Board.Settings)
+		// in battle a new board would be a free escape; R only restarts after defeat
+		if c.Mode != ModeBattle {
+			tm.Reset(tm.Board.Settings)
+		}
 	case rl.IsKeyPressed(rl.KeyZ), rl.IsKeyPressed(rl.KeyBackspace):
 		tm.Undo()
 	case rl.IsKeyPressed(rl.KeyEscape):
@@ -181,19 +194,30 @@ func (c *GameController) Draw() {
 	c.drawBackground()
 	tm := c.Active()
 	tm.Draw()
+	if c.Mode == ModeBattle {
+		c.Battle.DrawScreenFlash()
+	}
 
 	// draw panels scaled, and scale the mouse to match so the widgets' hit tests line up
 	s := uiScale()
 	rl.BeginMode2D(rl.Camera2D{ Zoom: s })
 	rl.SetMouseScale(1/s, 1/s)
 	c.drawLeftPanel(tm)
-	if c.Mode == ModeSandbox {
+	switch c.Mode {
+	case ModeSandbox:
 		DrawSandboxPanel(tm, c.DataManager, c.rightPanel())
-	} else {
+	case ModeBattle:
+		c.Battle.DrawEnemy(c.rightPanel())
+		c.Battle.DrawPanelEffects()
+	default:
 		c.drawGuide(c.rightPanel())
 	}
 	rl.SetMouseScale(1, 1)
 	rl.EndMode2D()
+
+	if c.Mode == ModeBattle {
+		c.Battle.DrawOverlay()
+	}
 
 	ui.Draw(c.DataManager.Consts.DebugFont)
 	rl.EndDrawing()
@@ -220,12 +244,32 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 	title := col.Next(44)
 	ui.Text("JEWEL GAME", title.X, title.Y, 40, ui.Accent)
 
-	tabs := ui.Row(col.Next(36), 2, 8)
-	if ui.Button(tabs[0], "Classic", c.Mode == ModeClassic) {
-		c.Mode = ModeClassic
+	tabs := ui.Row(col.Next(36), int(MODE_COUNT), 8)
+	for i, name := range []string{ "Classic", "Sandbox", "Battle" } {
+		if ui.Button(tabs[i], name, c.Mode == Mode(i)) {
+			c.Mode = Mode(i)
+		}
 	}
-	if ui.Button(tabs[1], "Sandbox", c.Mode == ModeSandbox) {
-		c.Mode = ModeSandbox
+
+	if c.Mode == ModeBattle {
+		c.Battle.DrawPlayer(&col)
+		col.Heading("Actions")
+		if ui.Button(col.Next(32), "Release locks  [Space]", false) {
+			tm.ReleaseLocks()
+		}
+		if ui.Button(col.Next(32), "Hint  [H]", false) {
+			tm.ShowHint()
+		}
+		col.Heading("Controls")
+		for _, line := range []string{
+			"Drag or click  swap (uses a turn)",
+			"Right click    lock / unlock a gem",
+			"1 2 3          cast skills",
+			"Tab            switch mode",
+		} {
+			col.Line(line, 15, ui.DimText)
+		}
+		return
 	}
 
 	b := tm.Board
@@ -265,7 +309,7 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 		"Left drag   swap gems",
 		"Left click  select, click to swap",
 		"Right click lock / unlock a gem",
-		"Tab         Classic <-> Sandbox",
+		"Tab         switch mode",
 		"F1          debug log    Esc  quit",
 	} {
 		col.Line(line, 15, ui.DimText)
