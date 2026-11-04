@@ -18,6 +18,7 @@ const (
 	BoltV		// clears its column when detonated
 	Bomb		// clears the surrounding square
 	Prism		// colorless; swap with a gem to clear that whole color
+	Wild		// duel rules: colorless, completes a run of any mana color and multiplies it
 )
 
 func (s Special) IsBolt() bool { return s == BoltH || s == BoltV }
@@ -30,6 +31,8 @@ func (s Special) String() string {
 		return "Bomb"
 	case Prism:
 		return "Prism"
+	case Wild:
+		return "Wild"
 	}
 	return ""
 }
@@ -65,6 +68,7 @@ type Gem struct {
 	Color	int		// -1 for Prism
 	Special	Special
 	Locked	bool	// locked gems never move, match, or get destroyed
+	Mult	int		// a Wild's multiplier
 }
 
 type Settings struct {
@@ -77,6 +81,10 @@ type Settings struct {
 	ChaosGravity	bool	// gravity turns randomly after every move
 	SpecialRate		float64	// chance a refilled gem arrives as a special
 	Overcharge		bool	// bigger bombs, wider bolts
+	Duel			bool	// no earned specials or combos; a run of 5 earns a Wild instead
+	WildColors		int		// duel rules: colors below this can be completed by a Wild
+	BombColor		int		// duel rules: refills of this color may arrive as a Bomb
+	BombRate		float64
 }
 
 func DefaultSettings() Settings {
@@ -146,7 +154,7 @@ func (b *Board) set(p Point, g *Gem) { b.Cells[p.Y][p.X] = g }
 
 func (b *Board) newGem(color int, special Special) *Gem {
 	b.nextID++
-	if special == Prism {
+	if special == Prism || special == Wild {
 		color = -1
 	}
 	return &Gem{ ID: b.nextID, Color: color, Special: special }
@@ -166,7 +174,11 @@ func (b *Board) randomGem() *Gem {
 			special = Prism
 		}
 	}
-	return b.newGem(b.rng.Intn(b.Settings.NumColors), special)
+	color := b.rng.Intn(b.Settings.NumColors)
+	if b.Settings.Duel && color == b.Settings.BombColor && b.rng.Float64() < b.Settings.BombRate {
+		special = Bomb
+	}
+	return b.newGem(color, special)
 }
 
 // fill builds a fresh board with no ready-made matches and at least one move.
@@ -235,6 +247,12 @@ func (b *Board) IsValidSwap(a, c Point) bool {
 		return true
 	}
 	ga, gc := b.At(a), b.At(c)
+	if b.Settings.Duel {
+		b.Swap(a, c)
+		ok := len(b.runsThrough(a, c)) > 0
+		b.Swap(a, c)
+		return ok
+	}
 	if ga.Special == Prism || gc.Special == Prism {
 		return true
 	}
@@ -344,7 +362,9 @@ func (b *Board) BeginMove(a, c Point) {
 	b.Moves++
 	b.Chain = 0
 	b.swapped = []Point{ c, a }
-	b.applyCombo(a, c)
+	if !b.Settings.Duel {
+		b.applyCombo(a, c)
+	}
 	if b.Settings.ChaosGravity {
 		b.Settings.Gravity = Direction(b.rng.Intn(4))
 	}
@@ -355,6 +375,57 @@ func (b *Board) StartChain() {
 	b.Chain = 0
 	b.swapped = nil
 }
+
+// Force queues cells to be cleared on the next Step, for spells.
+func (b *Board) Force(cells []Point) {
+	b.forceArea(cells)
+}
+
+// CellsOfColor lists every gem of a color, Wilds excluded.
+func (b *Board) CellsOfColor(color int) []Point {
+	var out []Point
+	b.each(func(p Point, g *Gem) {
+		if g.Color == color {
+			out = append(out, p)
+		}
+	})
+	return out
+}
+
+// Convert repaints every gem of one color as another. It returns how many changed.
+func (b *Board) Convert(from, to int) int {
+	cells := b.CellsOfColor(from)
+	for _, p := range cells {
+		b.At(p).Color = to
+	}
+	return len(cells)
+}
+
+// RandomCells picks up to n distinct cells that aren't Wilds.
+func (b *Board) RandomCells(n int) []Point {
+	var all []Point
+	b.each(func(p Point, g *Gem) {
+		if g.Special != Wild {
+			all = append(all, p)
+		}
+	})
+	b.rng.Shuffle(len(all), func(i, j int) { all[i], all[j] = all[j], all[i] })
+	return all[:min(n, len(all))]
+}
+
+// PlaceWild turns the gem at p into a Wild with the given multiplier.
+func (b *Board) PlaceWild(p Point, mult int) {
+	if g := b.At(p); g != nil {
+		g.Color, g.Special, g.Mult = -1, Wild, mult
+	}
+}
+
+// Rows and Cols list every cell in an inclusive range of lines, for spells.
+func (b *Board) Rows(from, to int) []Point { return b.rows(from, to) }
+func (b *Board) Cols(from, to int) []Point { return b.cols(from, to) }
+
+// Square lists the cells within r of c.
+func (b *Board) Square(c Point, r int) []Point { return b.square(c, r) }
 
 func (b *Board) each(f func(Point, *Gem)) {
 	for y := 0; y < b.H(); y++ {

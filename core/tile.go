@@ -5,7 +5,7 @@ import (
 	"jewel-game/entities"
 	"math"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 const (
@@ -65,7 +65,7 @@ func (t *Tile) Update(dt float32) bool {
 }
 
 func (t *Tile) Draw(tm *TileManager, offset rl.Vector2) {
-	types := tm.DataManager.GetAllGemTypes()
+	types := tm.gemTypes()
 	var gt *entities.GemType
 	if t.Gem.Color >= 0 && len(types) > 0 {
 		gt = types[t.Gem.Color%len(types)]

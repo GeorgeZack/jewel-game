@@ -1,25 +1,28 @@
 - name: Amethyst
   color: "#8A2BE2"
-  texturePath: _res/amethyst.png
+  texturePath: _res/rd-amethyst.png
+  fullColor: true
 - name: Crystal
   color: "#FFFF00"
-  texturePath: _res/crystalize.png
+  texturePath: _res/rd-crystal.png
+  fullColor: true
 - name: Diamond
   color: "#FFFFFF"
-  texturePath: _res/cut-diamond.png
+  texturePath: _res/rd-diamond.png
+  fullColor: true
 - name: Emerald
   color: "#00FF00"
-  texturePath: _res/emerald.png
-  role: heal
+  texturePath: _res/rd-emerald.png
+  fullColor: true
 - name: Rupee
   color: "#FF0000"
-  texturePath: _res/rupee.png
-  role: attack
+  texturePath: _res/rd-rupee.png
+  fullColor: true
 - name: Sapphire
   color: "#0000FF"
-  texturePath: _res/saphir.png
-  role: mana
+  texturePath: _res/rd-sapphire.png
+  fullColor: true
 - name: Topaz
   color: "#FFA500"
-  texturePath: _res/topaz.png
-
+  texturePath: _res/rd-topaz.png
+  fullColor: true

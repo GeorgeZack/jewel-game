@@ -1,0 +1,108 @@
+- id: emberfield
+  name: Emberfield
+  town: true
+  open: true
+  x: 0.1
+  y: 0.78
+  level: 1
+  desc: A farming town under the smoke of its last harvest. Home.
+  people:
+    - name: Old Bessa
+      scene: bessa_talk
+    - name: Sergeant Holm
+      scene: spar_talk
+  roads: [mossgate]
+- id: mossgate
+  name: Mossgate Woods
+  open: true
+  x: 0.24
+  y: 0.62
+  level: 1
+  desc: Old trees, new goblin trails.
+  roads: [emberfield, stonebridge, greyfen]
+  foes: [rat, goblin, slime]
+- id: stonebridge
+  name: Stonebridge
+  town: true
+  x: 0.38
+  y: 0.74
+  level: 2
+  desc: A toll town grown fat on the river trade.
+  enter_scene: stonebridge_arrival
+  roads: [mossgate, barrow, redtusk]
+- id: greyfen
+  name: Greyfen Marsh
+  x: 0.2
+  y: 0.36
+  level: 3
+  desc: Black water and worse things under it.
+  roads: [mossgate, barrow]
+  foes: [slime, spider, bandit]
+- id: barrow
+  name: The Old Barrow
+  x: 0.38
+  y: 0.44
+  level: 5
+  desc: The dead here have stopped staying down.
+  roads: [greyfen, stonebridge, highwatch]
+  foes: [skeleton, ghoul, spider]
+- id: highwatch
+  name: Highwatch
+  town: true
+  x: 0.56
+  y: 0.32
+  level: 6
+  desc: The last garrison between the lowlands and the mountains.
+  people:
+    - name: Captain Ise
+      scene: ise_talk
+      requires: [quest:barrow_lord]
+  roads: [barrow, ironpeak, redtusk]
+- id: redtusk
+  name: Redtusk Camp
+  x: 0.56
+  y: 0.68
+  level: 7
+  desc: Tents, drums, and a great many spears.
+  roads: [stonebridge, highwatch, silverlake]
+  foes: [orc, wolf, bandit]
+- id: ironpeak
+  name: Ironpeak Pass
+  x: 0.72
+  y: 0.16
+  level: 9
+  desc: The wind here cuts deeper than the cold.
+  roads: [highwatch, sunken]
+  foes: [troll, wolf, wyvern]
+- id: silverlake
+  name: Silverlake
+  town: true
+  x: 0.74
+  y: 0.8
+  level: 8
+  desc: A city of scholars on a lake that never freezes.
+  roads: [redtusk, sunken]
+- id: sunken
+  name: The Sunken Temple
+  x: 0.82
+  y: 0.5
+  level: 11
+  desc: Its bells still ring, deep under the water.
+  roads: [ironpeak, silverlake, ashen]
+  foes: [wraith, cultist, ghoul]
+- id: ashen
+  name: The Ashen Waste
+  x: 0.7
+  y: 0.4
+  level: 13
+  desc: Burned flat, long ago, by something that is still here.
+  roads: [sunken, hollow]
+  foes: [wyvern, cultist, troll]
+- id: hollow
+  name: Hollow Keep
+  x: 0.9
+  y: 0.16
+  level: 15
+  desc: 'The throne room faces the wrong way: inward.'
+  roads: [ashen]
+  foes: [wraith, cultist]

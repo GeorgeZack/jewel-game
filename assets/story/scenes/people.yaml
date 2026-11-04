@@ -1,0 +1,49 @@
+# Conversations with people in towns (locations.yaml: people).
+
+bessa_talk:
+  - if: [quest:barrow_lord]
+    then:
+      - who: bessa
+        text: They say you put the Barrow Lord back in his hole. My grandmother would have liked you.
+    else:
+      - who: bessa
+        text: Goblins running from something. In seventy years I've never seen a goblin run.
+      - if: ["!flag:bessa_gift"]
+        then:
+          - who: bessa
+            text: Here, take this. It's not much, but it's more use to you than to me.
+          - gold: 25
+          - set_flag: bessa_gift
+          - text: Bessa gives you 25 gold.
+
+ise_talk:
+  - who: ise
+    text: Highwatch has held for two hundred years. It'll hold another week. After that, ask me again.
+  - choices:
+      - text: What's coming from the mountains?
+        do:
+          - who: ise
+            mood: grim
+            text: The clans. Behind them, something the clans are more afraid of than us.
+      - text: Goodbye.
+
+# A scene can start a duel. win/lose name the scene to continue with; without them a win
+# carries on with the next step and a loss ends the scene.
+spar_talk:
+  - who: sergeant
+    text: Want to practice? I'll set a goblin dummy on you. Nothing gets broken but pride.
+    choices:
+      - text: Let's spar.
+        do:
+          - duel: { foe: goblin, level: 1, win: spar_won, lose: spar_lost }
+      - text: Maybe later.
+
+spar_won:
+  - who: sergeant
+    text: Not bad. Here, for the effort.
+  - gold: 10
+
+spar_lost:
+  - who: sergeant
+    mood: amused
+    text: The dummy wins again. Come back when you've had some sleep.

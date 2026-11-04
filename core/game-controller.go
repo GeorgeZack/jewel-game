@@ -7,9 +7,10 @@ import (
 	"jewel-game/ui"
 	"jewel-game/utils"
 	"path/filepath"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 type Mode int
@@ -17,7 +18,7 @@ type Mode int
 const (
 	ModeClassic Mode = iota
 	ModeSandbox
-	ModeBattle
+	ModeQuest
 	MODE_COUNT
 )
 
@@ -26,7 +27,7 @@ type GameController struct {
 	Mode			Mode
 	Classic			*TileManager
 	Sandbox			*TileManager
-	Battle			*BattleView
+	Quest			*QuestView
 	Quit			bool
 	Watcher			*fsnotify.Watcher
 	WatcherErrors	chan error
@@ -45,7 +46,7 @@ func NewGameController() *GameController {
 		DataManager:	dm,
 		Classic:		NewTileManager(board.DefaultSettings(), dm),
 		Sandbox:		sandbox,
-		Battle:			NewBattleView(dm),
+		Quest:			NewQuestView(dm),
 		WatcherErrors:	make(chan error, 1),
 		WatcherEvents:	make(chan fsnotify.Event, 10),
 		bkg:			rl.LoadTexture("_res/bkg.jpg"),
@@ -68,6 +69,12 @@ func NewGameController() *GameController {
 		return gc
 	}
 	gc.Watcher = watcher
+	// story files hot reload too; fsnotify isn't recursive, so each folder is watched
+	for _, dir := range []string{ STORY_DIR, STORY_DIR + "/scenes", STORY_DIR + "/portraits", STORY_DIR + "/backgrounds", STORY_DIR + "/foes" } {
+		if err := watcher.Add(dir); err != nil {
+			ui.AddMessage("Not watching %s: %v", dir, err)
+		}
+	}
 
 	go func() {
 		for {
@@ -93,8 +100,8 @@ func (c *GameController) Active() *TileManager {
 	switch c.Mode {
 	case ModeSandbox:
 		return c.Sandbox
-	case ModeBattle:
-		return c.Battle.TM
+	case ModeQuest:
+		return c.Quest.TM
 	}
 	return c.Classic
 }
@@ -119,14 +126,21 @@ func (c *GameController) Update() {
 			// boards keep their state; gems pick up the new looks on the next frame
 			c.DataManager.LoadGemTypes(utils.GEM_TYPES_FILE)
 		}
+		if isStoryFile(event.Name) && event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
+			ui.AddMessage("Detected change in %s, reloading the story...", event.Name)
+			c.Quest.ReloadStory()
+		}
 	case err := <-c.WatcherErrors:
 		ui.AddMessage("File watcher error: %v", err)
 	default:
 	}
 
 	c.handleKeys()
-	if c.Mode == ModeBattle {
-		c.Battle.Update()
+	if c.Mode == ModeQuest {
+		c.Quest.Update()
+		if !c.Quest.InDuel() {
+			return
+		}
 	}
 	tm := c.Active()
 	tm.Layout(c.boardArea())
@@ -135,7 +149,10 @@ func (c *GameController) Update() {
 
 func (c *GameController) handleKeys() {
 	tm := c.Active()
+	// a dialog or scene in Quest mode takes the keys, apart from the debug log and mode switch
+	busy := c.Mode == ModeQuest && c.Quest.HasModal()
 	switch {
+	case busy && !rl.IsKeyPressed(rl.KeyF1) && !rl.IsKeyPressed(rl.KeyTab):
 	case rl.IsKeyPressed(rl.KeyF1):
 		ui.ShowDebug = !ui.ShowDebug
 	case rl.IsKeyPressed(rl.KeyTab):
@@ -147,8 +164,8 @@ func (c *GameController) handleKeys() {
 	case rl.IsKeyPressed(rl.KeyEnter):
 		tm.Resolve()
 	case rl.IsKeyPressed(rl.KeyR):
-		// in battle a new board would be a free escape; R only restarts after defeat
-		if c.Mode != ModeBattle {
+		// in a duel a new board would be a free escape
+		if c.Mode != ModeQuest {
 			tm.Reset(tm.Board.Settings)
 		}
 	case rl.IsKeyPressed(rl.KeyZ), rl.IsKeyPressed(rl.KeyBackspace):
@@ -181,6 +198,12 @@ func (c *GameController) rightPanel() rl.Rectangle {
 	return rl.Rectangle{ X: w - MARGIN - utils.SIDE_PANEL_WIDTH, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN }
 }
 
+// centerPanel is the space between the side panels, in panel space.
+func (c *GameController) centerPanel() rl.Rectangle {
+	l, r := c.leftPanel(), c.rightPanel()
+	return rl.Rectangle{ X: l.X + l.Width + 16, Y: l.Y, Width: r.X - l.X - l.Width - 32, Height: l.Height }
+}
+
 // boardArea is in screen space.
 func (c *GameController) boardArea() rl.Rectangle {
 	s := uiScale()
@@ -191,33 +214,37 @@ func (c *GameController) boardArea() rl.Rectangle {
 
 func (c *GameController) Draw() {
 	rl.BeginDrawing()
+	ui.NewFrame()
 	c.drawBackground()
 	tm := c.Active()
-	tm.Draw()
-	if c.Mode == ModeBattle {
-		c.Battle.DrawScreenFlash()
+	quest := c.Mode == ModeQuest
+	if !quest || c.Quest.InDuel() {
+		tm.Draw()
+	}
+	if quest {
+		c.Quest.DrawScreenFlash()
 	}
 
 	// draw panels scaled, and scale the mouse to match so the widgets' hit tests line up
 	s := uiScale()
 	rl.BeginMode2D(rl.Camera2D{ Zoom: s })
 	rl.SetMouseScale(1/s, 1/s)
+	ui.Blocked = quest && c.Quest.HasModal()
 	c.drawLeftPanel(tm)
 	switch c.Mode {
 	case ModeSandbox:
 		DrawSandboxPanel(tm, c.DataManager, c.rightPanel())
-	case ModeBattle:
-		c.Battle.DrawEnemy(c.rightPanel())
-		c.Battle.DrawPanelEffects()
+	case ModeQuest:
+		c.Quest.DrawCenter(c.centerPanel())
+		c.Quest.DrawRight(c.rightPanel())
+		c.Quest.DrawEffects()
+		ui.Blocked = false
+		c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{ Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s })
 	default:
 		c.drawGuide(c.rightPanel())
 	}
 	rl.SetMouseScale(1, 1)
 	rl.EndMode2D()
-
-	if c.Mode == ModeBattle {
-		c.Battle.DrawOverlay()
-	}
 
 	ui.Draw(c.DataManager.Consts.DebugFont)
 	rl.EndDrawing()
@@ -245,30 +272,14 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 	ui.Text("JEWEL GAME", title.X, title.Y, 40, ui.Accent)
 
 	tabs := ui.Row(col.Next(36), int(MODE_COUNT), 8)
-	for i, name := range []string{ "Classic", "Sandbox", "Battle" } {
+	for i, name := range []string{ "Classic", "Sandbox", "Quest" } {
 		if ui.Button(tabs[i], name, c.Mode == Mode(i)) {
 			c.Mode = Mode(i)
 		}
 	}
 
-	if c.Mode == ModeBattle {
-		c.Battle.DrawPlayer(&col)
-		col.Heading("Actions")
-		if ui.Button(col.Next(32), "Release locks  [Space]", false) {
-			tm.ReleaseLocks()
-		}
-		if ui.Button(col.Next(32), "Hint  [H]", false) {
-			tm.ShowHint()
-		}
-		col.Heading("Controls")
-		for _, line := range []string{
-			"Drag or click  swap (uses a turn)",
-			"Right click    lock / unlock a gem",
-			"1 2 3          cast skills",
-			"Tab            switch mode",
-		} {
-			col.Line(line, 15, ui.DimText)
-		}
+	if c.Mode == ModeQuest {
+		c.Quest.DrawLeft(&col, r)
 		return
 	}
 
@@ -339,4 +350,21 @@ func (c *GameController) drawGuide(r rl.Rectangle) {
 	para("Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus.")
 	col.Y += 8
 	col.Paragraph("Tab opens the Sandbox, where every rule is up for grabs.", 16, ui.Accent)
+}
+
+// isStoryFile is true for story YAML and art, skipping editor temp files.
+func isStoryFile(name string) bool {
+	rel, err := filepath.Rel(STORY_DIR, name)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return false
+	}
+	base := filepath.Base(name)
+	if strings.HasPrefix(base, ".") || strings.HasSuffix(base, "~") {
+		return false
+	}
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".yaml", ".yml", ".png", ".jpg", ".jpeg":
+		return true
+	}
+	return false
 }

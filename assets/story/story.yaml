@@ -1,0 +1,9 @@
+# The story's settings. See docs/story.md for every file in this folder.
+title: The Hollow King
+map_name: The Marches
+start: emberfield              # location a new hero starts in
+opening: opening               # scene played when a hero is created
+final_quest: king              # finishing this quest beats the story
+blurb: >-
+  Something in the north has every creature in the land running south.
+  It will take someone to walk the other way.

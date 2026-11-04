@@ -6,7 +6,7 @@ import (
 	"jewel-game/entities"
 	"jewel-game/ui"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 type Preset struct {

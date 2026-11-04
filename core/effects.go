@@ -6,7 +6,7 @@ import (
 	"math"
 	"math/rand"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 type particle struct {
