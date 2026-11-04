@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 // Font is used by every widget; the GameController sets it once fonts are loaded.
@@ -23,6 +23,16 @@ var (
 
 const TEXT_SPACING = 1
 
+// Blocked makes widgets ignore the mouse, for everything underneath a modal dialog.
+var Blocked bool
+
+var clickTaken bool
+
+// NewFrame re-arms clicks; one click only ever activates one widget, even if it changes the screen.
+func NewFrame() {
+	clickTaken = false
+}
+
 func Text(s string, x, y, size float32, col rl.Color) {
 	rl.DrawTextEx(Font, s, rl.Vector2{ X: x, Y: y }, size, TEXT_SPACING, col)
 }
@@ -40,15 +50,27 @@ func Panel(r rl.Rectangle) {
 	rl.DrawRectangleRoundedLines(r, 0.04, 8, 2, PanelEdge)
 }
 
+// Hover reports whether the mouse is over r and free to interact with it.
+func Hover(r rl.Rectangle) bool {
+	return !Blocked && rl.CheckCollisionPointRec(rl.GetMousePosition(), r)
+}
+
+// Clicked reports a click on r, for custom widgets.
+func Clicked(r rl.Rectangle) bool { return clicked(r) }
+
 func clicked(r rl.Rectangle) bool {
-	return rl.IsMouseButtonPressed(rl.MouseLeftButton) && rl.CheckCollisionPointRec(rl.GetMousePosition(), r)
+	if Blocked || clickTaken || !rl.IsMouseButtonPressed(rl.MouseLeftButton) || !rl.CheckCollisionPointRec(rl.GetMousePosition(), r) {
+		return false
+	}
+	clickTaken = true
+	return true
 }
 
 func box(r rl.Rectangle, on bool) {
 	col := buttonIdle
 	if on {
 		col = buttonOn
-	} else if rl.CheckCollisionPointRec(rl.GetMousePosition(), r) {
+	} else if Hover(r) {
 		col = buttonHover
 	}
 	rl.DrawRectangleRounded(r, 0.3, 6, col)
@@ -181,4 +203,24 @@ func Row(r rl.Rectangle, n int, gap float32) []rl.Rectangle {
 		out[i] = rl.Rectangle{ X: r.X + float32(i)*(w+gap), Y: r.Y, Width: w, Height: r.Height }
 	}
 	return out
+}
+
+// MeasureParagraph returns the height Paragraph would take at this width, assuming a gap of 4.
+func MeasureParagraph(s string, size, width float32) float32 {
+	lines, line := 0, ""
+	for _, word := range strings.Fields(s) {
+		next := word
+		if line != "" {
+			next = line + " " + word
+		}
+		if line != "" && TextWidth(next, size) > width {
+			lines++
+			next = word
+		}
+		line = next
+	}
+	if line != "" {
+		lines++
+	}
+	return float32(lines) * (size + 6)
 }

@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 const MAX_MESSAGES = 200
@@ -54,6 +54,7 @@ func drawDebugText(font rl.Font) {
 	// rl.DrawTextEx(font, strAnimTime, tPos, fontSize, spacing, rl.Black)
 	// inc++
 	rl.DrawRectangle(0, 0, int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight()), rl.Fade(rl.RayWhite, 0.85))
+	rl.DrawTextEx(font, fmt.Sprintf("FPS %.0f", rl.GetFPS()), rl.Vector2{ X: margin, Y: margin }, 24, spacing, rl.Black)
 	for i, a := range GetMessages() {
 		pos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * (inc + float32(i)) }
 		// Use this for word wrapping

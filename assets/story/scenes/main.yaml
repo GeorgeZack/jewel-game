@@ -1,0 +1,49 @@
+# Story scenes. Each key is a scene id; its value is a list of steps, played in order.
+
+opening:
+  - fade_in: 1.5
+  - title: The Hollow King
+    subtitle: Emberfield, the last week of harvest
+  - text: You wake to smoke. The town still stands, but someone is hammering on your door.
+  - who: mayor
+    mood: worried
+    text: You're awake. Good. The Harlan farm burned last night, and there were goblin tracks all around it.
+  - who: hero
+    text: Goblins? This far south?
+  - who: mayor
+    text: That's what worries me. Come and find me in the square. I'll have work for you.
+  - set_flag: met_mayor
+
+# Plays instead of the plain offer box for "Smoke on the Road" (quests.yaml: offer_scene).
+goblins_offer:
+  - who: mayor
+    text: The tracks lead into Mossgate Woods. Drive them out before they come for the town.
+  - who: mayor
+    text: Two raiding parties, by the look of it. The town will pay forty gold.
+    choices:
+      - text: I'll go.
+        do:
+          - accept_quest: goblins
+          - who: mayor
+            text: Mossgate is north along the road. Click it on the map.
+      - text: Not yet.
+        do:
+          - who: mayor
+            mood: worried
+            text: Don't take long.
+
+stonebridge_arrival:
+  - who: tollkeeper
+    text: Toll's two silver. Unless you're the one who cleared the woods? Then it's free, and welcome.
+  - who: hero
+    text: The road was full of people heading south.
+  - who: tollkeeper
+    text: Half the marsh villages, and more every day. Nobody will say what they're running from.
+
+# The final quest's done_scene. "end: true" marks the story as beaten.
+king_done:
+  - fade_out: 1.0
+  - title: The End
+    subtitle: Your hero can keep playing; the roads are still full of monsters.
+  - end: true
+  - fade_in: 1.0

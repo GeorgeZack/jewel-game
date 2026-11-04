@@ -3,12 +3,13 @@ package core
 import (
 	"fmt"
 	"jewel-game/board"
+	"jewel-game/entities"
 	"jewel-game/ui"
 	"jewel-game/utils"
 	"math"
 	"time"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
+	"jewel-game/rl"
 )
 
 type Phase int
@@ -46,6 +47,9 @@ type TileManager struct {
 	Paused				bool						// ignore board input, e.g. during the enemy's turn
 	OnStep				func(*board.StepResult)		// called for every cascade step
 	OnMoveDone			func()						// called when a swap has fully resolved
+	OnShuffle			func()						// called when the board ran out of moves
+	Types				func() []*entities.GemType	// overrides the gem palette
+	Duel				bool						// no locks and no score popups
 	moving				bool
 	selected			*board.Point
 	dragFrom			*board.Point
@@ -236,6 +240,9 @@ func (tm *TileManager) step(dt float32) {
 func (tm *TileManager) finishResolve() {
 	if !tm.Board.Settings.FreeSwap && !tm.shuffled && tm.Board.Shuffle() {
 		tm.shuffled = true
+		if tm.OnShuffle != nil {
+			tm.OnShuffle()
+		}
 		r := tm.Rect()
 		tm.Effects.Popup("No moves left - shuffling", rl.Vector2{ X: r.X + r.Width/2, Y: r.Y + r.Height/2 }, 34, ui.Accent)
 		tm.Phase = PhaseFalling
@@ -253,7 +260,7 @@ func (tm *TileManager) finishResolve() {
 
 // showStep turns a cascade step into vanishing sprites, flashes, and score popups.
 func (tm *TileManager) showStep(res *board.StepResult) {
-	types := tm.DataManager.GetAllGemTypes()
+	types := tm.gemTypes()
 	var sum rl.Vector2
 	for _, c := range res.Cleared {
 		center := tm.pointCenter(c.Pos)
@@ -298,7 +305,9 @@ func (tm *TileManager) showStep(res *board.StepResult) {
 
 	n := float32(len(res.Cleared))
 	mid := rl.Vector2{ X: sum.X / n, Y: sum.Y / n }
-	tm.Effects.Popup(fmt.Sprintf("+%d", res.Points), mid, 26, rl.White)
+	if !tm.Duel {
+		tm.Effects.Popup(fmt.Sprintf("+%d", res.Points), mid, 26, rl.White)
+	}
 	if res.Chain >= 2 {
 		tm.Effects.Popup(fmt.Sprintf("Chain x%d!", res.Chain), rl.Vector2{ X: r.X + r.Width/2, Y: r.Y - 10 }, 30+float32(min(res.Chain, 8))*3, ui.Accent)
 	}
@@ -316,7 +325,7 @@ func (tm *TileManager) handleInput() {
 	mouse := rl.GetMousePosition()
 	p, inside := tm.CellAt(mouse)
 
-	if rl.IsMouseButtonPressed(rl.MouseRightButton) && inside {
+	if rl.IsMouseButtonPressed(rl.MouseRightButton) && inside && !tm.Duel {
 		tm.ToggleLock(p)
 		return
 	}
@@ -427,13 +436,39 @@ func (tm *TileManager) Resolve() {
 }
 
 func (tm *TileManager) ShowHint() {
-	if tm.Busy() {
+	if tm.Busy() || tm.Paused {
 		return
 	}
 	if a, c, ok := tm.Board.FindMove(); ok {
 		tm.hint = []board.Point{ a, c }
 		tm.hintTimer = 3
 	}
+}
+
+// RunMove resolves the board as a full move, for changes made outside a swap such as a spell.
+// OnMoveDone fires when it settles, even if nothing ended up clearing.
+func (tm *TileManager) RunMove() {
+	tm.Board.StartChain()
+	tm.moving = true
+	tm.Phase = PhaseResolving
+}
+
+// ShowMove highlights a swap about to be played, so an opponent's move can be followed.
+func (tm *TileManager) ShowMove(a, c board.Point) {
+	tm.hint = []board.Point{ a, c }
+	tm.hintTimer = 0.6
+}
+
+// PlaySwap makes a swap without player input.
+func (tm *TileManager) PlaySwap(a, c board.Point) {
+	tm.trySwap(a, c)
+}
+
+func (tm *TileManager) gemTypes() []*entities.GemType {
+	if tm.Types != nil {
+		return tm.Types()
+	}
+	return tm.DataManager.GetAllGemTypes()
 }
 
 func (tm *TileManager) pushUndo() {

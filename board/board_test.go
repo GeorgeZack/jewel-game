@@ -390,3 +390,99 @@ func TestRandomPlayIsStable(t *testing.T) {
 		}
 	}
 }
+
+func duelBoard(rows ...[]int) *Board {
+	b := NewBoard(Settings{ Width: len(rows[0]), Height: len(rows), NumColors: 7, Duel: true, WildColors: 4, BombColor: 4 }, 1)
+	for y, row := range rows {
+		for x, c := range row {
+			b.Cells[y][x] = b.newGem(c, None)
+			if c == -1 {
+				b.PlaceWild(Point{ x, y }, 3)
+			}
+		}
+	}
+	return b
+}
+
+func TestWildCompletesManaRunAndMultiplies(t *testing.T) {
+	b := duelBoard(
+		[]int{ 0, 0, -1, 6, 5 },
+		[]int{ 1, 2, 3, 4, 5 },
+		[]int{ 2, 3, 1, 5, 4 },
+		[]int{ 3, 1, 2, 4, 6 },
+	)
+	res := b.Step()
+	if res == nil || len(res.Matches) != 1 {
+		t.Fatalf("expected one match, got %+v", res)
+	}
+	if m := res.Matches[0]; m.Color != 0 || m.Size != 3 || m.Mult != 3 || m.Wilds != 1 {
+		t.Fatalf("bad match %+v", m)
+	}
+}
+
+func TestWildDoesNotCompleteSkulls(t *testing.T) {
+	b := duelBoard(
+		[]int{ 4, 4, -1, 6, 5 },
+		[]int{ 1, 2, 3, 4, 5 },
+		[]int{ 2, 3, 1, 5, 4 },
+		[]int{ 3, 1, 2, 4, 6 },
+	)
+	if b.HasMatches() {
+		t.Fatalf("a Wild must not extend a skull run")
+	}
+}
+
+func TestWildJoinsBothNeighbours(t *testing.T) {
+	b := duelBoard(
+		[]int{ 0, 0, -1, 1, 1 },
+		[]int{ 1, 2, 3, 4, 5 },
+		[]int{ 2, 3, 1, 5, 4 },
+		[]int{ 3, 1, 2, 4, 6 },
+	)
+	if res := b.Step(); res == nil || len(res.Matches) != 2 || len(res.Cleared) != 5 {
+		t.Fatalf("expected both sides to match: %+v", res)
+	}
+}
+
+func TestDuelRunOfFiveEarnsWildAndFourNothing(t *testing.T) {
+	b := duelBoard(
+		[]int{ 0, 0, 0, 0, 0 },
+		[]int{ 1, 2, 3, 4, 5 },
+		[]int{ 2, 3, 1, 5, 4 },
+	)
+	res := b.Step()
+	if len(res.Created) != 1 || b.At(res.Created[0]).Special != Wild || b.At(res.Created[0]).Mult != WILD_MULT {
+		t.Fatalf("run of 5 should earn a Wild: %+v", res)
+	}
+	b = duelBoard(
+		[]int{ 0, 0, 0, 0, 5 },
+		[]int{ 1, 2, 3, 4, 6 },
+		[]int{ 2, 3, 1, 5, 4 },
+	)
+	if res := b.Step(); len(res.Created) != 0 {
+		t.Fatalf("run of 4 earns no special in a duel: %+v", res)
+	}
+}
+
+func TestDuelSwapNeedsAMatchEvenWithWilds(t *testing.T) {
+	b := duelBoard(
+		[]int{ -1, 1, 2, 3 },
+		[]int{ -1, 4, 5, 6 },
+		[]int{ 6, 5, 4, 3 },
+	)
+	if b.IsValidSwap(Point{ 0, 0 }, Point{ 0, 1 }) {
+		t.Fatalf("swapping two Wilds isn't a move in a duel")
+	}
+}
+
+func TestBombClearsAreaInDuel(t *testing.T) {
+	b := duelBoard(
+		[]int{ 4, 4, 4, 1, 2 },
+		[]int{ 1, 2, 3, 6, 5 },
+		[]int{ 2, 3, 1, 5, 6 },
+	)
+	b.At(Point{ 1, 0 }).Special = Bomb
+	if res := b.Step(); len(res.Blasts) != 1 || len(res.Cleared) != 6 {
+		t.Fatalf("bomb should clear 3x2 at the edge: %+v", res)
+	}
+}

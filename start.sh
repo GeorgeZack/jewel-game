@@ -2,6 +2,8 @@
 # Build and run the game.
 #   ./start.sh           build once and run
 #   ./start.sh --watch   rebuild and restart on every save (needs CompileDaemon)
+#   ./start.sh --web     build for the browser and serve it on http://localhost:8000 (PORT to change)
+#   ./start.sh --dev     same as --web, and rebuild the wasm (then reload the page) on save
 set -e
 
 # assets are loaded relative to the project root
@@ -16,24 +18,56 @@ if head -c 40 _res/bkg.jpg 2>/dev/null | grep -q "git-lfs"; then
 	echo "Note: background image not downloaded, run 'git lfs pull' to get it (a gradient is used meanwhile)."
 fi
 
-case "$1" in
-	-w|--watch)
-		if ! command -v CompileDaemon >/dev/null; then
-			echo "CompileDaemon not found. Install it with:" >&2
-			echo "  go install github.com/githubnemo/CompileDaemon@latest" >&2
-			echo "and make sure \$(go env GOPATH)/bin is on your PATH." >&2
+watch=0
+web=0
+dev=0
+for arg in "$@"; do
+	case "$arg" in
+		-w|--watch) watch=1 ;;
+		--web) web=1 ;;
+		--dev) dev=1 ;;
+		*)
+			echo "usage: $0 [--watch | --web | --dev]" >&2
 			exit 1
-		fi
-		exec CompileDaemon -directory="." -recursive=true -exclude-dir=".git" -log-prefix=false -color=true \
-			-build="go build -o jewel-game ." -command="./jewel-game"
-		;;
-	"")
-		echo "Building (the first build compiles raylib and takes a little while)..."
-		go build -o jewel-game .
-		exec ./jewel-game
-		;;
-	*)
-		echo "usage: $0 [--watch]" >&2
+			;;
+	esac
+done
+
+if [ "$watch" = 1 ] && [ "$web$dev" != 00 ]; then
+	echo "use --watch for the desktop app, or --dev for the browser" >&2
+	exit 1
+fi
+
+if [ "$watch" = 1 ]; then
+	if ! command -v CompileDaemon >/dev/null; then
+		echo "CompileDaemon not found. Install it with:" >&2
+		echo "  go install github.com/githubnemo/CompileDaemon@latest" >&2
+		echo "and make sure \$(go env GOPATH)/bin is on your PATH." >&2
 		exit 1
-		;;
-esac
+	fi
+	exec CompileDaemon -directory="." -recursive=true -exclude-dir=".git" -exclude-dir="web" -log-prefix=false -color=true \
+		-build="go build -o jewel-game ." -command="./jewel-game"
+fi
+
+if [ "$dev" = 1 ]; then
+	if ! command -v python3 >/dev/null; then
+		echo "python3 is needed to serve the page." >&2
+		exit 1
+	fi
+	exec python3 devserver.py
+fi
+
+if [ "$web" = 1 ]; then
+	if ! command -v python3 >/dev/null; then
+		echo "python3 is needed to serve the page; or serve the web/ folder with any static server." >&2
+		exit 1
+	fi
+	./build-web.sh
+	port="${PORT:-8000}"
+	echo "Open http://localhost:$port  (Ctrl+C to stop; rerun ./build-web.sh and reload after changes)"
+	exec python3 -m http.server "$port" --bind 127.0.0.1 -d web
+fi
+
+echo "Building (the first build takes a little while)..."
+go build -o jewel-game .
+exec ./jewel-game

@@ -1,0 +1,144 @@
+- id: rat
+  name: Giant Rat
+  shape: beast
+  color: [140, 110, 90]
+  hp_pct: 75
+  stats: {cunning: 2, earth: 2}
+  growth: {air: 1, battle: 1, cunning: 1, earth: 2, fire: 1, water: 1}
+  spells: [bite]
+- id: slime
+  name: Bog Slime
+  shape: blob
+  color: [110, 190, 90]
+  hp_pct: 85
+  stats: {earth: 2, morale: 2, water: 2}
+  growth: {air: 1, battle: 1, earth: 2, fire: 1, morale: 1, water: 2}
+  spells: [venom]
+- id: goblin
+  name: Goblin
+  shape: humanoid
+  color: [120, 170, 70]
+  hp_pct: 85
+  stats: {air: 2, battle: 2, cunning: 3, fire: 2}
+  growth: {air: 1, battle: 2, cunning: 2, earth: 1, fire: 2, water: 1}
+  spells: [frenzy]
+- id: wolf
+  name: Dire Wolf
+  shape: beast
+  color: [150, 150, 165]
+  hp_pct: 90
+  stats: {air: 3, battle: 3, cunning: 3, earth: 2, fire: 1}
+  growth: {air: 2, battle: 2, cunning: 2, earth: 1, fire: 1, morale: 1, water: 1}
+  spells: [bite, roar]
+- id: bandit
+  name: Bandit
+  shape: humanoid
+  color: [170, 120, 80]
+  hp_pct: 100
+  stats: {air: 2, battle: 3, cunning: 4, earth: 1, fire: 2, morale: 1, water: 1}
+  growth: {air: 2, battle: 2, cunning: 2, earth: 1, fire: 1, morale: 1, water: 1}
+  spells: [bite, dark_pact]
+- id: spider
+  name: Cave Spider
+  shape: beast
+  color: [90, 70, 110]
+  hp_pct: 90
+  stats: {air: 2, battle: 1, cunning: 2, earth: 4, water: 2}
+  growth: {air: 1, battle: 1, cunning: 1, earth: 3, fire: 1, morale: 1, water: 1}
+  spells: [venom, bite]
+- id: skeleton
+  name: Skeleton
+  shape: humanoid
+  color: [225, 220, 200]
+  hp_pct: 95
+  stats: {battle: 3, earth: 4, fire: 1, morale: 3, water: 2}
+  growth: {air: 1, battle: 2, earth: 2, fire: 1, morale: 1, water: 1}
+  spells: [bone_ward, bite]
+- id: ghoul
+  name: Ghoul
+  shape: humanoid
+  color: [120, 150, 130]
+  hp_pct: 110
+  stats: {air: 2, battle: 3, earth: 2, morale: 2, water: 4}
+  growth: {air: 1, battle: 2, earth: 1, fire: 1, morale: 2, water: 2}
+  spells: [venom, drain_life]
+- id: orc
+  name: Orc Raider
+  shape: brute
+  color: [95, 130, 70]
+  hp_pct: 110
+  stats: {air: 2, battle: 5, cunning: 1, earth: 2, fire: 4, morale: 3}
+  growth: {air: 1, battle: 3, cunning: 1, earth: 1, fire: 2, morale: 2}
+  spells: [frenzy, roar]
+- id: cultist
+  name: Cultist
+  shape: humanoid
+  color: [150, 60, 110]
+  hp_pct: 90
+  stats: {air: 4, battle: 1, cunning: 2, fire: 4, morale: 1, water: 4}
+  growth: {air: 2, battle: 1, cunning: 1, earth: 1, fire: 2, morale: 1, water: 2}
+  spells: [dark_pact, mana_burn, firebreath]
+- id: wraith
+  name: Wraith
+  shape: ghost
+  color: [150, 170, 235]
+  hp_pct: 95
+  stats: {air: 6, battle: 2, cunning: 3, morale: 2, water: 6}
+  growth: {air: 2, battle: 1, cunning: 1, fire: 1, morale: 1, water: 3}
+  spells: [drain_life, mana_burn]
+- id: troll
+  name: Stone Troll
+  shape: brute
+  color: [120, 125, 135]
+  hp_pct: 130
+  stats: {battle: 5, earth: 6, fire: 1, morale: 5, water: 2}
+  growth: {battle: 3, earth: 3, fire: 1, morale: 3, water: 1}
+  spells: [bone_ward, roar, bite]
+- id: wyvern
+  name: Wyvern
+  shape: dragon
+  color: [90, 150, 130]
+  hp_pct: 115
+  stats: {air: 6, battle: 5, cunning: 4, earth: 1, fire: 5, morale: 3, water: 1}
+  growth: {air: 2, battle: 2, cunning: 2, earth: 1, fire: 3, morale: 2, water: 1}
+  spells: [firebreath, venom, roar]
+- id: barrow_lord
+  name: Barrow Lord
+  shape: humanoid
+  color: [110, 200, 180]
+  hp_pct: 115
+  stats: {air: 2, battle: 5, cunning: 2, earth: 6, fire: 2, morale: 5, water: 6}
+  growth: {air: 1, battle: 2, cunning: 1, earth: 2, fire: 1, morale: 2, water: 2}
+  spells: [drain_life, bone_ward, dark_pact]
+- id: warchief
+  name: Redtusk Warchief
+  shape: brute
+  color: [200, 80, 60]
+  hp_pct: 130
+  stats: {air: 4, battle: 8, cunning: 3, earth: 4, fire: 8, morale: 5}
+  growth: {air: 1, battle: 3, cunning: 1, earth: 1, fire: 2, morale: 2, water: 1}
+  spells: [frenzy, roar, firebreath]
+- id: high_priest
+  name: Drowned Priest
+  shape: ghost
+  color: [70, 170, 190]
+  hp_pct: 125
+  stats: {air: 6, battle: 3, cunning: 3, earth: 2, fire: 2, morale: 4, water: 10}
+  growth: {air: 2, battle: 2, cunning: 1, earth: 1, fire: 1, morale: 2, water: 3}
+  spells: [mana_burn, drain_life, bone_ward, dark_pact]
+- id: ember_wyrm
+  name: Ember Wyrm
+  shape: dragon
+  color: [225, 90, 40]
+  hp_pct: 135
+  stats: {air: 6, battle: 8, cunning: 4, earth: 4, fire: 12, morale: 6, water: 2}
+  growth: {air: 2, battle: 3, cunning: 1, earth: 1, fire: 3, morale: 2, water: 1}
+  spells: [firebreath, roar, frenzy]
+- id: hollow_king
+  name: The Hollow King
+  shape: ghost
+  color: [175, 80, 220]
+  hp_pct: 150
+  stats: {air: 10, battle: 8, cunning: 6, earth: 10, fire: 10, morale: 8, water: 10}
+  growth: {air: 2, battle: 3, cunning: 1, earth: 2, fire: 2, morale: 2, water: 2}
+  spells: [drain_life, mana_burn, firebreath, roar, dark_pact, bone_ward]

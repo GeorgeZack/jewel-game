@@ -1,0 +1,174 @@
+- id: goblins
+  title: Smoke on the Road
+  main: true
+  giver: emberfield
+  at: mossgate
+  foe: goblin
+  level: 1
+  count: 2
+  gold: 40
+  xp: 50
+  opens: [stonebridge, greyfen]
+  offer_scene: goblins_offer
+  intro: Goblins burned the Harlan farm last night. They've never come this far south. Drive them out of Mossgate before they try the town.
+  outro: The goblins weren't raiding. They were running, from something in the north.
+- id: toll
+  title: The Toll Road
+  main: true
+  giver: stonebridge
+  requires: [quest:goblins]
+  at: greyfen
+  foe: bandit
+  level: 2
+  count: 2
+  gold: 70
+  xp: 80
+  opens: [barrow]
+  intro: Refugees say the marsh road is closed by bandits. The mayor wants it open, and pays. Find them in Greyfen.
+  outro: 'A dying bandit tells you what they fled: the dead of the Old Barrow have started to walk.'
+- id: barrow_lord
+  title: What Walks the Barrow
+  main: true
+  giver: stonebridge
+  requires: [quest:toll]
+  at: barrow
+  foe: barrow_lord
+  level: 5
+  count: 1
+  gold: 160
+  xp: 200
+  item: barrow_mail
+  opens: [highwatch, redtusk]
+  intro: Whatever woke the barrow has a name, and a crown. Put the Barrow Lord back in the ground.
+  outro: Before it crumbles, the Lord bows to the north-east. 'He is hollow, and he is coming. We only went ahead.' Its mail is still good.
+- id: warchief
+  title: Spears at Highwatch
+  main: true
+  giver: highwatch
+  requires: [quest:barrow_lord]
+  at: redtusk
+  foe: warchief
+  level: 8
+  count: 1
+  gold: 300
+  xp: 350
+  opens: [silverlake, ironpeak]
+  intro: The Redtusk clans mass on the road, driven from their mountains. Captain Ise will hold the wall if you break their Warchief.
+  outro: The Warchief laughs through his blood. 'We were not attacking. We were leaving. You should too.'
+- id: archive
+  title: The Lake Archive
+  main: true
+  giver: silverlake
+  requires: [quest:warchief]
+  at: ironpeak
+  foe: troll
+  level: 9
+  count: 2
+  gold: 420
+  xp: 500
+  item: heart_stone
+  opens: [sunken]
+  intro: The archivists of Silverlake know the Hollow King's story but their copies are held by the pass-monks of Ironpeak, and trolls have taken the road. Clear it.
+  outro: A king traded his heart to outlast death, and it worked. His heart still beats, hidden in the Sunken Temple.
+- id: priest
+  title: The Drowned Choir
+  main: true
+  giver: silverlake
+  requires: [quest:archive]
+  at: sunken
+  foe: high_priest
+  level: 12
+  count: 1
+  gold: 650
+  xp: 800
+  opens: [ashen]
+  intro: The Drowned Priest guards the King's heart below the water. End the choir and cut the bell-rope.
+  outro: The bells stop. Far away, across the Waste, something turns to look at you.
+- id: wyrm
+  title: Ash and Ember
+  main: true
+  giver: highwatch
+  requires: [quest:priest]
+  at: ashen
+  foe: ember_wyrm
+  level: 14
+  count: 1
+  gold: 900
+  xp: 1100
+  item: kingsbane
+  opens: [hollow]
+  intro: Only one road crosses the Waste, and the Ember Wyrm has slept across it since it burned the land. Wake it. Kill it.
+  outro: 'The way to Hollow Keep lies open. A forge-master pulls a blade from the Wyrm''s hide, and it fits your hand: Kingsbane.'
+- id: king
+  done_scene: king_done
+  title: The Hollow King
+  main: true
+  giver: highwatch
+  requires: [quest:wyrm]
+  at: hollow
+  foe: hollow_king
+  level: 16
+  count: 1
+  gold: 2000
+  xp: 2500
+  intro: Everything has been walking toward this room. Go and finish it.
+  outro: The King's crown rolls across the floor and stops. Outside, for the first time in a generation, it rains on the Waste. You did it, and Emberfield will never believe it.
+- id: rats
+  title: Cellar Trouble
+  giver: emberfield
+  at: mossgate
+  foe: rat
+  level: 1
+  count: 2
+  gold: 35
+  xp: 40
+  intro: Rats the size of dogs are coming up from the woods and into the grain cellars. A few coins if you thin them out.
+  outro: The grain is safe, and the baker is almost grateful.
+- id: spiders
+  title: Web Silk
+  giver: stonebridge
+  requires: [quest:goblins]
+  at: greyfen
+  foe: spider
+  level: 3
+  count: 3
+  gold: 120
+  xp: 120
+  intro: The weavers will pay well for cave spider silk, as long as you're the one fetching it.
+  outro: You smell terrible but you are rich.
+- id: wolves
+  title: Wolves at the Wall
+  giver: highwatch
+  requires: [quest:barrow_lord]
+  at: redtusk
+  foe: wolf
+  level: 7
+  count: 3
+  gold: 260
+  xp: 300
+  intro: The dire wolves have followed the clans down. They're taking sentries off the wall.
+  outro: The sentries sleep a little better. The captain buys you a drink, and only one.
+- id: wyverns
+  title: Eggs of Ironpeak
+  giver: silverlake
+  requires: [quest:warchief]
+  at: ironpeak
+  foe: wyvern
+  level: 10
+  count: 2
+  gold: 480
+  xp: 520
+  intro: A naturalist wants the nests studied. The parents disagree.
+  outro: The naturalist is thrilled and pays double for the scars.
+- id: cult
+  title: Those Who Kneel
+  giver: silverlake
+  requires: [quest:archive]
+  at: sunken
+  foe: cultist
+  level: 11
+  count: 3
+  gold: 560
+  xp: 620
+  intro: Some of the missing scholars weren't taken. They went. Find them in the temple.
+  outro: They wouldn't come back. You took their notes instead.

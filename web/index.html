@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jewel Game</title>
+<style>
+	html, body { margin: 0; height: 100%; background: #080a1c; overflow: hidden; }
+	#status { position: fixed; inset: 0; display: grid; place-items: center; color: #ece8f8; font: 20px monospace; }
+</style>
+</head>
+<body>
+<div id="status">Loading…</div>
+<script src="wasm_exec.js"></script>
+<script>
+	const go = new Go();
+	WebAssembly.instantiateStreaming(fetch("game.wasm"), go.importObject)
+		.then(r => { document.getElementById("status").remove(); go.run(r.instance); })
+		.catch(e => { document.getElementById("status").textContent = "Could not start the game: " + e; });
+</script>
+</body>
+</html>

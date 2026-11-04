@@ -1,10 +1,12 @@
 package board
 
 const MIN_MATCH = 3
+const WILD_MULT = 3	// what a Wild earned by a run of 5 multiplies by
 
 type run struct {
 	cells		[]Point
 	horizontal	bool
+	color		int
 }
 
 type group struct {
@@ -24,47 +26,112 @@ type Blast struct {
 	Wide	bool	// overcharged, or a combo
 }
 
+// Match is one run cleared in a step. A Wild counts toward Size and multiplies the run.
+type Match struct {
+	Color, Size, Mult	int
+	Wilds, Bombs		int
+}
+
 // StepResult describes one cascade step so the caller can animate it.
 type StepResult struct {
 	Cleared	[]Cleared
 	Created	[]Point		// cells that now hold a freshly made special
 	Blasts	[]Blast
+	Matches	[]Match
 	Points	int
 	Chain	int
 }
 
-func (b *Board) findRuns() []run {
-	var runs []run
-	scan := func(start Point, step Point, horizontal bool) {
-		var cur []Point
-		color := -1
-		flush := func() {
-			if len(cur) >= MIN_MATCH {
-				runs = append(runs, run{ cells: cur, horizontal: horizontal })
-			}
-			cur, color = nil, -1
+func isWild(g *Gem) bool {
+	return g != nil && !g.Locked && g.Special == Wild
+}
+
+// scanLine appends the runs along one row or column.
+func (b *Board) scanLine(runs []run, start Point, step Point, horizontal bool) []run {
+	var cur []Point
+	color, trailing := -1, 0	// trailing: how many Wilds end cur, they also start the next run
+	flush := func() {
+		if color >= 0 && len(cur) >= MIN_MATCH {
+			runs = append(runs, run{ cells: cur, horizontal: horizontal, color: color })
 		}
-		for p := start; b.In(p); p = p.Add(step) {
-			g := b.At(p)
-			if !matchable(g) {
+		cur, color, trailing = nil, -1, 0
+	}
+	for p := start; b.In(p); p = p.Add(step) {
+		g := b.At(p)
+		if isWild(g) {
+			if color >= b.Settings.WildColors {
 				flush()
-				continue
-			}
-			if g.Color != color {
-				flush()
-				color = g.Color
 			}
 			cur = append(cur, p)
+			trailing++
+			continue
 		}
-		flush()
+		if !matchable(g) {
+			flush()
+			continue
+		}
+		if g.Color != color {
+			var carried []Point
+			if g.Color < b.Settings.WildColors {
+				carried = append(carried, cur[len(cur)-trailing:]...)
+			}
+			flush()
+			cur, color = carried, g.Color
+		}
+		cur = append(cur, p)
+		trailing = 0
 	}
+	flush()
+	return runs
+}
+
+func (b *Board) findRuns() []run {
+	var runs []run
 	for y := 0; y < b.H(); y++ {
-		scan(Point{ 0, y }, Point{ 1, 0 }, true)
+		runs = b.scanLine(runs, Point{ 0, y }, Point{ 1, 0 }, true)
 	}
 	for x := 0; x < b.W(); x++ {
-		scan(Point{ x, 0 }, Point{ 0, 1 }, false)
+		runs = b.scanLine(runs, Point{ x, 0 }, Point{ 0, 1 }, false)
 	}
 	return runs
+}
+
+// runsThrough lists runs on the lines of two cells, which is all a swap of them can change.
+func (b *Board) runsThrough(a, c Point) []run {
+	runs := b.scanLine(nil, Point{ 0, a.Y }, Point{ 1, 0 }, true)
+	runs = b.scanLine(runs, Point{ a.X, 0 }, Point{ 0, 1 }, false)
+	if c.Y != a.Y {
+		runs = b.scanLine(runs, Point{ 0, c.Y }, Point{ 1, 0 }, true)
+	}
+	if c.X != a.X {
+		runs = b.scanLine(runs, Point{ c.X, 0 }, Point{ 0, 1 }, false)
+	}
+	return runs
+}
+
+// PreviewSwap lists the matches a swap would make right away, without changing the board.
+func (b *Board) PreviewSwap(a, c Point) []Match {
+	b.Swap(a, c)
+	defer b.Swap(a, c)
+	var out []Match
+	for _, r := range b.runsThrough(a, c) {
+		out = append(out, b.describe(r))
+	}
+	return out
+}
+
+func (b *Board) describe(r run) Match {
+	m := Match{ Color: r.color, Size: len(r.cells), Mult: 1 }
+	for _, p := range r.cells {
+		switch g := b.At(p); g.Special {
+		case Wild:
+			m.Wilds++
+			m.Mult *= max(g.Mult, 1)
+		case Bomb:
+			m.Bombs++
+		}
+	}
+	return m
 }
 
 // findGroups merges runs that share a cell, so an L or T shape counts as one match.
@@ -344,21 +411,31 @@ func (b *Board) Step() *StepResult {
 		special	Special
 	}
 	var creations []creation
+	var matches []Match
 	for _, g := range b.findGroups() {
 		for _, c := range g.cells {
 			add(c)
 		}
-		if s := g.classify(); s != None {
+		longest := 0
+		for _, r := range g.runs {
+			matches = append(matches, b.describe(r))
+			longest = max(longest, len(r.cells))
+		}
+		if b.Settings.Duel {
+			if longest >= 5 {
+				creations = append(creations, creation{ b.placement(g), -1, Wild })
+			}
+		} else if s := g.classify(); s != None {
 			creations = append(creations, creation{ b.placement(g), g.color, s })
 		}
 	}
 
-	res := &StepResult{}
+	res := &StepResult{ Matches: matches }
 	// order grows while we walk it, so chain reactions keep going until they run out
 	for i := 0; i < len(order); i++ {
 		p := order[i]
 		g := b.At(p)
-		if g.Special == None {
+		if g.Special == None || g.Special == Wild {
 			continue
 		}
 		res.Blasts = append(res.Blasts, Blast{ Pos: p, Special: g.Special, Wide: b.Settings.Overcharge })
@@ -385,7 +462,11 @@ func (b *Board) Step() *StepResult {
 		b.set(p, nil)
 	}
 	for _, c := range creations {
-		b.set(c.pos, b.newGem(c.color, c.special))
+		g := b.newGem(c.color, c.special)
+		if c.special == Wild {
+			g.Mult = WILD_MULT
+		}
+		b.set(c.pos, g)
 		res.Created = append(res.Created, c.pos)
 	}
 	return res
@@ -469,7 +550,7 @@ func (b *Board) Shuffle() bool {
 		if attempt >= 200 {
 			// the colors themselves are stuck, so reroll them too
 			for _, g := range gems {
-				if g.Special != Prism {
+				if g.Special != Prism && g.Special != Wild {
 					g.Color = b.rng.Intn(b.Settings.NumColors)
 				}
 			}

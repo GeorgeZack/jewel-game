@@ -1,0 +1,17 @@
+# Everyone who speaks in scenes. "hero" is built in and always means the player.
+# portrait: image name in portraits/ (defaults to the id). Moods look for <portrait>_<mood>.png first.
+- id: mayor
+  name: Mayor Aldren
+  color: [214, 170, 90]
+- id: bessa
+  name: Old Bessa
+  color: [170, 140, 200]
+- id: ise
+  name: Captain Ise
+  color: [120, 170, 220]
+- id: tollkeeper
+  name: Tollkeeper Brann
+  color: [190, 120, 80]
+- id: sergeant
+  name: Sergeant Holm
+  color: [150, 160, 120]
