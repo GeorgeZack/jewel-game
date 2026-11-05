@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"jewel-game/text"
 	"log"
 	"sync"
 
@@ -54,7 +55,7 @@ func drawDebugText(font rl.Font) {
 	// rl.DrawTextEx(font, strAnimTime, tPos, fontSize, spacing, rl.Black)
 	// inc++
 	rl.DrawRectangle(0, 0, int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight()), rl.Fade(rl.RayWhite, 0.85))
-	rl.DrawTextEx(font, fmt.Sprintf("FPS %.0f", rl.GetFPS()), rl.Vector2{ X: margin, Y: margin }, 24, spacing, rl.Black)
+	rl.DrawTextEx(font, text.Tf("ui.fps", "FPS %.0f", rl.GetFPS()), rl.Vector2{ X: margin, Y: margin }, 24, spacing, rl.Black)
 	for i, a := range GetMessages() {
 		pos := rl.Vector2{ X: margin, Y: float32(rl.GetScreenHeight()) - margin - fontSize * (inc + float32(i)) }
 		// Use this for word wrapping
@@ -66,7 +67,10 @@ func drawDebugText(font rl.Font) {
 }
 
 func AddMessage(format string, a ...any) {
-	msg := fmt.Sprintf(format, a...)
+	msg := format
+	if len(a) > 0 {
+		msg = fmt.Sprintf(format, a...)
+	}
 	log.Println(msg)
 	messagesMu.Lock()
 	defer messagesMu.Unlock()

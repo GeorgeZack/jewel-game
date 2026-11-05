@@ -2,18 +2,18 @@ package rpg
 
 import (
 	"fmt"
+	"jewel-game/board"
 	"os"
 	"path"
-	"strings"
-	"jewel-game/board"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func step(cleared []int, matches ...board.Match) *board.StepResult {
-	res := &board.StepResult{ Chain: 1, Matches: matches }
+	res := &board.StepResult{Chain: 1, Matches: matches}
 	for _, c := range cleared {
-		res.Cleared = append(res.Cleared, board.Cleared{ Gem: board.Gem{ Color: c } })
+		res.Cleared = append(res.Cleared, board.Cleared{Gem: board.Gem{Color: c}})
 	}
 	return res
 }
@@ -25,16 +25,31 @@ func testDuel() *Duel {
 	return d
 }
 
+func TestStatBonusUsesTheCurrentValue(t *testing.T) {
+	if got := StatBonus(Fire, 8); got != "+8 max Fire mana, +1 per match" {
+		t.Fatalf("fire: %s", got)
+	}
+	if got := StatBonus(Battle, 9); got != "+2 damage per skull match" {
+		t.Fatalf("battle: %s", got)
+	}
+	if got := StatBonus(Cunning, 4); got != "+8% gold and XP" {
+		t.Fatalf("cunning: %s", got)
+	}
+	if got := StatBonus(Morale, 10); got != "+30 max HP, blocks 1" {
+		t.Fatalf("morale: %s", got)
+	}
+}
+
 func TestManaGoesToTheSideToMove(t *testing.T) {
 	d := testDuel()
 	d.Sides[Player].Stats[Fire] = 0
-	d.ApplyStep(step([]int{ Fire, Fire, Fire }, board.Match{ Color: Fire, Size: 3, Mult: 1 }))
+	d.ApplyStep(step([]int{Fire, Fire, Fire}, board.Match{Color: Fire, Size: 3, Mult: 1}))
 	if d.Sides[Player].Mana[Fire] != 3 {
 		t.Fatalf("player mana %v", d.Sides[Player].Mana)
 	}
 	d.Turn = Enemy
 	d.Sides[Enemy].Stats[Water] = 0
-	d.ApplyStep(step([]int{ Water, Water, Water }, board.Match{ Color: Water, Size: 3, Mult: 1 }))
+	d.ApplyStep(step([]int{Water, Water, Water}, board.Match{Color: Water, Size: 3, Mult: 1}))
 	if d.Sides[Enemy].Mana[Water] != 3 || d.Sides[Player].Mana[Water] != 0 {
 		t.Fatalf("enemy turn should credit the enemy")
 	}
@@ -45,19 +60,19 @@ func TestWildMultipliesAndManaCaps(t *testing.T) {
 	me := d.Sides[Player]
 	me.Stats[Fire] = 0
 	// two reds and a x3 Wild: 3 gems x3
-	d.ApplyStep(step([]int{ Fire, Fire, -1 }, board.Match{ Color: Fire, Size: 3, Mult: 3, Wilds: 1 }))
+	d.ApplyStep(step([]int{Fire, Fire, -1}, board.Match{Color: Fire, Size: 3, Mult: 3, Wilds: 1}))
 	if me.Mana[Fire] != 9 {
 		t.Fatalf("got %d", me.Mana[Fire])
 	}
 	me.Mana[Fire] = me.MaxMana[Fire] - 1
-	if g := d.ApplyStep(step([]int{ Fire, Fire, Fire }, board.Match{ Color: Fire, Size: 3, Mult: 1 })); g.Mana[Fire] != 1 {
+	if g := d.ApplyStep(step([]int{Fire, Fire, Fire}, board.Match{Color: Fire, Size: 3, Mult: 1})); g.Mana[Fire] != 1 {
 		t.Fatalf("should cap, got %+v", g)
 	}
 }
 
 func TestExtraTurnOnFour(t *testing.T) {
 	d := testDuel()
-	d.ApplyStep(step([]int{ Gold, Gold, Gold, Gold }, board.Match{ Color: Gold, Size: 4, Mult: 1 }))
+	d.ApplyStep(step([]int{Gold, Gold, Gold, Gold}, board.Match{Color: Gold, Size: 4, Mult: 1}))
 	d.EndTurn()
 	if d.Turn != Player {
 		t.Fatalf("four in a row keeps the turn")
@@ -72,12 +87,12 @@ func TestSkullsHurtAndCanFinish(t *testing.T) {
 	d := testDuel()
 	foe := d.Sides[Enemy]
 	hp := foe.HP
-	g := d.ApplyStep(step([]int{ Skull, Skull, Skull }, board.Match{ Color: Skull, Size: 3, Mult: 1 }))
+	g := d.ApplyStep(step([]int{Skull, Skull, Skull}, board.Match{Color: Skull, Size: 3, Mult: 1}))
 	if g.Damage <= 0 || foe.HP != hp-g.Damage {
 		t.Fatalf("skulls should hurt: %+v", g)
 	}
 	foe.HP = 1
-	d.ApplyStep(step([]int{ Skull, Skull, Skull }, board.Match{ Color: Skull, Size: 3, Mult: 1 }))
+	d.ApplyStep(step([]int{Skull, Skull, Skull}, board.Match{Color: Skull, Size: 3, Mult: 1}))
 	if d.Winner != Player {
 		t.Fatalf("expected a win")
 	}
@@ -103,8 +118,8 @@ func TestCastPaysAndCoolsDown(t *testing.T) {
 func TestStunSkipsTurnAndPoisonTicks(t *testing.T) {
 	d := testDuel()
 	foe := d.Sides[Enemy]
-	foe.AddEffect(Effect{ Stun, 1, 0 })
-	foe.AddEffect(Effect{ Poison, 2, 3 })
+	foe.AddEffect(Effect{Stun, 1, 0})
+	foe.AddEffect(Effect{Poison, 2, 3})
 	hp := foe.HP
 	d.EndTurn()
 	if d.Turn != Player || foe.HP != hp-3 {
@@ -121,8 +136,8 @@ func TestSpellsAllCastOnARealBoard(t *testing.T) {
 		s := &Spells[i]
 		d := testDuel()
 		me := d.Sides[Player]
-		me.Spells = []*Spell{ s }
-		me.Mana = [NUM_MANA]int{ 50, 50, 50, 50 }
+		me.Spells = []*Spell{s}
+		me.Mana = [NUM_MANA]int{50, 50, 50, 50}
 		if !d.Cast(s) {
 			t.Fatalf("%s did not cast", s.ID)
 		}
@@ -189,11 +204,11 @@ func (m memFiles) ReadDir(dir string) ([]string, error) {
 func TestLoaderReportsMistakes(t *testing.T) {
 	defer LoadStory(diskFiles{}, "../assets/story")
 	problems, err := LoadStory(memFiles{
-		"s/story.yaml":		"start: nowhere\nopening: missing_scene",
-		"s/foes.yaml":		"- { id: rat, name: Rat, stats: { fire: 1, luck: 2 }, spells: [bite, zap] }",
-		"s/locations.yaml":	"- { id: a, name: A, open: true, roads: [b], foes: [rat] }\n- { id: b, name: B, roads: [], foes: [bat] }",
-		"s/quests.yaml":	"- { id: q, title: Q, giver: a, at: b, foe: rat, requires: [quest:nope, \"!flag:x\", level:two] }",
-		"s/scenes/x.yaml":	"talk:\n  - who: stranger\n    text: hi\n  - goto: elsewhere\n  - choices: [ { text: ok, do: [ { accept_quest: q }, { item: no_such } ] } ]",
+		"s/story.yaml":     "start: nowhere\nopening: missing_scene",
+		"s/foes.yaml":      "- { id: rat, name: Rat, stats: { fire: 1, luck: 2 }, spells: [bite, zap] }",
+		"s/locations.yaml": "- { id: a, name: A, open: true, roads: [b], foes: [rat] }\n- { id: b, name: B, roads: [], foes: [bat] }",
+		"s/quests.yaml":    "- { id: q, title: Q, giver: a, at: b, foe: rat, requires: [quest:nope, \"!flag:x\", level:two] }",
+		"s/scenes/x.yaml":  "talk:\n  - who: stranger\n    text: hi\n  - goto: elsewhere\n  - choices: [ { text: ok, do: [ { accept_quest: q }, { item: no_such } ] } ]",
 	}, "s")
 	if err != nil {
 		t.Fatal(err)
@@ -215,7 +230,7 @@ func TestLoaderReportsMistakes(t *testing.T) {
 
 func TestConditions(t *testing.T) {
 	h := NewHero("Druid")
-	h.Done = []string{ "goblins" }
+	h.Done = []string{"goblins"}
 	h.Flags["met"] = true
 	h.Level = 3
 	for cond, want := range map[string]bool{
@@ -224,7 +239,7 @@ func TestConditions(t *testing.T) {
 		"level:3": true, "level:4": false, "class:druid": true,
 		"at:" + Story.Start: true, "active:toll": false,
 	} {
-		if got := h.Meets([]string{ cond }); got != want {
+		if got := h.Meets([]string{cond}); got != want {
 			t.Errorf("%s = %v, want %v", cond, got, want)
 		}
 	}
@@ -362,9 +377,9 @@ func bestShopGear(h *Hero) {
 func TestDuelsFinishAndAreFair(t *testing.T) {
 	const N = 6
 	foes := []struct {
-		id		string
-		level	int
-	}{ { "goblin", 1 }, { "barrow_lord", 5 }, { "orc", 8 }, { "high_priest", 12 }, { "hollow_king", 16 } }
+		id    string
+		level int
+	}{{"goblin", 1}, {"barrow_lord", 5}, {"orc", 8}, {"high_priest", 12}, {"hollow_king", 16}}
 	for _, class := range Classes {
 		for _, f := range foes {
 			wins, turns := 0, 0
@@ -391,5 +406,73 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 				t.Errorf("%s vs %s drags: %d turns", class.Name, f.id, turns/N)
 			}
 		}
+	}
+}
+
+// moveKinds lists combo swaps and ordinary swaps on b. A combo is a run of 4+, a wild, or a +5 skull.
+func moveKinds(b *board.Board) (combo, other map[[2]board.Point]bool) {
+	combo, other = map[[2]board.Point]bool{}, map[[2]board.Point]bool{}
+	for y := range b.H() {
+		for x := range b.W() {
+			p := board.Point{X: x, Y: y}
+			for _, q := range []board.Point{{X: x + 1, Y: y}, {X: x, Y: y + 1}} {
+				if !b.In(q) || !b.IsValidSwap(p, q) {
+					continue
+				}
+				kind := other
+				for _, m := range b.PreviewSwap(p, q) {
+					if m.Size >= 4 || m.Wilds > 0 || (m.Color == Skull && m.Bombs > 0) {
+						kind = combo
+						break
+					}
+				}
+				kind[[2]board.Point{p, q}] = true
+			}
+		}
+	}
+	return combo, other
+}
+
+func TestWeakFoesLeaveCombos(t *testing.T) {
+	var b *board.Board
+	var combos map[[2]board.Point]bool
+	for seed := int64(1); seed < 400; seed++ {
+		candidate := board.NewBoard(BoardSettings(), seed)
+		combo, other := moveKinds(candidate)
+		if len(combo) > 0 && len(other) > 0 {
+			b, combos = candidate, combo
+			break
+		}
+	}
+	if b == nil {
+		t.Fatal("no board had both a combo and an ordinary match")
+	}
+	rate := func(level, n int) int {
+		foe := NewFoeCombatant(FoeByID("rat"), level)
+		d := NewDuel(NewHeroCombatant(NewHero("Knight")), foe, 1)
+		d.Board = b
+		d.Turn = Enemy
+		hits := 0
+		for range n {
+			a, c, ok := d.ChooseMove()
+			if !ok {
+				t.Fatal("no move")
+			}
+			if combos[[2]board.Point{a, c}] {
+				hits++
+			}
+		}
+		return hits
+	}
+	const n = 200
+	low, high := rate(1, n), rate(16, n)
+	if low > n*2/5 {
+		t.Errorf("a level 1 foe took the combo %d/%d times", low, n)
+	}
+	if high < n*11/20 {
+		t.Errorf("a level 16 foe took the combo only %d/%d times", high, n)
+	}
+	if high < low {
+		t.Errorf("higher level noticed fewer combos: L1 %d, L16 %d", low, high)
 	}
 }

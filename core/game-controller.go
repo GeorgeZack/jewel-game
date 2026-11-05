@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"jewel-game/board"
+	"jewel-game/text"
 	"jewel-game/ui"
 	"jewel-game/utils"
 	"path/filepath"
@@ -36,6 +37,7 @@ type GameController struct {
 }
 
 func NewGameController() *GameController {
+	loadLocale()
 	dm := NewDataManager()
 	ui.Font = dm.Consts.UIFont
 
@@ -52,29 +54,24 @@ func NewGameController() *GameController {
 		bkg:			rl.LoadTexture("_res/bkg.jpg"),
 	}
 	if gc.bkg.ID == 0 {
-		ui.AddMessage("Background missing or not an image (git lfs pull?), using a gradient")
+		ui.AddMessage("%s", text.T("log.background", "Background missing or not an image (git lfs pull?), using a gradient"))
 	}
 
 	// Watch for gem type edits; events are forwarded here and handled in Update so
 	// textures are only ever loaded on the main (OpenGL) thread.
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		ui.AddMessage("Hot reload disabled, failed to create file watcher: %v", err)
+		ui.AddMessage("%s", text.Tf("log.watch_create", "Hot reload disabled, failed to create file watcher: %v", err))
 		return gc
 	}
 	watchDir := filepath.Dir(utils.GEM_TYPES_FILE)
 	if err := watcher.Add(watchDir); err != nil {
-		ui.AddMessage("Hot reload disabled, failed to watch %s: %v", watchDir, err)
+		ui.AddMessage("%s", text.Tf("log.watch_dir", "Hot reload disabled, failed to watch %s: %v", watchDir, err))
 		watcher.Close()
 		return gc
 	}
 	gc.Watcher = watcher
-	// story files hot reload too; fsnotify isn't recursive, so each folder is watched
-	for _, dir := range []string{ STORY_DIR, STORY_DIR + "/scenes", STORY_DIR + "/portraits", STORY_DIR + "/backgrounds", STORY_DIR + "/foes" } {
-		if err := watcher.Add(dir); err != nil {
-			ui.AddMessage("Not watching %s: %v", dir, err)
-		}
-	}
+	gc.watchExtra()
 
 	go func() {
 		for {
@@ -115,23 +112,44 @@ func (c *GameController) Unload() {
 		// closing the watcher ends the forwarding goroutine
 		c.Watcher.Close()
 	}
-	ui.AddMessage("GameController resources unloaded.")
+	ui.AddMessage("%s", text.T("log.unloaded", "GameController resources unloaded."))
+}
+
+// watchExtra watches the language folder and every story folder. fsnotify is not recursive.
+func (c *GameController) watchExtra() {
+	if c.Watcher == nil {
+		return
+	}
+	dirs := append([]string{ langDir }, storyDirs(defaultStoryDir)...)
+	if storyRoot != defaultStoryDir {
+		dirs = append(dirs, storyDirs(storyRoot)...)
+	}
+	for _, dir := range dirs {
+		if err := c.Watcher.Add(dir); err != nil {
+			ui.AddMessage("%s", text.Tf("log.watch_skip", "Not watching %s: %v", dir, err))
+		}
+	}
 }
 
 func (c *GameController) Update() {
 	select {
 	case event := <-c.WatcherEvents:
 		if filepath.Clean(event.Name) == filepath.Clean(utils.GEM_TYPES_FILE) && event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
-			ui.AddMessage("Detected change in %s, reloading gem types...", event.Name)
+			ui.AddMessage("%s", text.Tf("log.watch_gems", "Detected change in %s, reloading gem types...", event.Name))
 			// boards keep their state; gems pick up the new looks on the next frame
 			c.DataManager.LoadGemTypes(utils.GEM_TYPES_FILE)
 		}
-		if isStoryFile(event.Name) && event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
-			ui.AddMessage("Detected change in %s, reloading the story...", event.Name)
+		if isLocaleFile(event.Name) && event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
+			ui.AddMessage("%s", text.Tf("log.watch_lang", "Detected change in %s, reloading language...", event.Name))
+			loadLocale()
+			c.watchExtra()
+			c.Quest.ReloadStory()
+		} else if isStoryFile(event.Name) && event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
+			ui.AddMessage("%s", text.Tf("log.watch_story", "Detected change in %s, reloading the story...", event.Name))
 			c.Quest.ReloadStory()
 		}
 	case err := <-c.WatcherErrors:
-		ui.AddMessage("File watcher error: %v", err)
+		ui.AddMessage("%s", text.Tf("log.watch_err", "File watcher error: %v", err))
 	default:
 	}
 
@@ -269,10 +287,15 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 	ui.Panel(r)
 	col := ui.Column{ X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6 }
 	title := col.Next(44)
-	ui.Text("JEWEL GAME", title.X, title.Y, 40, ui.Accent)
+	ui.Text(text.T("ui.title", "JEWEL GAME"), title.X, title.Y, 40, ui.Accent)
 
 	tabs := ui.Row(col.Next(36), int(MODE_COUNT), 8)
-	for i, name := range []string{ "Classic", "Sandbox", "Quest" } {
+	names := []string{
+		text.T("ui.mode_classic", "Classic"),
+		text.T("ui.mode_sandbox", "Sandbox"),
+		text.T("ui.mode_quest", "Quest"),
+	}
+	for i, name := range names {
 		if ui.Button(tabs[i], name, c.Mode == Mode(i)) {
 			c.Mode = Mode(i)
 		}
@@ -284,44 +307,44 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 	}
 
 	b := tm.Board
-	col.Heading("Score")
+	col.Heading(text.T("ui.score", "Score"))
 	score := col.Next(50)
 	ui.Text(fmt.Sprint(b.Score), score.X, score.Y, 48, ui.TextColor)
-	col.Line(fmt.Sprintf("Moves      %d", b.Moves), 18, ui.TextColor)
-	col.Line(fmt.Sprintf("Chain      %d  (best %d)", b.Chain, b.BestChain), 18, ui.TextColor)
-	col.Line(fmt.Sprintf("Cleared    %d", b.Cleared), 18, ui.TextColor)
-	locks := fmt.Sprintf("Locks      %d / %s", b.LockCount(), lockLabel(b.Settings.MaxLocks))
+	col.Line(text.Tf("ui.moves", "Moves      %d", b.Moves), 18, ui.TextColor)
+	col.Line(text.Tf("ui.chain", "Chain      %d  (best %d)", b.Chain, b.BestChain), 18, ui.TextColor)
+	col.Line(text.Tf("ui.cleared", "Cleared    %d", b.Cleared), 18, ui.TextColor)
+	locks := text.Tf("ui.locks", "Locks      %d / %s", b.LockCount(), lockLabel(b.Settings.MaxLocks))
 	col.Line(locks, 18, ui.TextColor)
 	if b.Settings.Gravity != board.Down || b.Settings.ChaosGravity {
-		col.Line(fmt.Sprintf("Gravity    %s", b.Settings.Gravity), 18, ui.Accent)
+		col.Line(text.Tf("ui.gravity", "Gravity    %s", trDir(b.Settings.Gravity)), 18, ui.Accent)
 	}
 
-	col.Heading("Actions")
-	if ui.Button(col.Next(32), "Release locks  [Space]", false) {
+	col.Heading(text.T("ui.actions", "Actions"))
+	if ui.Button(col.Next(32), text.T("ui.release_locks", "Release locks  [Space]"), false) {
 		tm.ReleaseLocks()
 	}
-	if ui.Button(col.Next(32), "Hint  [H]", false) {
+	if ui.Button(col.Next(32), text.T("ui.hint", "Hint  [H]"), false) {
 		tm.ShowHint()
 	}
-	if ui.Button(col.Next(32), "New board  [R]", false) {
+	if ui.Button(col.Next(32), text.T("ui.new_board", "New board  [R]"), false) {
 		tm.Reset(b.Settings)
 	}
 	if c.Mode == ModeSandbox {
-		if ui.Button(col.Next(32), fmt.Sprintf("Undo  [Z]  (%d)", len(tm.undo)), false) {
+		if ui.Button(col.Next(32), text.Tf("ui.undo", "Undo  [Z]  (%d)", len(tm.undo)), false) {
 			tm.Undo()
 		}
-		if ui.Button(col.Next(32), "Clear matches  [Enter]", false) {
+		if ui.Button(col.Next(32), text.T("ui.clear_matches", "Clear matches  [Enter]"), false) {
 			tm.Resolve()
 		}
 	}
 
-	col.Heading("Controls")
+	col.Heading(text.T("ui.controls", "Controls"))
 	for _, line := range []string{
-		"Left drag   swap gems",
-		"Left click  select, click to swap",
-		"Right click lock / unlock a gem",
-		"Tab         switch mode",
-		"F1          debug log    Esc  quit",
+		text.T("ui.help_drag", "Left drag   swap gems"),
+		text.T("ui.help_click", "Left click  select, click to swap"),
+		text.T("ui.help_lock", "Right click lock / unlock a gem"),
+		text.T("ui.help_tab", "Tab         switch mode"),
+		text.T("ui.help_keys", "F1          debug log    Esc  quit"),
 	} {
 		col.Line(line, 15, ui.DimText)
 	}
@@ -334,27 +357,27 @@ func (c *GameController) drawGuide(r rl.Rectangle) {
 		col.Paragraph(s, 16, ui.TextColor)
 		col.Y += 6
 	}
-	col.Heading("Specials")
-	para("4 in a row makes a Bolt. It clears its whole row or column.")
-	para("An L or T shape makes a Bomb. It blasts the 3x3 around it.")
-	para("5 in a row makes a Prism. Swap it with any gem to clear that color.")
-	col.Heading("Combos")
-	para("Swap two specials into each other:")
-	para("Bolt + Bolt: a full cross.")
-	para("Bolt + Bomb: a cross three lines wide.")
-	para("Bomb + Bomb: a 5x5 blast.")
-	para("Prism + Bolt/Bomb: every gem of that color turns into one and goes off.")
-	para("Prism + Prism: clears the board.")
-	col.Heading("Locks")
-	para("Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them.")
-	para("Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus.")
+	col.Heading(text.T("ui.specials", "Specials"))
+	para(text.T("ui.help_bolt", "4 in a row makes a Bolt. It clears its whole row or column."))
+	para(text.T("ui.help_bomb", "An L or T shape makes a Bomb. It blasts the 3x3 around it."))
+	para(text.T("ui.help_prism", "5 in a row makes a Prism. Swap it with any gem to clear that color."))
+	col.Heading(text.T("ui.combos", "Combos"))
+	para(text.T("ui.help_combo_intro", "Swap two specials into each other:"))
+	para(text.T("ui.help_bolt_bolt", "Bolt + Bolt: a full cross."))
+	para(text.T("ui.help_bolt_bomb", "Bolt + Bomb: a cross three lines wide."))
+	para(text.T("ui.help_bomb_bomb", "Bomb + Bomb: a 5x5 blast."))
+	para(text.T("ui.help_prism_mix", "Prism + Bolt/Bomb: every gem of that color turns into one and goes off."))
+	para(text.T("ui.help_prism_prism", "Prism + Prism: clears the board."))
+	col.Heading(text.T("ui.locks_heading", "Locks"))
+	para(text.T("ui.help_lock_body", "Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them."))
+	para(text.T("ui.help_lock_release", "Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus."))
 	col.Y += 8
-	col.Paragraph("Tab opens the Sandbox, where every rule is up for grabs.", 16, ui.Accent)
+	col.Paragraph(text.T("ui.help_sandbox", "Tab opens the Sandbox, where every rule is up for grabs."), 16, ui.Accent)
 }
 
 // isStoryFile is true for story YAML and art, skipping editor temp files.
 func isStoryFile(name string) bool {
-	rel, err := filepath.Rel(STORY_DIR, name)
+	rel, err := filepath.Rel(storyRoot, name)
 	if err != nil || strings.HasPrefix(rel, "..") {
 		return false
 	}

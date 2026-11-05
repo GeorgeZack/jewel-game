@@ -1,0 +1,3 @@
+# Which language file to use. Copy assets/lang/en.yaml to assets/lang/es.yaml,
+# translate the values, and set this to es. See docs/story.md.
+language: en

@@ -1,8 +1,8 @@
 package rpg
 
 import (
-	"fmt"
 	"jewel-game/board"
+	"jewel-game/text"
 	"math/rand"
 	"slices"
 )
@@ -63,7 +63,7 @@ func NewHeroCombatant(h *Hero) *Combatant {
 			spells = append(spells, s)
 		}
 	}
-	c := newCombatant(h.Class, h.Level, stats, HeroHP(h.Level)+b.HP, b.StartMana, spells)
+	c := newCombatant(ClassByName(h.Class).Label(), h.Level, stats, HeroHP(h.Level)+b.HP, b.StartMana, spells)
 	c.SkullDamage, c.Armor, c.GoldPct, c.XPPct = b.SkullDamage, b.Armor, b.GoldPct, b.XPPct
 	return c
 }
@@ -120,7 +120,7 @@ type Duel struct {
 	Winner	int		// -1 while the fight is on
 	Turns	int
 	Extra	bool	// the side to move goes again when this turn ends
-	Log		[]string	// newest first
+	Log		[]LogLine	// newest first
 	Board	*board.Board
 	OnHit	func(side, amount int)	// lets the view show damage from any source
 	OnHeal	func(side, amount int)
@@ -133,7 +133,7 @@ func NewDuel(a, b *Combatant, seed int64) *Duel {
 	if d.rng.Intn(10+a.Stats[Cunning]) < d.rng.Intn(10+b.Stats[Cunning]) {
 		d.Turn = Enemy
 	}
-	d.logf("%s moves first.", d.Sides[d.Turn].Name)
+	d.logf("log.moves_first", "%s moves first.", d.Sides[d.Turn].Name)
 	return d
 }
 
@@ -171,7 +171,7 @@ func (d *Duel) Damage(c *Combatant, n int) int {
 	}
 	if c.HP == 0 {
 		d.Winner = 1 - d.Side(c)
-		d.logf("%s falls!", c.Name)
+		d.logf("log.falls", "%s falls!", c.Name)
 	}
 	return n
 }
@@ -244,7 +244,7 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 	}
 	if g.Extra && !d.Over() {
 		d.Extra = true
-		d.logf("%s earns an extra turn!", me.Name)
+		d.logf("log.extra_turn", "%s earns an extra turn!", me.Name)
 	}
 	return g
 }
@@ -275,7 +275,7 @@ func (d *Duel) Cast(s *Spell) bool {
 	if s.Cooldown > 0 {
 		me.Cooldowns[s.ID] = s.Cooldown
 	}
-	d.logf("%s casts %s.", me.Name, s.Name)
+	d.logf("log.casts", "%s casts %s.", me.Name, s.Label())
 	if s.Free {
 		d.Extra = true
 	}
@@ -301,7 +301,7 @@ func (d *Duel) EndTurn() {
 		if !stunned || d.Over() {
 			return
 		}
-		d.logf("%s is stunned!", d.Sides[d.Turn].Name)
+		d.logf("log.stunned", "%s is stunned!", d.Sides[d.Turn].Name)
 	}
 }
 
@@ -329,11 +329,20 @@ func (d *Duel) ManaDrain() {
 	for _, c := range d.Sides {
 		c.Mana = [NUM_MANA]int{}
 	}
-	d.logf("No moves left: all mana drains away!")
+	d.logf("log.mana_drain", "No moves left: all mana drains away!")
 }
 
-func (d *Duel) logf(format string, a ...any) {
-	d.Log = append([]string{ fmt.Sprintf(format, a...) }, d.Log...)
+// LogLine is one battle-log entry. It is formatted when drawn, so editing
+// the language file changes lines that are already on screen.
+type LogLine struct {
+	Key, Fallback string
+	Args          []any
+}
+
+func (l LogLine) Text() string { return text.Tf(l.Key, l.Fallback, l.Args...) }
+
+func (d *Duel) logf(key, fallback string, a ...any) {
+	d.Log = append([]LogLine{{ Key: key, Fallback: fallback, Args: a }}, d.Log...)
 	if len(d.Log) > 30 {
 		d.Log = d.Log[:30]
 	}

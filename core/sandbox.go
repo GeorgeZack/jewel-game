@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"jewel-game/board"
 	"jewel-game/entities"
+	"jewel-game/text"
 	"jewel-game/ui"
 
 	"jewel-game/rl"
@@ -36,9 +37,9 @@ func Presets() []Preset {
 	insane.SpecialRate = 0.25
 
 	return []Preset{
-		{ Name: "Chill", Settings: chill, Speed: 1 },
-		{ Name: "Playground", Settings: playground, Speed: 1 },
-		{ Name: "Insane", Settings: insane, Speed: 1.5 },
+		{ Name: text.T("ui.preset_chill", "Chill"), Settings: chill, Speed: 1 },
+		{ Name: text.T("ui.preset_playground", "Playground"), Settings: playground, Speed: 1 },
+		{ Name: text.T("ui.preset_insane", "Insane"), Settings: insane, Speed: 1.5 },
 	}
 }
 
@@ -53,7 +54,7 @@ func DrawSandboxPanel(tm *TileManager, dm *DataManager, r rl.Rectangle) {
 	s := tm.Board.Settings
 	reset := false
 
-	col.Heading("Presets")
+	col.Heading(text.T("ui.presets", "Presets"))
 	presets := Presets()
 	for i, b := range ui.Row(col.Next(34), len(presets), 8) {
 		if ui.Button(b, presets[i].Name, false) {
@@ -61,40 +62,40 @@ func DrawSandboxPanel(tm *TileManager, dm *DataManager, r rl.Rectangle) {
 		}
 	}
 
-	col.Heading("Board (starts a new one)")
-	if d := ui.Stepper(col.Next(30), "Width", fmt.Sprint(s.Width)); d != 0 {
+	col.Heading(text.T("ui.board_heading", "Board (starts a new one)"))
+	if d := ui.Stepper(col.Next(30), text.T("ui.width", "Width"), fmt.Sprint(s.Width)); d != 0 {
 		s.Width, reset = clampInt(s.Width+d, 4, 16), true
 	}
-	if d := ui.Stepper(col.Next(30), "Height", fmt.Sprint(s.Height)); d != 0 {
+	if d := ui.Stepper(col.Next(30), text.T("ui.height", "Height"), fmt.Sprint(s.Height)); d != 0 {
 		s.Height, reset = clampInt(s.Height+d, 4, 16), true
 	}
 	maxColors := max(3, len(dm.GemTypeOrder))
-	if d := ui.Stepper(col.Next(30), "Colors", fmt.Sprint(s.NumColors)); d != 0 {
+	if d := ui.Stepper(col.Next(30), text.T("ui.colors", "Colors"), fmt.Sprint(s.NumColors)); d != 0 {
 		s.NumColors, reset = clampInt(s.NumColors+d, 3, maxColors), true
 	}
 
-	col.Heading("Rules")
-	if d := ui.Stepper(col.Next(30), "Locks", lockLabel(s.MaxLocks)); d != 0 {
+	col.Heading(text.T("ui.rules", "Rules"))
+	if d := ui.Stepper(col.Next(30), text.T("ui.locks_setting", "Locks"), lockLabel(s.MaxLocks)); d != 0 {
 		s.MaxLocks = stepLocks(s.MaxLocks, d)
 	}
-	s.FreeSwap = ui.Toggle(col.Next(30), "Free swaps", s.FreeSwap)
-	s.DiagonalSwap = ui.Toggle(col.Next(30), "Diagonal swaps", s.DiagonalSwap)
-	s.Overcharge = ui.Toggle(col.Next(30), "Overcharged specials", s.Overcharge)
-	s.ChaosGravity = ui.Toggle(col.Next(30), "Chaos gravity", s.ChaosGravity)
-	if d := ui.Stepper(col.Next(30), "Gravity", s.Gravity.String()); d != 0 {
+	s.FreeSwap = ui.Toggle(col.Next(30), text.T("ui.free_swaps", "Free swaps"), s.FreeSwap)
+	s.DiagonalSwap = ui.Toggle(col.Next(30), text.T("ui.diagonal_swaps", "Diagonal swaps"), s.DiagonalSwap)
+	s.Overcharge = ui.Toggle(col.Next(30), text.T("ui.overcharged", "Overcharged specials"), s.Overcharge)
+	s.ChaosGravity = ui.Toggle(col.Next(30), text.T("ui.chaos_gravity", "Chaos gravity"), s.ChaosGravity)
+	if d := ui.Stepper(col.Next(30), text.T("ui.gravity_setting", "Gravity"), trDir(s.Gravity)); d != 0 {
 		s.Gravity = board.Direction((int(s.Gravity) + d + 4) % 4)
 	}
 	rain := int(s.SpecialRate*100 + 0.5)
-	if d := ui.Stepper(col.Next(30), "Special rain", fmt.Sprintf("%d%%", rain)); d != 0 {
+	if d := ui.Stepper(col.Next(30), text.T("ui.special_rain", "Special rain"), text.Tf("ui.percent", "%d%%", rain)); d != 0 {
 		s.SpecialRate = float64(clampInt(rain+d*5, 0, 50)) / 100
 	}
-	if d := ui.Stepper(col.Next(30), "Anim speed", fmt.Sprintf("%gx", tm.Speed)); d != 0 {
+	if d := ui.Stepper(col.Next(30), text.T("ui.anim_speed", "Anim speed"), text.Tf("ui.speed", "%gx", tm.Speed)); d != 0 {
 		tm.Speed = stepSpeed(tm.Speed, d)
 	}
 
-	col.Heading("Paint brush")
-	col.Line("Pick one, then click or drag on gems.", 15, ui.DimText)
-	col.Line("Esc puts the brush down.", 15, ui.DimText)
+	col.Heading(text.T("ui.brush", "Paint brush"))
+	col.Line(text.T("ui.brush_pick", "Pick one, then click or drag on gems."), 15, ui.DimText)
+	col.Line(text.T("ui.brush_esc", "Esc puts the brush down."), 15, ui.DimText)
 	drawBrushPicker(tm, dm, &col, s.NumColors)
 
 	if reset {
@@ -128,7 +129,7 @@ func drawBrushPicker(tm *TileManager, dm *DataManager, col *ui.Column, numColors
 			Time:	tm.time,
 		})
 	}
-	if ui.Button(swatches[n], "Off", tm.Brush == nil) {
+	if ui.Button(swatches[n], text.T("ui.brush_off", "Off"), tm.Brush == nil) {
 		tm.Brush = nil
 	}
 
@@ -136,11 +137,11 @@ func drawBrushPicker(tm *TileManager, dm *DataManager, col *ui.Column, numColors
 		label	string
 		special	board.Special
 	}{
-		{ "Plain", board.None },
-		{ "Bolt-", board.BoltH },
-		{ "Bolt|", board.BoltV },
-		{ "Bomb", board.Bomb },
-		{ "Prism", board.Prism },
+		{ text.T("ui.brush_plain", "Plain"), board.None },
+		{ text.T("special.bolt", "Bolt") + "-", board.BoltH },
+		{ text.T("special.bolt", "Bolt") + "|", board.BoltV },
+		{ text.T("special.bomb", "Bomb"), board.Bomb },
+		{ text.T("special.prism", "Prism"), board.Prism },
 	}
 	for i, b := range ui.Row(col.Next(32), len(specials), 4) {
 		sp := specials[i]
@@ -156,9 +157,9 @@ func drawBrushPicker(tm *TileManager, dm *DataManager, col *ui.Column, numColors
 func lockLabel(n int) string {
 	switch n {
 	case -1:
-		return "unlimited"
+		return text.T("ui.locks_unlimited", "unlimited")
 	case 0:
-		return "off"
+		return text.T("ui.locks_off", "off")
 	}
 	return fmt.Sprint(n)
 }

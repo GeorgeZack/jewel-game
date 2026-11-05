@@ -1,9 +1,9 @@
 package core
 
 import (
-	"fmt"
 	"jewel-game/rl"
 	"jewel-game/rpg"
+	"jewel-game/text"
 	"jewel-game/ui"
 	"math"
 	"path"
@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	TEXT_SPEED		= 50	// characters per second as dialogue types out
-	TITLE_TIME		= 3.5	// seconds a title card stays up unless clicked
-	STORY_DIR		= "assets/story"
+	TEXT_SPEED	= 50	// characters per second as dialogue types out
+	TITLE_TIME	= 3.5	// seconds a title card stays up unless clicked
 )
 
 type sceneFrame struct {
@@ -50,7 +49,7 @@ func (s *SceneRunner) Play(id string) {
 		return
 	}
 	if rpg.Scenes[id] == nil {
-		ui.AddMessage("Story: no scene %q", id)
+		ui.AddMessage("%s", text.Tf("log.no_scene", "Story: no scene %q", id))
 		return
 	}
 	s.queue = append(s.queue, id)
@@ -92,7 +91,7 @@ func (s *SceneRunner) Update(dt float32) {
 			return
 		}
 	}
-	ui.AddMessage("Story: a scene ran 1000 steps without stopping, check it for a loop")
+	ui.AddMessage("%s", text.T("log.scene_loop", "Story: a scene ran 1000 steps without stopping, check it for a loop"))
 	s.Stop()
 }
 
@@ -202,7 +201,7 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	}
 	if st.XP > 0 {
 		if h.AddXP(st.XP) > 0 {
-			s.v.show(Modal{ Title: fmt.Sprintf("Level %d!", h.Level), Body: fmt.Sprintf("You have %d points to spend in Hero.", h.Points) })
+			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.Tf("ui.level_up_short", "You have %d points to spend in Hero.", h.Points) })
 		}
 	}
 	h.GiveItem(st.Item)
@@ -336,7 +335,7 @@ func (s *SceneRunner) Draw(area rl.Rectangle, t float64) {
 	}
 	// Skip runs through to the next choice (or the end), fades and pauses included
 	skip := rl.Rectangle{ X: area.X + area.Width - 150, Y: area.Y + 20, Width: 130, Height: 36 }
-	if len(s.choices) == 0 && ui.Button(skip, "Skip  >>", false) {
+	if len(s.choices) == 0 && ui.Button(skip, text.T("ui.skip", "Skip  >>"), false) {
 		s.skipping = true
 		s.title, s.line = nil, nil
 		return
@@ -443,7 +442,7 @@ func storyImage(dir, name string) rl.Texture2D {
 	if name == "" {
 		return rl.Texture2D{}
 	}
-	key := dir + "/" + name
+	key := storyRoot + "/" + dir + "/" + name
 	if tex, ok := storyArt[key]; ok {
 		return tex
 	}
@@ -453,7 +452,7 @@ func storyImage(dir, name string) rl.Texture2D {
 		candidates = []string{ name + ".png", name + ".jpg", name + ".jpeg" }
 	}
 	for _, f := range candidates {
-		if tex = rl.LoadTexture(path.Join(STORY_DIR, dir, f)); tex.ID != 0 {
+		if tex = rl.LoadTexture(storyPath(dir, f)); tex.ID != 0 {
 			rl.SetTextureFilter(tex, rl.FilterPoint)
 			break
 		}
