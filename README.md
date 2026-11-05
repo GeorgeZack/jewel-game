@@ -71,8 +71,9 @@ Losing a duel costs nothing but keeps only what you picked up on the board. The 
 
 **Writing the story:** the world, foes, quests, characters, dialogue and cutscenes are YAML files in
 `assets/story/`, with art in its `portraits/`, `backgrounds/` and `foes/` folders. They reload live
-on the desktop. See [docs/story.md](docs/story.md) for the format. Classes, spells and items are
-still Go tables in `rpg/`.
+on the desktop. See [docs/story.md](docs/story.md) for the format. The wording of menus, spells,
+items and classes is in `assets/lang/en.yaml` (set the language in `assets/lang.yaml`). The
+numbers behind those spells and items stay in `rpg/`.
 
 Gem looks come from `assets/gemtypes.yaml` and reload live when it changes.
 
@@ -81,6 +82,7 @@ Gem looks come from `assets/gemtypes.yaml` and reload live when it changes.
 - `board/` pure game rules (matching, specials, gravity, locks); unit tested
 - `rpg/` RPG rules (duels, spells, heroes, quests, saves) and the story loader; unit tested
 - `assets/story/` the story as data, documented in `docs/story.md`
+- `assets/lang/` the interface language files
 - `core/` animation, input, and the game loop around a board
 - `entities/` gem drawing
 - `ui/` widgets and the debug log

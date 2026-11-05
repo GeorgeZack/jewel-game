@@ -3,7 +3,7 @@
   texturePath: _res/rd-amethyst.png
   fullColor: true
 - name: Crystal
-  color: "#FFFF00"
+  color: "#FBF286"
   texturePath: _res/rd-crystal.png
   fullColor: true
 - name: Diamond

@@ -124,7 +124,7 @@ func (g *game) Layout(w, h int) (int, int) {
 // or the window is closed.
 func Run(width, height int, title string, update func() bool, draw func()) error {
 	ebiten.SetWindowSize(width, height)
-	ebiten.SetWindowTitle(title)
+	SetWindowTitle(title)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowClosingHandled(false)
 	err := ebiten.RunGameWithOptions(&game{ update: update, draw: draw }, &ebiten.RunGameOptions{ ScreenTransparent: false })
@@ -133,6 +133,8 @@ func Run(width, height int, title string, update func() bool, draw func()) error
 	}
 	return err
 }
+
+func SetWindowTitle(title string) { ebiten.SetWindowTitle(title) }
 
 func GetScreenWidth() int	{ return screenW }
 func GetScreenHeight() int	{ return screenH }

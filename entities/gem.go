@@ -1,9 +1,9 @@
 package entities
 
 import (
-	"fmt"
 	"image/color"
 	"jewel-game/board"
+	"jewel-game/text"
 	"math"
 
 	"jewel-game/rl"
@@ -25,6 +25,12 @@ type GemType struct {
 	Bomb            rl.Texture2D // drawn instead of Texture for a bomb, the +5 skull
 	Shape           int          // drawn procedurally instead of from Texture
 	FullColor       bool         // Texture is already colored, so it is not multiplied by Color
+	Idle            rl.Texture2D // horizontal strip, one square frame per step
+	IdleFrames      int
+	IdleFPS         float32
+	BombIdle        rl.Texture2D
+	BombIdleFrames  int
+	BombIdleFPS     float32
 }
 
 var lockColor = rl.Color{R: 140, G: 210, B: 255, A: 255}
@@ -40,6 +46,9 @@ type GemLook struct {
 	Alpha  float32
 	Flash  float32 // 0..1 white-out while being cleared
 	Time   float64
+	// PlayIdle shows this gem's strip once, starting at IdleAt seconds. Otherwise the still.
+	PlayIdle bool
+	IdleAt   float64
 }
 
 func (l GemLook) tint() rl.Color {
@@ -59,6 +68,7 @@ func DrawGem(l GemLook) {
 	rl.DrawCircleV(c, s*0.36, rl.Fade(col, 0.16*l.Alpha))
 
 	tex, rot := l.Prism, float32(0)
+	src := rl.Rectangle{}
 	if l.Gem.Special == board.Prism || l.Gem.Special == board.Wild {
 		rot = float32(math.Mod(l.Time*40, 360))
 		rl.DrawCircleV(c, s*0.42, rl.Fade(rl.White, (0.15+0.15*pulse)*l.Alpha))
@@ -73,6 +83,16 @@ func DrawGem(l GemLook) {
 		if l.Gem.Special == board.Bomb && l.Type.Bomb.ID != 0 {
 			tex = l.Type.Bomb
 		}
+		if l.PlayIdle {
+			strip, frames, fps := l.Type.Idle, l.Type.IdleFrames, l.Type.IdleFPS
+			if l.Gem.Special == board.Bomb && l.Type.BombIdle.ID != 0 {
+				strip, frames, fps = l.Type.BombIdle, l.Type.BombIdleFrames, l.Type.BombIdleFPS
+			}
+			if frame := idleSrc(strip, frames, fps, l.IdleAt, 0); frame.Width > 0 {
+				tex = strip
+				src = frame
+			}
+		}
 	}
 	sprite := col
 	if l.Type != nil && l.Type.FullColor && l.Gem.Special != board.Prism && l.Gem.Special != board.Wild {
@@ -85,7 +105,9 @@ func DrawGem(l GemLook) {
 		if l.Type != nil && l.Type.FullColor && l.Gem.Special != board.Prism && l.Gem.Special != board.Wild {
 			d = s * 0.90 // the opaque gem fills most of a trimmed full-color texture
 		}
-		src := rl.Rectangle{Width: float32(tex.Width), Height: float32(tex.Height)}
+		if src.Width == 0 {
+			src = rl.Rectangle{Width: float32(tex.Width), Height: float32(tex.Height)}
+		}
 		dst := rl.Rectangle{X: c.X, Y: c.Y, Width: d, Height: d}
 		rl.DrawTexturePro(tex, src, dst, rl.Vector2{X: d / 2, Y: d / 2}, rot, rl.Fade(lerpColor(sprite, rl.White, l.Flash), l.Alpha))
 	} else {
@@ -101,10 +123,10 @@ func DrawGem(l GemLook) {
 		spark := rl.Vector2{X: c.X + s*0.29, Y: c.Y - s*0.29}
 		rl.DrawCircleV(spark, 3+3*pulse, rl.Fade(rl.Orange, l.Alpha))
 		if l.Type != nil && (l.Type.Shape == ShapeSkull || l.Type.Bomb.ID != 0) {
-			drawBadge("+5", c, s, rl.Fade(rl.Orange, l.Alpha))
+			drawBadge(text.T("ui.badge_skull", "+5"), c, s, rl.Fade(rl.Orange, l.Alpha))
 		}
 	case board.Wild:
-		drawBadge(fmt.Sprintf("x%d", max(l.Gem.Mult, 1)), c, s, rl.Fade(rl.White, l.Alpha))
+		drawBadge(text.Tf("ui.badge_wild", "x%d", max(l.Gem.Mult, 1)), c, s, rl.Fade(rl.White, l.Alpha))
 	}
 
 	if l.Gem.Locked {
@@ -177,6 +199,22 @@ func drawLock(c rl.Vector2, size, alpha float32) {
 	rl.DrawRing(shackle, w*0.24, w*0.36, 180, 360, 12, rl.Fade(lockColor, alpha))
 	rl.DrawRectangleRounded(body, 0.25, 4, rl.Fade(lockColor, alpha))
 	rl.DrawCircleV(rl.Vector2{X: body.X + w/2, Y: body.Y + h/2}, h*0.16, rl.Fade(rl.DarkBlue, alpha))
+}
+
+// idleSrc is the current frame of a horizontal strip. A zero width means there is no strip.
+func idleSrc(strip rl.Texture2D, frames int, fps float32, time, phase float64) rl.Rectangle {
+	if strip.ID == 0 || frames < 2 || strip.Height == 0 {
+		return rl.Rectangle{}
+	}
+	if fps <= 0 {
+		fps = 8
+	}
+	i := int(math.Mod((time+phase)*float64(fps), float64(frames)))
+	if i < 0 {
+		i += frames
+	}
+	fw := float32(strip.Width) / float32(frames)
+	return rl.Rectangle{X: float32(i) * fw, Y: 0, Width: fw, Height: float32(strip.Height)}
 }
 
 func lerpColor(a, b rl.Color, t float32) rl.Color {

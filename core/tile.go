@@ -9,28 +9,28 @@ import (
 )
 
 const (
-	FALL_ACCEL	= 70	// cells per second squared
-	START_SPEED	= 4		// cells per second
-	POP_SPEED	= 5		// scale per second for gems appearing in place
-	DIE_SPEED	= 4		// scale per second for gems being cleared
+	FALL_ACCEL  = 70 // cells per second squared
+	START_SPEED = 4  // cells per second
+	POP_SPEED   = 5  // scale per second for gems appearing in place
+	DIE_SPEED   = 4  // scale per second for gems being cleared
 )
 
 // Tile is the on-screen sprite for one gem. It's keyed by gem ID, so it glides to wherever
 // the board puts that gem: swaps, falls, shuffles and undo all animate for free.
 type Tile struct {
-	ID		int
-	Pos		rl.Vector2	// in board cells, fractional mid-move, off-board while spawning
-	Target	rl.Vector2
-	Vel		float32
-	Scale	float32
-	Alpha	float32
-	Flash	float32
-	Gem		board.Gem	// last seen state, so cleared gems can still be drawn while they vanish
-	Dying	bool
+	ID     int
+	Pos    rl.Vector2 // in board cells, fractional mid-move, off-board while spawning
+	Target rl.Vector2
+	Vel    float32
+	Scale  float32
+	Alpha  float32
+	Flash  float32
+	Gem    board.Gem // last seen state, so cleared gems can still be drawn while they vanish
+	Dying  bool
 }
 
 func NewTile(g *board.Gem, pos rl.Vector2, scale float32) *Tile {
-	return &Tile{ ID: g.ID, Pos: pos, Target: pos, Scale: scale, Alpha: 1, Gem: *g }
+	return &Tile{ID: g.ID, Pos: pos, Target: pos, Scale: scale, Alpha: 1, Gem: *g}
 }
 
 // Update moves the tile toward its target and reports whether it has come to rest.
@@ -71,15 +71,20 @@ func (t *Tile) Draw(tm *TileManager, offset rl.Vector2) {
 		gt = types[t.Gem.Color%len(types)]
 	}
 	c := tm.CellCenter(t.Pos)
-	entities.DrawGem(entities.GemLook{
-		Type:	gt,
-		Prism:	tm.DataManager.PrismTexture(),
-		Gem:	t.Gem,
-		Center:	rl.Vector2{ X: c.X + offset.X, Y: c.Y + offset.Y },
-		Size:	tm.CellSize,
-		Scale:	t.Scale,
-		Alpha:	t.Alpha,
-		Flash:	t.Flash,
-		Time:	tm.time,
-	})
+	look := entities.GemLook{
+		Type:   gt,
+		Prism:  tm.DataManager.PrismTexture(),
+		Gem:    t.Gem,
+		Center: rl.Vector2{X: c.X + offset.X, Y: c.Y + offset.Y},
+		Size:   tm.CellSize,
+		Scale:  t.Scale,
+		Alpha:  t.Alpha,
+		Flash:  t.Flash,
+		Time:   tm.time,
+	}
+	if tm.idleID == t.Gem.ID {
+		look.PlayIdle = true
+		look.IdleAt = tm.time - tm.idleStart
+	}
+	entities.DrawGem(look)
 }

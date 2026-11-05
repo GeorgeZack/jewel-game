@@ -6,9 +6,11 @@ import (
 	"image/draw"
 	"math"
 	"path/filepath"
+	"strings"
 
 	"jewel-game/entities"
 	"jewel-game/rpg"
+	"jewel-game/text"
 	"jewel-game/ui"
 	"jewel-game/utils"
 
@@ -35,6 +37,14 @@ type DataManager struct {
 	GemTypeOrder         []string // YAML order, so a gem's color index is stable
 	skull, skullPlus     rl.Texture2D
 	coin, star           rl.Texture2D
+	skullIdle            rl.Texture2D
+	skullIdleFrames      int
+	skullPlusIdle        rl.Texture2D
+	skullPlusIdleFrames  int
+	coinIdle             rl.Texture2D
+	coinIdleFrames       int
+	starIdle             rl.Texture2D
+	starIdleFrames       int
 	IsMouseButtonPressed bool
 	MoveStarted          bool
 }
@@ -66,6 +76,10 @@ func NewDataManager() *DataManager {
 	dm.skullPlus = loadFullColorGem("_res/rd-skull-plus.png")
 	dm.coin = loadFullColorGem("_res/rd-coin.png")
 	dm.star = loadFullColorGem("_res/rd-star.png")
+	dm.skullIdle, dm.skullIdleFrames = loadIdleStrip("_res/idle/skull.png")
+	dm.skullPlusIdle, dm.skullPlusIdleFrames = loadIdleStrip("_res/idle/skull-plus.png")
+	dm.coinIdle, dm.coinIdleFrames = loadIdleStrip("_res/idle/coin.png")
+	dm.starIdle, dm.starIdleFrames = loadIdleStrip("_res/idle/star.png")
 
 	return dm
 }
@@ -99,21 +113,32 @@ func (dm *DataManager) DuelGemTypes() []*entities.GemType {
 		}
 		return gt.Texture, gt.FullColor
 	}
-	piece := func(name string, col rl.Color, tex rl.Texture2D, full bool, bomb rl.Texture2D) *entities.GemType {
-		return &entities.GemType{Name: name, Color: col, Texture: tex, FullColor: full, Bomb: bomb}
+	piece := func(name string, col rl.Color, tex rl.Texture2D, full bool, bomb rl.Texture2D, src string) *entities.GemType {
+		gt := &entities.GemType{Name: name, Color: col, Texture: tex, FullColor: full, Bomb: bomb}
+		if srcGT, ok := dm.GemTypes[src]; ok {
+			gt.Idle, gt.IdleFrames, gt.IdleFPS = srcGT.Idle, srcGT.IdleFrames, srcGT.IdleFPS
+		}
+		return gt
 	}
 	rupee, rupeeFull := from("Rupee")
 	sapphire, sapphireFull := from("Sapphire")
 	crystal, crystalFull := from("Crystal")
 	emerald, emeraldFull := from("Emerald")
+	skull := piece("Skull", rl.Color{R: 235, G: 230, B: 215, A: 255}, dm.skull, true, dm.skullPlus, "")
+	skull.Idle, skull.IdleFrames, skull.IdleFPS = dm.skullIdle, dm.skullIdleFrames, 5
+	skull.BombIdle, skull.BombIdleFrames, skull.BombIdleFPS = dm.skullPlusIdle, dm.skullPlusIdleFrames, 5
+	gold := piece("Gold", rl.Color{R: 224, G: 120, B: 32, A: 255}, dm.coin, true, rl.Texture2D{}, "")
+	gold.Idle, gold.IdleFrames, gold.IdleFPS = dm.coinIdle, dm.coinIdleFrames, 10
+	star := piece("Star", rl.Color{R: 190, G: 110, B: 255, A: 255}, dm.star, true, rl.Texture2D{}, "")
+	star.Idle, star.IdleFrames, star.IdleFPS = dm.starIdle, dm.starIdleFrames, 8
 	return []*entities.GemType{
-		rpg.Fire:  piece("Fire", rl.Color{R: 240, G: 60, B: 50, A: 255}, rupee, rupeeFull, rl.Texture2D{}),
-		rpg.Water: piece("Water", rl.Color{R: 70, G: 130, B: 255, A: 255}, sapphire, sapphireFull, rl.Texture2D{}),
-		rpg.Air:   piece("Air", rl.Color{R: 250, G: 225, B: 70, A: 255}, crystal, crystalFull, rl.Texture2D{}),
-		rpg.Earth: piece("Earth", rl.Color{R: 70, G: 210, B: 90, A: 255}, emerald, emeraldFull, rl.Texture2D{}),
-		rpg.Skull: piece("Skull", rl.Color{R: 235, G: 230, B: 215, A: 255}, dm.skull, true, dm.skullPlus),
-		rpg.Gold:  piece("Gold", rl.Color{R: 255, G: 190, B: 40, A: 255}, dm.coin, true, rl.Texture2D{}),
-		rpg.Star:  piece("Star", rl.Color{R: 190, G: 110, B: 255, A: 255}, dm.star, true, rl.Texture2D{}),
+		rpg.Fire:  piece("Fire", rl.Color{R: 240, G: 60, B: 50, A: 255}, rupee, rupeeFull, rl.Texture2D{}, "Rupee"),
+		rpg.Water: piece("Water", rl.Color{R: 70, G: 130, B: 255, A: 255}, sapphire, sapphireFull, rl.Texture2D{}, "Sapphire"),
+		rpg.Air:   piece("Air", rl.Color{R: 251, G: 242, B: 134, A: 255}, crystal, crystalFull, rl.Texture2D{}, "Crystal"),
+		rpg.Earth: piece("Earth", rl.Color{R: 70, G: 210, B: 90, A: 255}, emerald, emeraldFull, rl.Texture2D{}, "Emerald"),
+		rpg.Skull: skull,
+		rpg.Gold:  gold,
+		rpg.Star:  star,
 	}
 }
 
@@ -124,8 +149,11 @@ func (dm *DataManager) Unload() {
 		if gt.Texture.ID != 0 {
 			rl.UnloadTexture(gt.Texture)
 		}
+		if gt.Idle.ID != 0 {
+			rl.UnloadTexture(gt.Idle)
+		}
 	}
-	for _, t := range []rl.Texture2D{dm.skull, dm.skullPlus, dm.coin, dm.star} {
+	for _, t := range []rl.Texture2D{dm.skull, dm.skullPlus, dm.coin, dm.star, dm.skullIdle, dm.skullPlusIdle, dm.coinIdle, dm.starIdle} {
 		if t.ID != 0 {
 			rl.UnloadTexture(t)
 		}
@@ -135,7 +163,7 @@ func (dm *DataManager) Unload() {
 func (dm *DataManager) LoadGemTypes(fileName string) {
 	data, err := rl.ReadFile(fileName)
 	if err != nil {
-		ui.AddMessage("Error reading gem types file %s: %v", fileName, err)
+		ui.AddMessage("%s", text.Tf("log.gem_read", "Error reading gem types file %s: %v", fileName, err))
 		return
 	}
 
@@ -146,12 +174,12 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		FullColor   bool   `yaml:"fullColor"`
 	}
 	if err := yaml.Unmarshal(data, &tempGemTypes); err != nil {
-		ui.AddMessage("Error unmarshaling gem types: %v", err)
+		ui.AddMessage("%s", text.Tf("log.gem_parse", "Error unmarshaling gem types: %v", err))
 		return
 	}
 
 	if len(tempGemTypes) < 3 {
-		ui.AddMessage("Need at least 3 gem types in %s, found %d; keeping the old ones", fileName, len(tempGemTypes))
+		ui.AddMessage("%s", text.Tf("log.gem_few", "Need at least 3 gem types in %s, found %d; keeping the old ones", fileName, len(tempGemTypes)))
 		return
 	}
 
@@ -161,14 +189,18 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 		found := false
 		for _, newDef := range tempGemTypes {
 			if newDef.Name == name && filepath.Clean(newDef.TexturePath) == filepath.Clean(oldGem.TexturePath) && oldGem.Texture.ID != 0 {
-				ui.AddMessage("Found difference in %s type", name)
+				ui.AddMessage("%s", text.Tf("log.gem_diff", "Found difference in %s type", name))
 				found = true
 				break
 			}
 		}
 		if !found && oldGem.Texture.ID != 0 {
 			rl.UnloadTexture(oldGem.Texture)
-			ui.AddMessage("Unloaded old texture for gem: %s", name)
+			ui.AddMessage("%s", text.Tf("log.gem_unloaded", "Unloaded old texture for gem: %s", name))
+		}
+		if !found && oldGem.Idle.ID != 0 {
+			rl.UnloadTexture(oldGem.Idle)
+			oldGem.Idle = rl.Texture2D{}
 		}
 	}
 
@@ -194,11 +226,17 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			}
 		}
 		if texture.ID == 0 {
-			ui.AddMessage("Warning: Failed to load texture for gem %s at %s", temp.Name, temp.TexturePath)
+			ui.AddMessage("%s", text.Tf("log.gem_texture_fail", "Warning: Failed to load texture for gem %s at %s", temp.Name, temp.TexturePath))
 		} else if loaded {
-			ui.AddMessage("Loaded new texture for gem: %s from %s", temp.Name, temp.TexturePath)
+			ui.AddMessage("%s", text.Tf("log.gem_texture_ok", "Loaded new texture for gem: %s from %s", temp.Name, temp.TexturePath))
 		}
 
+		idle, idleFrames := rl.Texture2D{}, 0
+		if oldGem, ok := dm.GemTypes[temp.Name]; ok && oldGem.Idle.ID != 0 {
+			idle, idleFrames = oldGem.Idle, oldGem.IdleFrames
+		} else {
+			idle, idleFrames = loadIdleStrip("_res/idle/" + strings.ToLower(temp.Name) + ".png")
+		}
 		newGemTypes[temp.Name] = &entities.GemType{
 			Color:       color,
 			Name:        temp.Name,
@@ -207,13 +245,26 @@ func (dm *DataManager) LoadGemTypes(fileName string) {
 			Texture:     texture,
 			TexturePath: texturePath,
 			FullColor:   temp.FullColor,
+			Idle:        idle,
+			IdleFrames:  idleFrames,
+			IdleFPS:     8,
 		}
 		newOrder = append(newOrder, temp.Name)
 	}
 
 	dm.GemTypes = newGemTypes
 	dm.GemTypeOrder = newOrder
-	ui.AddMessage("Gem types loaded: %v", newOrder)
+	ui.AddMessage("%s", text.Tf("log.gem_loaded", "Gem types loaded: %v", newOrder))
+}
+
+// loadIdleStrip loads a horizontal strip of square frames. A missing file leaves the gem still.
+func loadIdleStrip(path string) (rl.Texture2D, int) {
+	tex := rl.LoadTexture(path)
+	if tex.ID == 0 || tex.Height == 0 || tex.Width < tex.Height*2 {
+		return rl.Texture2D{}, 0
+	}
+	rl.SetTextureFilter(tex, rl.FilterPoint)
+	return tex, int(tex.Width / tex.Height)
 }
 
 // loadFullColorGem trims the transparent margin so every sprite fills its cell by about the same amount.

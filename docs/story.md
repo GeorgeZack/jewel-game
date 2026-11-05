@@ -12,6 +12,26 @@ The Quest mode's world, monsters, quests, dialogue and cutscenes are plain text 
   naming a foe that doesn't exist or a scene that `goto`s a misspelled scene. It also checks that
   the main quests can be finished in order.
 
+## Language
+
+Interface text (menus, spells, items, classes, the battle log) is in `assets/lang/en.yaml`.
+Edit a value and save. On the desktop it reloads immediately. On the web, `./start.sh --dev`
+rebuilds and reloads the page.
+
+`assets/lang.yaml` names the language, `en` by default. To add one, copy `en.yaml` to
+`fr.yaml`, translate the values (leave the keys), and set `language: fr`. A missing key keeps
+the English from the code, so a translation can be partial. Patterns are Go format strings
+(`%s`, `%d`); `%[2]s` swaps the order of arguments.
+
+Anything in the story files (place names, foe names, dialogue, quest text) stays in
+`assets/story/`. A language can replace the whole story by shipping
+`assets/lang/<language>/story/story.yaml` plus the rest of that folder. Pictures not in the
+translation fall back to `assets/story/`.
+
+Ids do not get translated: class names stored in the save, spell ids, item ids, and the `name`
+of a gem type. Change the words next to those ids. The font is Noto Mono, which covers
+Latin letters; another script needs a font that has those glyphs.
+
 ```
 assets/story/
   story.yaml        title, start location, opening scene, final quest

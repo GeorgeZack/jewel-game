@@ -1,12 +1,13 @@
 package core
 
 import (
-	"fmt"
 	"jewel-game/board"
 	"jewel-game/entities"
+	"jewel-game/text"
 	"jewel-game/ui"
 	"jewel-game/utils"
 	"math"
+	"math/rand"
 	"time"
 
 	"jewel-game/rl"
@@ -15,61 +16,69 @@ import (
 type Phase int
 
 const (
-	PhaseIdle		Phase = iota
-	PhaseSwapping	// gems sliding into a swap
-	PhaseSwapBack	// a swap that didn't match, sliding back
-	PhaseResolving	// ready to run the next cascade step
-	PhaseClearing	// cleared gems vanishing
-	PhaseFalling	// gems falling into gaps
+	PhaseIdle      Phase = iota
+	PhaseSwapping        // gems sliding into a swap
+	PhaseSwapBack        // a swap that didn't match, sliding back
+	PhaseResolving       // ready to run the next cascade step
+	PhaseClearing        // cleared gems vanishing
+	PhaseFalling         // gems falling into gaps
 )
 
 const CLEAR_TIME = 0.22
 
+// IDLE_QUIET is how long a settled board waits between one-shot gem animations.
+const IDLE_QUIET = 4.0
+
 // Brush is the sandbox paint tool; while one is set, clicking a gem repaints it.
 type Brush struct {
-	Color	int
-	Special	board.Special
+	Color   int
+	Special board.Special
 }
 
 // TileManager runs one board: it turns input into board moves and animates the results.
 type TileManager struct {
-	Board				*board.Board
-	DataManager			*DataManager
-	Tiles				map[int]*Tile
-	Dying				[]*Tile
-	Effects				Effects
-	Phase				Phase
-	ScreenX, ScreenY	float32
-	CellSize			float32
-	Speed				float32
-	UndoEnabled			bool
-	Brush				*Brush
-	Paused				bool						// ignore board input, e.g. during the enemy's turn
-	OnStep				func(*board.StepResult)		// called for every cascade step
-	OnMoveDone			func()						// called when a swap has fully resolved
-	OnShuffle			func()						// called when the board ran out of moves
-	Types				func() []*entities.GemType	// overrides the gem palette
-	Duel				bool						// no locks and no score popups
-	moving				bool
-	selected			*board.Point
-	dragFrom			*board.Point
-	swapA, swapB		board.Point
-	swapValid			bool
-	clearTimer			float32
-	hint				[]board.Point
-	hintTimer			float32
-	undo				[]board.Snapshot
-	spawns				map[int]board.Point
-	shuffled			bool
-	settled				bool
-	time				float64
+	Board            *board.Board
+	DataManager      *DataManager
+	Tiles            map[int]*Tile
+	Dying            []*Tile
+	Effects          Effects
+	Phase            Phase
+	ScreenX, ScreenY float32
+	CellSize         float32
+	Speed            float32
+	UndoEnabled      bool
+	Brush            *Brush
+	Paused           bool                       // ignore board input, e.g. during the enemy's turn
+	OnStep           func(*board.StepResult)    // called for every cascade step
+	OnMoveDone       func()                     // called when a swap has fully resolved
+	OnShuffle        func()                     // called when the board ran out of moves
+	Types            func() []*entities.GemType // overrides the gem palette
+	Duel             bool                       // no locks and no score popups
+	moving           bool
+	selected         *board.Point
+	dragFrom         *board.Point
+	swapA, swapB     board.Point
+	swapValid        bool
+	clearTimer       float32
+	hint             []board.Point
+	hintTimer        float32
+	undo             []board.Snapshot
+	spawns           map[int]board.Point
+	shuffled         bool
+	settled          bool
+	time             float64
+	quiet            float64 // seconds the board has been settled since the last idle
+	idleID           int     // gem playing its strip, or 0
+	idleStart        float64
+	idleDur          float64
+	lastIdle         int
 }
 
 func NewTileManager(settings board.Settings, dm *DataManager) *TileManager {
 	tm := &TileManager{
-		DataManager:	dm,
-		CellSize:		utils.CELL_WIDTH,
-		Speed:			1,
+		DataManager: dm,
+		CellSize:    utils.CELL_WIDTH,
+		Speed:       1,
 	}
 	tm.Reset(settings)
 	return tm
@@ -85,15 +94,16 @@ func (tm *TileManager) Reset(settings board.Settings) {
 	tm.undo = nil
 	tm.spawns = nil
 	tm.moving = false
+	tm.quiet, tm.idleID, tm.idleStart, tm.idleDur, tm.lastIdle = 0, 0, 0, 0, 0
 	// new boards drop in from above
 	for y, row := range tm.Board.Cells {
 		for x, g := range row {
-			tile := NewTile(g, rl.Vector2{ X: float32(x), Y: float32(y - tm.Board.H() - 1) }, 1)
-			tile.Target = rl.Vector2{ X: float32(x), Y: float32(y) }
+			tile := NewTile(g, rl.Vector2{X: float32(x), Y: float32(y - tm.Board.H() - 1)}, 1)
+			tile.Target = rl.Vector2{X: float32(x), Y: float32(y)}
 			tm.Tiles[g.ID] = tile
 		}
 	}
-	ui.AddMessage("New board: %+v", settings)
+	ui.AddMessage("%s", text.Tf("log.new_board", "New board: %+v", settings))
 }
 
 // Layout fits the board inside r, as large as allowed, centered.
@@ -106,25 +116,25 @@ func (tm *TileManager) Layout(r rl.Rectangle) {
 
 func (tm *TileManager) Rect() rl.Rectangle {
 	return rl.Rectangle{
-		X:		tm.ScreenX,
-		Y:		tm.ScreenY,
-		Width:	tm.CellSize * float32(tm.Board.W()),
-		Height:	tm.CellSize * float32(tm.Board.H()),
+		X:      tm.ScreenX,
+		Y:      tm.ScreenY,
+		Width:  tm.CellSize * float32(tm.Board.W()),
+		Height: tm.CellSize * float32(tm.Board.H()),
 	}
 }
 
 func (tm *TileManager) CellCenter(p rl.Vector2) rl.Vector2 {
-	return rl.Vector2{ X: tm.ScreenX + (p.X+0.5)*tm.CellSize, Y: tm.ScreenY + (p.Y+0.5)*tm.CellSize }
+	return rl.Vector2{X: tm.ScreenX + (p.X+0.5)*tm.CellSize, Y: tm.ScreenY + (p.Y+0.5)*tm.CellSize}
 }
 
 func (tm *TileManager) pointCenter(p board.Point) rl.Vector2 {
-	return tm.CellCenter(rl.Vector2{ X: float32(p.X), Y: float32(p.Y) })
+	return tm.CellCenter(rl.Vector2{X: float32(p.X), Y: float32(p.Y)})
 }
 
 func (tm *TileManager) CellAt(pos rl.Vector2) (board.Point, bool) {
 	x := int(math.Floor(float64((pos.X - tm.ScreenX) / tm.CellSize)))
 	y := int(math.Floor(float64((pos.Y - tm.ScreenY) / tm.CellSize)))
-	p := board.Point{ X: x, Y: y }
+	p := board.Point{X: x, Y: y}
 	return p, tm.Board.In(p)
 }
 
@@ -140,6 +150,7 @@ func (tm *TileManager) Update() {
 	tm.animate(dt)
 	tm.step(dt)
 	tm.Effects.Update(dt)
+	tm.updateIdle(float64(rl.GetFrameTime()))
 	if tm.hintTimer > 0 {
 		tm.hintTimer -= rl.GetFrameTime()
 	}
@@ -153,11 +164,11 @@ func (tm *TileManager) syncTiles() {
 			if g == nil {
 				continue
 			}
-			at := rl.Vector2{ X: float32(x), Y: float32(y) }
+			at := rl.Vector2{X: float32(x), Y: float32(y)}
 			t, ok := tm.Tiles[g.ID]
 			if !ok {
 				if sp, ok := tm.spawns[g.ID]; ok {
-					t = NewTile(g, rl.Vector2{ X: float32(sp.X), Y: float32(sp.Y) }, 1)
+					t = NewTile(g, rl.Vector2{X: float32(sp.X), Y: float32(sp.Y)}, 1)
 					delete(tm.spawns, g.ID)
 				} else {
 					t = NewTile(g, at, 0)
@@ -244,7 +255,7 @@ func (tm *TileManager) finishResolve() {
 			tm.OnShuffle()
 		}
 		r := tm.Rect()
-		tm.Effects.Popup("No moves left - shuffling", rl.Vector2{ X: r.X + r.Width/2, Y: r.Y + r.Height/2 }, 34, ui.Accent)
+		tm.Effects.Popup(text.T("ui.no_moves", "No moves left - shuffling"), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 34, ui.Accent)
 		tm.Phase = PhaseFalling
 		return
 	}
@@ -281,16 +292,16 @@ func (tm *TileManager) showStep(res *board.StepResult) {
 	r := tm.Rect()
 	for _, b := range res.Blasts {
 		c := tm.pointCenter(b.Pos)
-		f := flash{ kind: b.Special, center: c, life: 0.4 }
+		f := flash{kind: b.Special, center: c, life: 0.4}
 		half := tm.CellSize / 2
 		if b.Wide {
 			half *= 3
 		}
 		switch b.Special {
 		case board.BoltH:
-			f.rect = rl.Rectangle{ X: r.X, Y: c.Y - half, Width: r.Width, Height: half * 2 }
+			f.rect = rl.Rectangle{X: r.X, Y: c.Y - half, Width: r.Width, Height: half * 2}
 		case board.BoltV:
-			f.rect = rl.Rectangle{ X: c.X - half, Y: r.Y, Width: half * 2, Height: r.Height }
+			f.rect = rl.Rectangle{X: c.X - half, Y: r.Y, Width: half * 2, Height: r.Height}
 		case board.Bomb:
 			f.radius = tm.CellSize * 1.6
 			if b.Wide {
@@ -304,20 +315,20 @@ func (tm *TileManager) showStep(res *board.StepResult) {
 	}
 
 	n := float32(len(res.Cleared))
-	mid := rl.Vector2{ X: sum.X / n, Y: sum.Y / n }
+	mid := rl.Vector2{X: sum.X / n, Y: sum.Y / n}
 	if !tm.Duel {
-		tm.Effects.Popup(fmt.Sprintf("+%d", res.Points), mid, 26, rl.White)
+		tm.Effects.Popup(text.Tf("ui.plus", "+%d", res.Points), mid, 26, rl.White)
 	}
 	if res.Chain >= 2 {
-		tm.Effects.Popup(fmt.Sprintf("Chain x%d!", res.Chain), rl.Vector2{ X: r.X + r.Width/2, Y: r.Y - 10 }, 30+float32(min(res.Chain, 8))*3, ui.Accent)
+		tm.Effects.Popup(text.Tf("ui.chain_popup", "Chain x%d!", res.Chain), rl.Vector2{X: r.X + r.Width/2, Y: r.Y - 10}, 30+float32(min(res.Chain, 8))*3, ui.Accent)
 	}
 	for _, p := range res.Created {
 		if g := tm.Board.At(p); g != nil {
-			tm.Effects.Popup(g.Special.String()+"!", tm.pointCenter(p), 24, ui.Accent)
+			tm.Effects.Popup(text.Tf("ui.special_popup", "%s!", trSpecial(g.Special)), tm.pointCenter(p), 24, ui.Accent)
 		}
 	}
 	if len(res.Created) >= 2 {
-		tm.Effects.Popup(fmt.Sprintf("Synchro x%d!", len(res.Created)), rl.Vector2{ X: r.X + r.Width/2, Y: r.Y + r.Height/2 }, 44, rl.SkyBlue)
+		tm.Effects.Popup(text.Tf("ui.synchro_popup", "Synchro x%d!", len(res.Created)), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 44, rl.SkyBlue)
 	}
 }
 
@@ -380,9 +391,9 @@ func (tm *TileManager) handleInput() {
 func (tm *TileManager) trySwap(a, c board.Point) {
 	tm.selected, tm.dragFrom = nil, nil
 	if !tm.Board.CanSwap(a, c) {
-		for _, p := range []board.Point{ a, c } {
+		for _, p := range []board.Point{a, c} {
 			if g := tm.Board.At(p); g != nil && g.Locked {
-				tm.Effects.Popup("Locked", tm.pointCenter(p), 22, rl.SkyBlue)
+				tm.Effects.Popup(text.T("ui.locked", "Locked"), tm.pointCenter(p), 22, rl.SkyBlue)
 			}
 		}
 		return
@@ -403,7 +414,7 @@ func (tm *TileManager) ToggleLock(p board.Point) {
 	tm.pushUndo()
 	if !tm.Board.ToggleLock(p) {
 		tm.dropUndo()
-		tm.Effects.Popup("No locks left", tm.pointCenter(p), 22, rl.SkyBlue)
+		tm.Effects.Popup(text.T("ui.no_locks", "No locks left"), tm.pointCenter(p), 22, rl.SkyBlue)
 		return
 	}
 	if g := tm.Board.At(p); g != nil && !g.Locked && tm.Brush == nil && tm.Board.HasMatches() {
@@ -420,7 +431,7 @@ func (tm *TileManager) ReleaseLocks() {
 	tm.pushUndo()
 	n := tm.Board.ReleaseAll()
 	r := tm.Rect()
-	tm.Effects.Popup(fmt.Sprintf("Released %d", n), rl.Vector2{ X: r.X + r.Width/2, Y: r.Y + r.Height + 8 }, 26, rl.SkyBlue)
+	tm.Effects.Popup(text.Tf("ui.released", "Released %d", n), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height + 8}, 26, rl.SkyBlue)
 	tm.Board.StartChain()
 	tm.Phase = PhaseResolving
 }
@@ -440,7 +451,7 @@ func (tm *TileManager) ShowHint() {
 		return
 	}
 	if a, c, ok := tm.Board.FindMove(); ok {
-		tm.hint = []board.Point{ a, c }
+		tm.hint = []board.Point{a, c}
 		tm.hintTimer = 3
 	}
 }
@@ -455,13 +466,101 @@ func (tm *TileManager) RunMove() {
 
 // ShowMove highlights a swap about to be played, so an opponent's move can be followed.
 func (tm *TileManager) ShowMove(a, c board.Point) {
-	tm.hint = []board.Point{ a, c }
+	tm.hint = []board.Point{a, c}
 	tm.hintTimer = 0.6
 }
 
 // PlaySwap makes a swap without player input.
 func (tm *TileManager) PlaySwap(a, c board.Point) {
 	tm.trySwap(a, c)
+}
+
+// updateIdle plays one gem's strip after the board has been still, then waits again.
+func (tm *TileManager) updateIdle(dt float64) {
+	active := tm.Phase != PhaseIdle || !tm.settled || len(tm.Dying) > 0
+	if active {
+		tm.quiet = 0
+		tm.idleID = 0
+		return
+	}
+	if tm.idleID != 0 {
+		if _, ok := tm.Tiles[tm.idleID]; !ok || tm.time-tm.idleStart >= tm.idleDur {
+			tm.lastIdle = tm.idleID
+			tm.idleID = 0
+			tm.quiet = 0
+		}
+		return
+	}
+	tm.quiet += dt
+	if tm.quiet < IDLE_QUIET {
+		return
+	}
+	if !tm.beginIdle() {
+		tm.quiet = 0
+	}
+}
+
+// beginIdle starts one random gem that has a strip. It reports whether one started.
+func (tm *TileManager) beginIdle() bool {
+	var ids []int
+	for id, t := range tm.Tiles {
+		if t.Gem.Special == board.Prism || t.Gem.Special == board.Wild {
+			continue
+		}
+		if _, _, ok := idleClip(tm.gemType(t.Gem), t.Gem.Special == board.Bomb); ok {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return false
+	}
+	pool := ids
+	if len(ids) > 1 {
+		var rest []int
+		for _, id := range ids {
+			if id != tm.lastIdle {
+				rest = append(rest, id)
+			}
+		}
+		if len(rest) > 0 {
+			pool = rest
+		}
+	}
+	id := pool[rand.Intn(len(pool))]
+	t := tm.Tiles[id]
+	frames, fps, _ := idleClip(tm.gemType(t.Gem), t.Gem.Special == board.Bomb)
+	tm.idleID = id
+	tm.idleStart = tm.time
+	tm.idleDur = float64(frames) / float64(fps)
+	return true
+}
+
+// gemType is the palette entry for a gem, or nil for a colorless one.
+func (tm *TileManager) gemType(g board.Gem) *entities.GemType {
+	types := tm.gemTypes()
+	if g.Color < 0 || len(types) == 0 {
+		return nil
+	}
+	return types[g.Color%len(types)]
+}
+
+// idleClip is the strip a one-shot idle plays. A bomb uses the cracked strip when it has one.
+func idleClip(gt *entities.GemType, bomb bool) (frames int, fps float32, ok bool) {
+	if gt == nil {
+		return 0, 0, false
+	}
+	frames, fps = gt.IdleFrames, gt.IdleFPS
+	id := gt.Idle.ID
+	if bomb && gt.BombIdle.ID != 0 {
+		frames, fps, id = gt.BombIdleFrames, gt.BombIdleFPS, gt.BombIdle.ID
+	}
+	if id == 0 || frames < 2 {
+		return 0, 0, false
+	}
+	if fps <= 0 {
+		fps = 8
+	}
+	return frames, fps, true
 }
 
 func (tm *TileManager) gemTypes() []*entities.GemType {
@@ -511,16 +610,16 @@ func (tm *TileManager) Draw() {
 	r.X += off.X
 	r.Y += off.Y
 
-	frame := rl.Rectangle{ X: r.X - 10, Y: r.Y - 10, Width: r.Width + 20, Height: r.Height + 20 }
-	rl.DrawRectangleRounded(frame, 0.03, 8, rl.Color{ R: 10, G: 8, B: 22, A: 200 })
+	frame := rl.Rectangle{X: r.X - 10, Y: r.Y - 10, Width: r.Width + 20, Height: r.Height + 20}
+	rl.DrawRectangleRounded(frame, 0.03, 8, rl.Color{R: 10, G: 8, B: 22, A: 200})
 	rl.DrawRectangleRoundedLines(frame, 0.03, 8, 2, ui.PanelEdge)
 	for y := 0; y < tm.Board.H(); y++ {
 		for x := 0; x < tm.Board.W(); x++ {
-			col := rl.Color{ R: 255, G: 255, B: 255, A: 10 }
+			col := rl.Color{R: 255, G: 255, B: 255, A: 10}
 			if (x+y)%2 == 0 {
 				col.A = 22
 			}
-			rl.DrawRectangleRec(tm.cellRect(board.Point{ X: x, Y: y }, off), col)
+			rl.DrawRectangleRec(tm.cellRect(board.Point{X: x, Y: y}, off), col)
 		}
 	}
 
@@ -548,7 +647,7 @@ func (tm *TileManager) Draw() {
 	for _, t := range tm.Dying {
 		t.Draw(tm, off)
 	}
-	tm.Effects.DrawFlashes()
+	tm.Effects.DrawFlashes(off)
 	rl.EndScissorMode()
 
 	tm.drawGravity(r)
@@ -557,10 +656,10 @@ func (tm *TileManager) Draw() {
 
 func (tm *TileManager) cellRect(p board.Point, off rl.Vector2) rl.Rectangle {
 	return rl.Rectangle{
-		X:		tm.ScreenX + float32(p.X)*tm.CellSize + off.X,
-		Y:		tm.ScreenY + float32(p.Y)*tm.CellSize + off.Y,
-		Width:	tm.CellSize,
-		Height:	tm.CellSize,
+		X:      tm.ScreenX + float32(p.X)*tm.CellSize + off.X,
+		Y:      tm.ScreenY + float32(p.Y)*tm.CellSize + off.Y,
+		Width:  tm.CellSize,
+		Height: tm.CellSize,
 	}
 }
 
@@ -571,12 +670,12 @@ func (tm *TileManager) drawGravity(r rl.Rectangle) {
 		return
 	}
 	v := d.Vec()
-	c := rl.Vector2{ X: r.X + r.Width/2 + float32(v.X)*(r.Width/2+30), Y: r.Y + r.Height/2 + float32(v.Y)*(r.Height/2+30) }
-	tip := rl.Vector2{ X: c.X + float32(v.X)*12, Y: c.Y + float32(v.Y)*12 }
-	side := rl.Vector2{ X: float32(-v.Y) * 12, Y: float32(v.X) * 12 }
-	back := rl.Vector2{ X: c.X - float32(v.X)*12, Y: c.Y - float32(v.Y)*12 }
-	a := rl.Vector2{ X: back.X + side.X, Y: back.Y + side.Y }
-	b := rl.Vector2{ X: back.X - side.X, Y: back.Y - side.Y }
+	c := rl.Vector2{X: r.X + r.Width/2 + float32(v.X)*(r.Width/2+30), Y: r.Y + r.Height/2 + float32(v.Y)*(r.Height/2+30)}
+	tip := rl.Vector2{X: c.X + float32(v.X)*12, Y: c.Y + float32(v.Y)*12}
+	side := rl.Vector2{X: float32(-v.Y) * 12, Y: float32(v.X) * 12}
+	back := rl.Vector2{X: c.X - float32(v.X)*12, Y: c.Y - float32(v.Y)*12}
+	a := rl.Vector2{X: back.X + side.X, Y: back.Y + side.Y}
+	b := rl.Vector2{X: back.X - side.X, Y: back.Y - side.Y}
 	rl.DrawTriangle(tip, a, b, ui.Accent)
 	rl.DrawTriangle(tip, b, a, ui.Accent)
 }
