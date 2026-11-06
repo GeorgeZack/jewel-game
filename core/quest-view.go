@@ -94,6 +94,10 @@ type QuestView struct {
 	legT    float32
 
 	hex hexEditor
+
+	shopScroll float32
+	shopMax    float32
+	shopGrab   bool
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
