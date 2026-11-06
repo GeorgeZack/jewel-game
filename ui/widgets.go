@@ -127,16 +127,21 @@ func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
 	if enabled {
 		return Button(r, label, false)
 	}
+	DisabledButton(r, label, rl.Fade(DimText, 0.8))
+	return false
+}
+
+// DisabledButton draws a dark, unclickable button. The label color can say why, e.g. red for too expensive.
+func DisabledButton(r rl.Rectangle, label string, col rl.Color) {
 	ensureTheme()
-	if !nine(themeButton, r, 10, rl.Fade(rl.White, 0.45)) {
-		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.5))
+	if !nine(themeButton, r, 10, rl.Color{R: 120, G: 115, B: 135, A: 150}) {
+		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.4))
 	}
 	size := min(r.Height*0.55, 22)
 	for size > 10 && TextWidth(label, size) > r.Width-8 {
 		size--
 	}
-	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, DimText)
-	return false
+	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
 }
 
 // Bar draws a meter like an HP bar, with "label  value/max" on it.
