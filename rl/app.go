@@ -114,6 +114,7 @@ func (g *game) Draw(s *ebiten.Image) {
 	}
 	g.draw()
 	flush()
+	maybeShot(fullScreen)
 	trimTextCaches()
 	zoom, camOffset, mouseScale = 1, Vector2{}, Vector2{X: 1, Y: 1}
 }
@@ -127,7 +128,7 @@ func (g *game) Layout(w, h int) (int, int) {
 // Run opens the window and calls update then draw once per frame until update returns false
 // or the window is closed.
 func Run(width, height int, title string, update func() bool, draw func()) error {
-	ebiten.SetWindowSize(width, height)
+	ebiten.SetWindowSize(windowSize(width, height))
 	SetWindowTitle(title)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowClosingHandled(false)

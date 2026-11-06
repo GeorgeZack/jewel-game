@@ -135,7 +135,7 @@ func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
 	for size > 10 && TextWidth(label, size) > r.Width-8 {
 		size--
 	}
-	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, rl.Fade(DimText, 0.6))
+	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, DimText)
 	return false
 }
 
@@ -226,13 +226,18 @@ func (c *Column) Heading(s string) {
 	rl.DrawLineEx(rl.Vector2{ X: r.X, Y: r.Y + 21 }, rl.Vector2{ X: r.X + r.Width, Y: r.Y + 21 }, 1, PanelEdge)
 }
 
+// MinText is the smallest size Column text is drawn at, so long lines stay readable.
+const MinText = 17
+
 func (c *Column) Line(s string, size float32, col rl.Color) {
+	size = max(size, MinText)
 	r := c.Next(size + 2)
 	Text(s, r.X, r.Y, size, col)
 }
 
 // Paragraph word-wraps s to the column width.
 func (c *Column) Paragraph(s string, size float32, col rl.Color) {
+	size = max(size, MinText)
 	line := ""
 	for _, word := range strings.Fields(s) {
 		next := word
@@ -262,6 +267,7 @@ func Row(r rl.Rectangle, n int, gap float32) []rl.Rectangle {
 
 // MeasureParagraph returns the height Paragraph would take at this width, assuming a gap of 4.
 func MeasureParagraph(s string, size, width float32) float32 {
+	size = max(size, MinText)
 	lines, line := 0, ""
 	for _, word := range strings.Fields(s) {
 		next := word

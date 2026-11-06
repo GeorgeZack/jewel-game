@@ -143,7 +143,7 @@ func (v *QuestView) drawMapNode(r rl.Rectangle, l *rpg.Location) {
 			rl.DrawPoly(p, 6, 19, 0, col)
 		}
 	}
-	ui.TextCenteredOutlined(text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level), p.X, p.Y+26, 15, ui.TextColor)
+	ui.TextCenteredOutlined(text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level), p.X, p.Y+26, 17, ui.TextColor)
 	if len(h.OfferedQuests(l.ID)) > 0 || len(h.QuestsHere(l.ID)) > 0 {
 		ui.TextCenteredOutlined("!", p.X+18, p.Y-36, 30, ui.Accent)
 	}
@@ -260,7 +260,7 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	for stat := range rpg.NUM_STATS {
 		row := col.Next(54)
 		ui.Text(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), c.Stats[stat]), row.X, row.Y+2, 22, ui.TextColor)
-		ui.Text(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+30, 15, ui.DimText)
+		ui.Text(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, ui.DimText)
 		btn := rl.Rectangle{X: row.X + row.Width - 130, Y: row.Y + 4, Width: 130, Height: 38}
 		if ui.ButtonIf(btn, text.Tf("ui.raise_stat", "+1  (cost %d)", cls.Cost[stat]), h.Points >= cls.Cost[stat]) {
 			h.RaiseStat(stat)
@@ -581,9 +581,9 @@ func (v *QuestView) drawCitadelYard(col *ui.Column, h *rpg.Hero) {
 			}
 			drawHexTile(citadelSprite(b.ID), foot, scale, tint)
 			if !built {
-				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 13, goldColor)
+				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 16, goldColor)
 			}
-			ui.TextCentered(b.Label(), slot.X+slot.Width/2, slot.Y+slot.Height-22, 14, ui.TextColor)
+			ui.TextCentered(b.Label(), slot.X+slot.Width/2, slot.Y+slot.Height-22, 16, ui.TextColor)
 			if !built && ui.Clicked(slot) && h.Gold >= b.Price {
 				h.Build(b)
 				v.save()
@@ -603,13 +603,18 @@ func (v *QuestView) drawCitadel(r rl.Rectangle) {
 	col.Y += 6
 	v.drawCitadelYard(&col, h)
 	col.Y += 10
+	// two columns of plaques, so all of them fit under the yard
+	var cells []rl.Rectangle
 	for i := range rpg.Buildings {
+		if i%2 == 0 {
+			cells = ui.Row(col.Next(72), 2, 10)
+		}
 		b := &rpg.Buildings[i]
-		row := col.Next(72)
+		row := cells[i%2]
 		plaque(row, h.Has(b.ID))
-		ui.Text(b.Label(), row.X+16, row.Y+10, 24, ui.TextColor)
-		ui.Text(b.About(), row.X+16, row.Y+42, 16, ui.DimText)
-		btn := rl.Rectangle{X: row.X + row.Width - 160, Y: row.Y + 16, Width: 140, Height: 40}
+		ui.Text(b.Label(), row.X+14, row.Y+10, 22, ui.TextColor)
+		ui.Text(b.About(), row.X+14, row.Y+42, 16, ui.DimText)
+		btn := rl.Rectangle{X: row.X + row.Width - 124, Y: row.Y + 8, Width: 112, Height: 34}
 		if h.Has(b.ID) {
 			ui.Button(btn, text.T("ui.built", "Built"), true)
 		} else if ui.ButtonIf(btn, text.Tf("ui.build", "Build %d", b.Price), h.Gold >= b.Price) {
