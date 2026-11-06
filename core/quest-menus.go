@@ -359,14 +359,32 @@ func (v *QuestView) drawQuestLog(r rl.Rectangle) {
 func (v *QuestView) drawShop(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	title := rl.Rectangle{X: r.X + 30, Y: r.Y + 20, Width: r.Width - 60, Height: 44}
-	ui.Text(text.T("ui.shop", "Shop"), title.X, title.Y, 38, ui.Accent)
-	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), title.X+title.Width-170, title.Y+8, 24, goldColor)
-	col := ui.Column{X: r.X + 30, Y: r.Y + 70, W: r.Width - 60, Gap: 3}
+	ui.Text(text.T("ui.shop", "Shop"), r.X+30, r.Y+20, 38, ui.Accent)
+	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), r.X+r.Width-200, r.Y+28, 24, goldColor)
+
+	view := rl.Rectangle{X: r.X + 18, Y: r.Y + 72, Width: r.Width - 36, Height: r.Height - 90}
+	track := rl.Rectangle{X: view.X + view.Width - 16, Y: view.Y + 4, Width: 12, Height: view.Height - 8}
+	v.dragShopScroll(view, track)
+	if ui.Hover(view) {
+		v.shopScroll -= shopWheel(rl.Wheel()) / uiScale()
+	}
+	if v.shopScroll < 0 {
+		v.shopScroll = 0
+	}
+	if v.shopScroll > v.shopMax {
+		v.shopScroll = v.shopMax
+	}
+	s := uiScale()
+	rl.BeginScissorMode(int32(view.X*s), int32(view.Y*s), int32(view.Width*s), int32(view.Height*s))
+	col := ui.Column{X: view.X + 12, Y: view.Y - v.shopScroll, W: view.Width - 40, Gap: 8}
+	top := col.Y
 	for _, slot := range rpg.Slots {
-		col.Heading(rpg.SlotLabel(slot))
+		col.Y += 8
+		head := col.Next(30)
+		ui.Text(rpg.SlotLabel(slot), head.X, head.Y, 24, ui.Accent)
+		rl.DrawLineEx(rl.Vector2{X: head.X, Y: head.Y + 28}, rl.Vector2{X: head.X + head.Width, Y: head.Y + 28}, 1, ui.PanelEdge)
 		if slot == rpg.SlotMount && !h.Has("stables") {
-			col.Line(text.T("ui.need_stables", "Build Stables in your citadel to buy mounts."), 16, ui.DimText)
+			col.Line(text.T("ui.need_stables", "Build Stables in your citadel to buy mounts."), 22, ui.DimText)
 			continue
 		}
 		for i := range rpg.Items {
@@ -375,31 +393,137 @@ func (v *QuestView) drawShop(r rl.Rectangle) {
 			if it.Slot != slot || (it.QuestOnly && !owned) {
 				continue
 			}
-			row := col.Next(32)
-			worn := h.Gear[slot] == it.ID
-			nameCol := ui.TextColor
-			if it.Level > h.Level {
-				nameCol = ui.DimText
-			}
-			ui.Text(it.Label(), row.X, row.Y+6, 18, nameCol)
-			ui.Text(it.About(), row.X+190, row.Y+8, 14, ui.DimText)
-			btn := rl.Rectangle{X: row.X + row.Width - 130, Y: row.Y, Width: 130, Height: 30}
-			switch {
-			case worn:
-				ui.Button(btn, text.T("ui.equipped_tag", "Equipped"), true)
-			case owned:
-				if ui.Button(btn, text.T("ui.equip", "Equip"), false) {
-					h.Buy(it)
-					v.save()
-				}
-			case it.Level > h.Level:
-				ui.ButtonIf(btn, text.Tf("ui.need_level", "Level %d", it.Level), false)
-			default:
-				if ui.ButtonIf(btn, text.Tf("ui.buy", "Buy %d", it.Price), h.Gold >= it.Price) {
-					h.Buy(it)
-					v.save()
-				}
-			}
+			v.drawShopRow(&col, h, it)
+		}
+	}
+	v.shopMax = max(0, col.Y-top-view.Height)
+	rl.EndScissorMode()
+	v.drawShopScroll(track)
+}
+
+// shopWheel turns one frame of wheel input into pixels of the list.
+// A mouse notch on the desktop build is about ±1. A trackpad, and the browser,
+// already report how far the fingers moved, often as a burst of pixel deltas.
+// Multiplying those by a row height makes a two-finger swipe race through the list.
+func shopWheel(dy float32) float32 {
+	if dy > 3 || dy < -3 {
+		return dy
+	}
+	return dy * 48
+}
+
+// dragShopScroll moves the list when the thumb or its track is dragged.
+func (v *QuestView) dragShopScroll(view, track rl.Rectangle) {
+	if v.shopMax <= 0 {
+		v.shopGrab = false
+		return
+	}
+	thumb := shopThumb(track, v.shopScroll, v.shopMax)
+	if !rl.IsMouseButtonDown(rl.MouseLeftButton) {
+		v.shopGrab = false
+		return
+	}
+	if rl.IsMouseButtonPressed(rl.MouseLeftButton) && ui.Hover(track) {
+		v.shopGrab = true
+		if !ui.Hover(thumb) {
+			// Jump the thumb so the click lands on it.
+			frac := (rl.GetMousePosition().Y - track.Y - thumb.Height/2) / (track.Height - thumb.Height)
+			v.shopScroll = max(0, min(1, frac)) * v.shopMax
+		}
+	}
+	if !v.shopGrab {
+		return
+	}
+	thumb = shopThumb(track, v.shopScroll, v.shopMax)
+	frac := (rl.GetMousePosition().Y - track.Y - thumb.Height/2) / (track.Height - thumb.Height)
+	v.shopScroll = max(0, min(1, frac)) * v.shopMax
+}
+
+func shopThumb(track rl.Rectangle, scroll, maxScroll float32) rl.Rectangle {
+	span := track.Height
+	// The thumb shows how much of the list is on screen. The list is the
+	// visible height plus whatever is still scrolled off.
+	visible := span
+	total := span + maxScroll
+	h := max(28, span*visible/total)
+	if h > span {
+		h = span
+	}
+	travel := span - h
+	y := track.Y
+	if maxScroll > 0 {
+		y += travel * (scroll / maxScroll)
+	}
+	return rl.Rectangle{X: track.X, Y: y, Width: track.Width, Height: h}
+}
+
+func (v *QuestView) drawShopScroll(track rl.Rectangle) {
+	if v.shopMax <= 0 {
+		return
+	}
+	rl.DrawRectangleRounded(track, 0.8, 6, rl.Color{R: 16, G: 14, B: 28, A: 220})
+	thumb := shopThumb(track, v.shopScroll, v.shopMax)
+	col := ui.Accent
+	if ui.Hover(thumb) || v.shopGrab {
+		col = rl.Color{R: 255, G: 214, B: 120, A: 255}
+	}
+	rl.DrawRectangleRounded(thumb, 0.8, 6, col)
+}
+
+var itemIcons map[string]rl.Texture2D
+
+func itemIcon(id string) rl.Texture2D {
+	if itemIcons == nil {
+		itemIcons = map[string]rl.Texture2D{}
+	}
+	if tex, ok := itemIcons[id]; ok {
+		return tex
+	}
+	tex := rl.LoadTexture("_res/items/" + id + ".png")
+	if tex.ID != 0 {
+		rl.SetTextureFilter(tex, rl.FilterPoint)
+	}
+	itemIcons[id] = tex
+	return tex
+}
+
+func (v *QuestView) drawShopRow(col *ui.Column, h *rpg.Hero, it *rpg.Item) {
+	row := col.Next(64)
+	worn := h.Gear[it.Slot] == it.ID
+	owned := slices.Contains(h.Owned, it.ID)
+	nameCol := ui.TextColor
+	if it.Level > h.Level && !owned {
+		nameCol = ui.DimText
+	}
+	if icon := itemIcon(it.ID); icon.ID != 0 {
+		rl.DrawTexturePro(icon,
+			rl.Rectangle{Width: float32(icon.Width), Height: float32(icon.Height)},
+			rl.Rectangle{X: row.X, Y: row.Y + 6, Width: 52, Height: 52},
+			rl.Vector2{}, 0, rl.White)
+	}
+	ui.Text(it.Label(), row.X+62, row.Y+6, 26, nameCol)
+	about := it.About()
+	size := float32(18)
+	maxW := row.Width - 62 - 160
+	for size > 13 && ui.TextWidth(about, size) > maxW {
+		size--
+	}
+	ui.Text(about, row.X+62, row.Y+36, size, ui.DimText)
+	btn := rl.Rectangle{X: row.X + row.Width - 148, Y: row.Y + 12, Width: 140, Height: 40}
+	switch {
+	case worn:
+		ui.Button(btn, text.T("ui.equipped_tag", "Equipped"), true)
+	case owned:
+		if ui.Button(btn, text.T("ui.equip", "Equip"), false) {
+			h.Buy(it)
+			v.save()
+		}
+	case it.Level > h.Level:
+		ui.ButtonIf(btn, text.Tf("ui.need_level", "Level %d", it.Level), false)
+	default:
+		if ui.ButtonIf(btn, text.Tf("ui.buy", "Buy %d", it.Price), h.Gold >= it.Price) {
+			h.Buy(it)
+			v.save()
 		}
 	}
 }

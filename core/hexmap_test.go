@@ -107,6 +107,15 @@ func TestRoadBendRoundTrip(t *testing.T) {
 	mapLoaded = false
 }
 
+func TestShopWheel(t *testing.T) {
+	if shopWheel(1) != 48 || shopWheel(-1) != -48 {
+		t.Fatal("a mouse notch should move about one row")
+	}
+	if shopWheel(40) != 40 || shopWheel(-12) != -12 {
+		t.Fatal("a trackpad delta is already in pixels")
+	}
+}
+
 func TestFitRectKeepsShape(t *testing.T) {
 	// A wide picture in a tall frame is limited by the width and stays centered.
 	got := fitRect(rl.Rectangle{X: 10, Y: 20, Width: 200, Height: 400}, 2)
