@@ -1,9 +1,7 @@
 package core
 
 import (
-	"fmt"
 	"image/color"
-	"jewel-game/board"
 	"jewel-game/text"
 	"jewel-game/ui"
 	"jewel-game/utils"
@@ -14,20 +12,8 @@ import (
 	"jewel-game/rl"
 )
 
-type Mode int
-
-const (
-	ModeClassic Mode = iota
-	ModeSandbox
-	ModeQuest
-	MODE_COUNT
-)
-
 type GameController struct {
 	DataManager   *DataManager
-	Mode          Mode
-	Classic       *TileManager
-	Sandbox       *TileManager
 	Quest         *QuestView
 	Quit          bool
 	Watcher       *fsnotify.Watcher
@@ -41,13 +27,8 @@ func NewGameController() *GameController {
 	dm := NewDataManager()
 	ui.Font = dm.Consts.UIFont
 
-	sandbox := NewTileManager(Presets()[1].Settings, dm)
-	sandbox.UndoEnabled = true
-
 	gc := &GameController{
 		DataManager:   dm,
-		Classic:       NewTileManager(board.DefaultSettings(), dm),
-		Sandbox:       sandbox,
 		Quest:         NewQuestView(dm),
 		WatcherErrors: make(chan error, 1),
 		WatcherEvents: make(chan fsnotify.Event, 10),
@@ -93,15 +74,7 @@ func NewGameController() *GameController {
 	return gc
 }
 
-func (c *GameController) Active() *TileManager {
-	switch c.Mode {
-	case ModeSandbox:
-		return c.Sandbox
-	case ModeQuest:
-		return c.Quest.TM
-	}
-	return c.Classic
-}
+func (c *GameController) Active() *TileManager { return c.Quest.TM }
 
 func (c *GameController) Unload() {
 	if c.bkg.ID != 0 {
@@ -154,11 +127,9 @@ func (c *GameController) Update() {
 	}
 
 	c.handleKeys()
-	if c.Mode == ModeQuest {
-		c.Quest.Update()
-		if !c.Quest.InDuel() {
-			return
-		}
+	c.Quest.Update()
+	if !c.Quest.InDuel() {
+		return
 	}
 	tm := c.Active()
 	tm.Layout(c.boardArea())
@@ -167,9 +138,9 @@ func (c *GameController) Update() {
 
 func (c *GameController) handleKeys() {
 	tm := c.Active()
-	// a dialog or scene in Quest mode takes the keys, apart from the debug log and mode switch
-	busy := c.Mode == ModeQuest && c.Quest.HasModal()
-	if !busy && c.Mode == ModeQuest && c.Quest != nil && c.Quest.hex.on {
+	// a dialog or scene takes the keys, apart from the debug log
+	busy := c.Quest.HasModal()
+	if !busy && c.Quest.hex.on {
 		switch {
 		case rl.IsKeyPressed(rl.KeyF1):
 			ui.ShowDebug = !ui.ShowDebug
@@ -181,32 +152,19 @@ func (c *GameController) handleKeys() {
 		return
 	}
 	switch {
-	case busy && !rl.IsKeyPressed(rl.KeyF1) && !rl.IsKeyPressed(rl.KeyTab):
+	case busy && !rl.IsKeyPressed(rl.KeyF1):
 	case rl.IsKeyPressed(rl.KeyF1):
 		ui.ShowDebug = !ui.ShowDebug
-	case rl.IsKeyPressed(rl.KeyTab):
-		c.Mode = (c.Mode + 1) % MODE_COUNT
 	case rl.IsKeyPressed(rl.KeyH):
 		tm.ShowHint()
 	case rl.IsKeyPressed(rl.KeySpace):
 		tm.ReleaseLocks()
-	case rl.IsKeyPressed(rl.KeyEnter):
-		tm.Resolve()
-	case rl.IsKeyPressed(rl.KeyR):
-		// in a duel a new board would be a free escape
-		if c.Mode != ModeQuest {
-			tm.Reset(tm.Board.Settings)
-		}
-	case rl.IsKeyPressed(rl.KeyZ), rl.IsKeyPressed(rl.KeyBackspace):
-		tm.Undo()
 	case rl.IsKeyPressed(rl.KeyE):
-		if c.Mode == ModeQuest && c.Quest != nil && c.Quest.Screen == ScreenWorld && !c.Quest.HasModal() {
+		if c.Quest.Screen == ScreenWorld && !c.Quest.HasModal() {
 			c.Quest.hex.on = true
 		}
 	case rl.IsKeyPressed(rl.KeyEscape):
-		if tm.Brush != nil {
-			tm.Brush = nil
-		} else if !tm.ClearSelection() {
+		if !tm.ClearSelection() {
 			c.Quit = true
 		}
 	}
@@ -247,32 +205,22 @@ func (c *GameController) Draw() {
 	ui.NewFrame()
 	c.drawBackground()
 	tm := c.Active()
-	quest := c.Mode == ModeQuest
-	if !quest || c.Quest.InDuel() {
+	if c.Quest.InDuel() {
 		tm.Draw()
 	}
-	if quest {
-		c.Quest.DrawScreenFlash()
-	}
+	c.Quest.DrawScreenFlash()
 
 	// draw panels scaled, and scale the mouse to match so the widgets' hit tests line up
 	s := uiScale()
 	rl.BeginMode2D(rl.Camera2D{Zoom: s})
 	rl.SetMouseScale(1/s, 1/s)
-	ui.Blocked = quest && c.Quest.HasModal()
-	c.drawLeftPanel(tm)
-	switch c.Mode {
-	case ModeSandbox:
-		DrawSandboxPanel(tm, c.DataManager, c.rightPanel())
-	case ModeQuest:
-		c.Quest.DrawCenter(c.centerPanel())
-		c.Quest.DrawRight(c.rightPanel())
-		c.Quest.DrawEffects()
-		ui.Blocked = false
-		c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s})
-	default:
-		c.drawGuide(c.rightPanel())
-	}
+	ui.Blocked = c.Quest.HasModal()
+	c.drawLeftPanel()
+	c.Quest.DrawCenter(c.centerPanel())
+	c.Quest.DrawRight(c.rightPanel())
+	c.Quest.DrawEffects()
+	ui.Blocked = false
+	c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s})
 	rl.SetMouseScale(1, 1)
 	rl.EndMode2D()
 
@@ -294,97 +242,13 @@ func (c *GameController) drawBackground() {
 	rl.DrawTexturePro(c.bkg, src, dst, rl.Vector2{}, 0, color.RGBA{255, 255, 255, 105})
 }
 
-func (c *GameController) drawLeftPanel(tm *TileManager) {
+func (c *GameController) drawLeftPanel() {
 	r := c.leftPanel()
 	ui.Panel(r)
 	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6}
 	title := col.Next(44)
 	ui.Text(text.T("ui.title", "JEWEL GAME"), title.X, title.Y, 40, ui.Accent)
-
-	tabs := ui.Row(col.Next(36), int(MODE_COUNT), 8)
-	names := []string{
-		text.T("ui.mode_classic", "Classic"),
-		text.T("ui.mode_sandbox", "Sandbox"),
-		text.T("ui.mode_quest", "Quest"),
-	}
-	for i, name := range names {
-		if ui.Button(tabs[i], name, c.Mode == Mode(i)) {
-			c.Mode = Mode(i)
-		}
-	}
-
-	if c.Mode == ModeQuest {
-		c.Quest.DrawLeft(&col, r)
-		return
-	}
-
-	b := tm.Board
-	col.Heading(text.T("ui.score", "Score"))
-	score := col.Next(50)
-	ui.Text(fmt.Sprint(b.Score), score.X, score.Y, 48, ui.TextColor)
-	col.Line(text.Tf("ui.moves", "Moves      %d", b.Moves), 18, ui.TextColor)
-	col.Line(text.Tf("ui.chain", "Chain      %d  (best %d)", b.Chain, b.BestChain), 18, ui.TextColor)
-	col.Line(text.Tf("ui.cleared", "Cleared    %d", b.Cleared), 18, ui.TextColor)
-	locks := text.Tf("ui.locks", "Locks      %d / %s", b.LockCount(), lockLabel(b.Settings.MaxLocks))
-	col.Line(locks, 18, ui.TextColor)
-	if b.Settings.Gravity != board.Down || b.Settings.ChaosGravity {
-		col.Line(text.Tf("ui.gravity", "Gravity    %s", trDir(b.Settings.Gravity)), 18, ui.Accent)
-	}
-
-	col.Heading(text.T("ui.actions", "Actions"))
-	if ui.Button(col.Next(32), text.T("ui.release_locks", "Release locks  [Space]"), false) {
-		tm.ReleaseLocks()
-	}
-	if ui.Button(col.Next(32), text.T("ui.hint", "Hint  [H]"), false) {
-		tm.ShowHint()
-	}
-	if ui.Button(col.Next(32), text.T("ui.new_board", "New board  [R]"), false) {
-		tm.Reset(b.Settings)
-	}
-	if c.Mode == ModeSandbox {
-		if ui.Button(col.Next(32), text.Tf("ui.undo", "Undo  [Z]  (%d)", len(tm.undo)), false) {
-			tm.Undo()
-		}
-		if ui.Button(col.Next(32), text.T("ui.clear_matches", "Clear matches  [Enter]"), false) {
-			tm.Resolve()
-		}
-	}
-
-	col.Heading(text.T("ui.controls", "Controls"))
-	for _, line := range []string{
-		text.T("ui.help_drag", "Left drag   swap gems"),
-		text.T("ui.help_click", "Left click  select, click to swap"),
-		text.T("ui.help_lock", "Right click lock / unlock a gem"),
-		text.T("ui.help_tab", "Tab         switch mode"),
-		text.T("ui.help_keys", "F1          debug log    Esc  quit"),
-	} {
-		col.Line(line, 15, ui.DimText)
-	}
-}
-
-func (c *GameController) drawGuide(r rl.Rectangle) {
-	ui.Panel(r)
-	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 4}
-	para := func(s string) {
-		col.Paragraph(s, 16, ui.TextColor)
-		col.Y += 6
-	}
-	col.Heading(text.T("ui.specials", "Specials"))
-	para(text.T("ui.help_bolt", "4 in a row makes a Bolt. It clears its whole row or column."))
-	para(text.T("ui.help_bomb", "An L or T shape makes a Bomb. It blasts the 3x3 around it."))
-	para(text.T("ui.help_prism", "5 in a row makes a Prism. Swap it with any gem to clear that color."))
-	col.Heading(text.T("ui.combos", "Combos"))
-	para(text.T("ui.help_combo_intro", "Swap two specials into each other:"))
-	para(text.T("ui.help_bolt_bolt", "Bolt + Bolt: a full cross."))
-	para(text.T("ui.help_bolt_bomb", "Bolt + Bomb: a cross three lines wide."))
-	para(text.T("ui.help_bomb_bomb", "Bomb + Bomb: a 5x5 blast."))
-	para(text.T("ui.help_prism_mix", "Prism + Bolt/Bomb: every gem of that color turns into one and goes off."))
-	para(text.T("ui.help_prism_prism", "Prism + Prism: clears the board."))
-	col.Heading(text.T("ui.locks_heading", "Locks"))
-	para(text.T("ui.help_lock_body", "Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them."))
-	para(text.T("ui.help_lock_release", "Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus."))
-	col.Y += 8
-	col.Paragraph(text.T("ui.help_sandbox", "Tab opens the Sandbox, where every rule is up for grabs."), 16, ui.Accent)
+	c.Quest.DrawLeft(&col, r)
 }
 
 // isStoryFile is true for story YAML and art, skipping editor temp files.
