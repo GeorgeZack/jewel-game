@@ -10,27 +10,6 @@ ui:
   window_title: Jewel Game
   title: JEWEL GAME
   fps: "FPS %.0f"
-  mode_classic: Classic
-  mode_sandbox: Sandbox
-  mode_quest: Quest
-  score: Score
-  moves: "Moves      %d"
-  chain: "Chain      %d  (best %d)"
-  cleared: "Cleared    %d"
-  locks: "Locks      %d / %s"
-  gravity: "Gravity    %s"
-  actions: Actions
-  release_locks: "Release locks  [Space]"
-  hint: "Hint  [H]"
-  new_board: "New board  [R]"
-  undo: "Undo  [Z]  (%d)"
-  clear_matches: "Clear matches  [Enter]"
-  controls: Controls
-  help_drag: "Left drag   swap gems"
-  help_click: "Left click  select, click to swap"
-  help_lock: "Right click lock / unlock a gem"
-  help_tab: "Tab         switch mode"
-  help_keys: "F1          debug log    Esc  quit"
   specials: Specials
   help_bolt: "4 in a row makes a Bolt. It clears its whole row or column."
   help_bomb: "An L or T shape makes a Bomb. It blasts the 3x3 around it."
@@ -45,7 +24,6 @@ ui:
   locks_heading: Locks
   help_lock_body: "Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them."
   help_lock_release: "Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus."
-  help_sandbox: "Tab opens the Sandbox, where every rule is up for grabs."
   chain_popup: "Chain x%d!"
   synchro_popup: "Synchro x%d!"
   special_popup: "%s!"
@@ -55,32 +33,6 @@ ui:
   no_moves: No moves left - shuffling
   badge_skull: "+5"
   badge_wild: "x%d"
-  presets: Presets
-  preset_chill: Chill
-  preset_playground: Playground
-  preset_insane: Insane
-  board_heading: "Board (starts a new one)"
-  width: Width
-  height: Height
-  colors: Colors
-  rules: Rules
-  locks_setting: Locks
-  locks_unlimited: unlimited
-  locks_off: "off"
-  free_swaps: Free swaps
-  diagonal_swaps: Diagonal swaps
-  overcharged: Overcharged specials
-  chaos_gravity: Chaos gravity
-  gravity_setting: Gravity
-  special_rain: Special rain
-  percent: "%d%%"
-  anim_speed: Anim speed
-  speed: "%gx"
-  brush: Paint brush
-  brush_pick: "Pick one, then click or drag on gems."
-  brush_esc: "Esc puts the brush down."
-  brush_off: "Off"
-  brush_plain: Plain
   hp: HP
   xp: XP
   gold: "Gold %d"
@@ -231,7 +183,6 @@ log:
   watch_story: "Detected change in %s, reloading the story..."
   watch_lang: "Detected change in %s, reloading language..."
   watch_err: "File watcher error: %v"
-  new_board: "New board: %+v"
   no_scene: "Story: no scene %q"
   scene_loop: "Story: a scene ran 1000 steps without stopping, check it for a loop"
   save_read: "Could not read save, starting fresh: %v"
@@ -440,7 +391,6 @@ item:
   leather:
     name: Leather Jerkin
     desc: "+10 HP"
-  chain:
     name: Chain Shirt
     desc: "+20 HP, blocks 1"
   mage_robe:
