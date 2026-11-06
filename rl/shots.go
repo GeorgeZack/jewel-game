@@ -4,6 +4,7 @@ package rl
 
 import (
 	"fmt"
+	"image"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -23,6 +24,11 @@ var (
 )
 
 func init() {
+	if shotDir != "" {
+		// a window on a hidden workspace gets no vsync, so draw on a timer instead
+		ebiten.SetVsyncEnabled(false)
+		ebiten.SetTPS(30)
+	}
 	if s, err := strconv.ParseFloat(os.Getenv("JEWEL_SHOT_EVERY"), 64); err == nil && s > 0 {
 		shotEvery = time.Duration(s * float64(time.Second))
 	}
@@ -34,12 +40,18 @@ func maybeShot(s *ebiten.Image) {
 	}
 	shotLast = time.Now()
 	shotN++
-	f, err := os.Create(filepath.Join(shotDir, fmt.Sprintf("shot-%03d.png", shotN)))
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	png.Encode(f, s)
+	b := s.Bounds()
+	img := image.NewRGBA(b)
+	s.ReadPixels(img.Pix)
+	name := filepath.Join(shotDir, fmt.Sprintf("shot-%04d.png", shotN))
+	go func() { // encode off the game loop so frames keep coming
+		f, err := os.Create(name)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		(&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(f, img)
+	}()
 }
 
 // windowSize lets JEWEL_WINDOW=1280x720 pick the starting window size.
