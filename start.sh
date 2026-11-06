@@ -1,8 +1,8 @@
 #!/bin/bash
 # Build and run the game.
-#   ./start.sh           build once and run
+#   ./start.sh           build once and run, with the map editor and hot reload
 #   ./start.sh --watch   rebuild and restart on every save (needs CompileDaemon)
-#   ./start.sh --web     build for the browser and serve it on http://localhost:8000 (PORT to change)
+#   ./start.sh --web     build the public browser version (no editor) and serve it on http://localhost:8000 (PORT to change)
 #   ./start.sh --dev     same as --web, and rebuild the wasm (then reload the page) on save
 set -e
 
@@ -46,7 +46,7 @@ if [ "$watch" = 1 ]; then
 		exit 1
 	fi
 	exec CompileDaemon -directory="." -recursive=true -exclude-dir=".git" -exclude-dir="web" -log-prefix=false -color=true \
-		-build="go build -o jewel-game ." -command="./jewel-game"
+		-build="go build -tags dev -o jewel-game ." -command="./jewel-game"
 fi
 
 if [ "$dev" = 1 ]; then
@@ -68,5 +68,5 @@ if [ "$web" = 1 ]; then
 fi
 
 echo "Building (the first build takes a little while)..."
-go build -o jewel-game .
+go build -tags dev -o jewel-game .
 exec ./jewel-game

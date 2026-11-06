@@ -79,7 +79,7 @@ def changed_paths(prev: dict, cur: dict) -> list[Path]:
 
 def build() -> bool:
     print("rebuilding…", flush=True)
-    result = subprocess.run(["./build-web.sh"], cwd=ROOT)
+    result = subprocess.run(["./build-web.sh"], cwd=ROOT, env={**os.environ, "TAGS": "dev"})
     if result.returncode != 0:
         print("build failed; still serving the last wasm", flush=True)
         return False
