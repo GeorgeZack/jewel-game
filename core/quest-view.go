@@ -95,9 +95,8 @@ type QuestView struct {
 
 	hex hexEditor
 
-	shopScroll float32
-	shopMax    float32
-	shopGrab   bool
+	shopScroll ui.Scroll
+	leftScroll ui.Scroll
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
@@ -508,7 +507,15 @@ func (v *QuestView) DrawModal(area, full rl.Rectangle) {
 }
 
 // DrawLeft fills the left panel below the mode tabs.
+// Everything below the title scrolls when it doesn't fit, as in a duel with many spells.
 func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
+	view := rl.Rectangle{X: r.X + 4, Y: col.Y, Width: r.Width - 8, Height: r.Y + r.Height - 14 - col.Y}
+	col.Y = v.leftScroll.Begin(view, uiScale())
+	if v.leftScroll.Overflows() {
+		col.W -= 14
+	}
+	bottom := col.Y + view.Height
+	defer func() { v.leftScroll.End(col.Y) }()
 	switch {
 	case v.Hero == nil:
 		col.Heading(text.T("ui.quest_heading", "Quest"))
@@ -524,7 +531,7 @@ func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
 			v.flee()
 		}
 	default:
-		v.drawHeroSummary(col, r.Y+r.Height-14)
+		v.drawHeroSummary(col, bottom)
 	}
 }
 
