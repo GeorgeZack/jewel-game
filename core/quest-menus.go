@@ -30,13 +30,15 @@ func (v *QuestView) DrawCenter(r rl.Rectangle) {
 }
 
 // card draws a hoverable box and reports a click on it.
-func card(r rl.Rectangle, selected bool) bool {
-	edge := ui.PanelEdge
+func plaque(r rl.Rectangle, selected bool) {
+	ui.Frame(r)
 	if selected || ui.Hover(r) {
-		edge = ui.Accent
+		rl.DrawRectangleRoundedLines(r, 0.06, 8, 2, ui.Accent)
 	}
-	rl.DrawRectangleRounded(r, 0.06, 8, rl.Color{R: 32, G: 28, B: 58, A: 240})
-	rl.DrawRectangleRoundedLines(r, 0.06, 8, 2, edge)
+}
+
+func card(r rl.Rectangle, selected bool) bool {
+	plaque(r, selected)
 	return ui.Clicked(r)
 }
 
@@ -66,26 +68,32 @@ func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 	}
 }
 
-func mapPoint(r rl.Rectangle, l *rpg.Location) rl.Vector2 {
-	return rl.Vector2{X: r.X + 50 + l.X*(r.Width-100), Y: r.Y + 60 + l.Y*(r.Height-120)}
-}
-
 func (v *QuestView) drawWorld(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	rl.DrawRectangleRounded(rl.Rectangle{X: r.X + 12, Y: r.Y + 12, Width: r.Width - 24, Height: r.Height - 24}, 0.03, 8, rl.Color{R: 40, G: 54, B: 44, A: 150})
-	ui.Text(rpg.Story.MapName, r.X+30, r.Y+24, 30, ui.Accent)
+	drawMapBackground(r)
 
-	for i := range rpg.Locations {
-		l := &rpg.Locations[i]
-		for _, id := range l.Roads {
-			o := rpg.LocationByID(id)
-			if l.ID < o.ID {
-				col := rl.Fade(rl.Beige, 0.7)
-				if !h.LocationOpen(l) || !h.LocationOpen(o) {
-					col = rl.Fade(rl.Beige, 0.12)
+	if v.hex.on {
+		for i := range rpg.Locations {
+			l := &rpg.Locations[i]
+			for _, id := range l.Roads {
+				o := rpg.LocationByID(id)
+				if o == nil || l.ID >= o.ID {
+					continue
 				}
-				rl.DrawLineEx(mapPoint(r, l), mapPoint(r, o), 4, col)
+				col := rl.Fade(rl.Beige, 0.85)
+				if !h.LocationOpen(l) || !h.LocationOpen(o) {
+					col = rl.Fade(rl.Beige, 0.18)
+				}
+				pts := roadScreen(r, l.ID, o.ID)
+				for s := 1; s < len(pts); s++ {
+					rl.DrawLineEx(pts[s-1], pts[s], 7, rl.Fade(rl.Black, 0.55))
+					rl.DrawLineEx(pts[s-1], pts[s], 4, col)
+				}
+				for s := 1; s < len(pts)-1; s++ {
+					rl.DrawCircleV(pts[s], 7, rl.Black)
+					rl.DrawCircleV(pts[s], 5, rl.Beige)
+				}
 			}
 		}
 	}
@@ -94,41 +102,53 @@ func (v *QuestView) drawWorld(r rl.Rectangle) {
 	}
 
 	// the hero token, mid-road if walking
-	at := mapPoint(r, rpg.LocationByID(h.Location))
+	at := placePoint(r, h.Location)
 	if len(v.route) > 0 {
-		to := mapPoint(r, rpg.LocationByID(v.route[0]))
-		at = rl.Vector2{X: at.X + (to.X-at.X)*v.legT, Y: at.Y + (to.Y-at.Y)*v.legT}
+		from := v.legFrom
+		if from == "" {
+			from = h.Location
+		}
+		at = pointAlong(roadScreen(r, from, v.route[0]), v.legT)
 	}
 	drawFoe("hero", foeColor(rpg.ClassByName(h.Class).Color), rl.Vector2{X: at.X, Y: at.Y - 34}, 20, v.time, 0, true)
+	ui.TextOutlined(rpg.Story.MapName, r.X+30, r.Y+24, 30, ui.Accent)
+	v.drawHexEditor(r)
 }
 
 func (v *QuestView) drawMapNode(r rl.Rectangle, l *rpg.Location) {
 	h := v.Hero
-	p := mapPoint(r, l)
+	p := placePoint(r, l.ID)
 	if !h.LocationOpen(l) {
-		rl.DrawCircleV(p, 14, rl.Color{R: 40, G: 40, B: 50, A: 220})
-		ui.TextCentered("?", p.X, p.Y-10, 20, ui.DimText)
+		if v.hex.on {
+			rl.DrawCircleV(p, 14, rl.Color{R: 40, G: 40, B: 50, A: 220})
+		}
+		ui.TextCenteredOutlined("?", p.X, p.Y-10, 20, ui.DimText)
 		return
 	}
-	col := rl.Color{R: 180, G: 70, B: 70, A: 255}
-	if l.Town {
-		col = rl.Color{R: 80, G: 130, B: 220, A: 255}
-	}
 	hit := rl.Rectangle{X: p.X - 24, Y: p.Y - 24, Width: 48, Height: 48}
-	if ui.Hover(hit) {
-		rl.DrawCircleV(p, 25, rl.Fade(ui.Accent, 0.4))
+	if v.hex.on {
+		col := rl.Color{R: 180, G: 70, B: 70, A: 255}
+		if l.Town {
+			col = rl.Color{R: 80, G: 130, B: 220, A: 255}
+		}
+		if ui.Hover(hit) {
+			rl.DrawCircleV(p, 25, rl.Fade(ui.Accent, 0.4))
+		}
+		if l.ID == h.Location {
+			rl.DrawRing(p, 21, 25, 0, 360, 36, ui.Accent)
+		}
+		if l.Town {
+			rl.DrawRectangleRounded(rl.Rectangle{X: p.X - 17, Y: p.Y - 17, Width: 34, Height: 34}, 0.25, 6, col)
+		} else {
+			rl.DrawPoly(p, 6, 19, 0, col)
+		}
 	}
-	if l.ID == h.Location {
-		rl.DrawRing(p, 21, 25, 0, 360, 36, ui.Accent)
-	}
-	if l.Town {
-		rl.DrawRectangleRounded(rl.Rectangle{X: p.X - 17, Y: p.Y - 17, Width: 34, Height: 34}, 0.25, 6, col)
-	} else {
-		rl.DrawPoly(p, 6, 19, 0, col)
-	}
-	ui.TextCentered(text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level), p.X, p.Y+26, 15, ui.TextColor)
+	ui.TextCenteredOutlined(text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level), p.X, p.Y+26, 15, ui.TextColor)
 	if len(h.OfferedQuests(l.ID)) > 0 || len(h.QuestsHere(l.ID)) > 0 {
-		ui.TextCentered("!", p.X+18, p.Y-36, 30, ui.Accent)
+		ui.TextCenteredOutlined("!", p.X+18, p.Y-36, 30, ui.Accent)
+	}
+	if v.hex.on {
+		return
 	}
 	if ui.Clicked(hit) && l.ID != h.Location && len(v.route) == 0 {
 		if route := h.Route(l.ID); route != nil {
@@ -384,6 +404,70 @@ func (v *QuestView) drawShop(r rl.Rectangle) {
 	}
 }
 
+// citadelSprite is the hex picture for a building in the yard.
+func citadelSprite(id string) hexRef {
+	switch id {
+	case "treasury":
+		return hx(hexSheetTown, 4, 5)
+	case "stables":
+		return hx(hexSheetTown, 0, 4)
+	case "barracks":
+		return hx(hexSheetTown, 5, 2)
+	case "library":
+		return hx(hexSheetTown, 4, 0)
+	case "temple":
+		return hx(hexSheetOcean, 0, 1)
+	case "mage_tower":
+		return hx(hexSheetTown, 4, 2)
+	case "war_room":
+		return hx(hexSheetTown, 3, 4)
+	default:
+		return hx(hexSheetTown, 2, 0)
+	}
+}
+
+func (v *QuestView) drawCitadelYard(col *ui.Column, h *rpg.Hero) {
+	n := len(rpg.Buildings)
+	if n == 0 {
+		return
+	}
+	gap := float32(8)
+	rowH := float32(128)
+	per := n
+	if slot := (col.W - gap*float32(n-1)) / float32(n); slot < 96 && n > 1 {
+		per = (n + 1) / 2
+	}
+	loadHexSheets()
+	for start := 0; start < n; start += per {
+		end := min(start+per, n)
+		count := end - start
+		row := col.Next(rowH)
+		slotW := (row.Width - gap*float32(count-1)) / float32(count)
+		rl.DrawRectangleRounded(row, 0.04, 6, rl.Color{R: 36, G: 58, B: 40, A: 160})
+		for i := start; i < end; i++ {
+			b := &rpg.Buildings[i]
+			x := row.X + float32(i-start)*(slotW+gap)
+			slot := rl.Rectangle{X: x, Y: row.Y + 4, Width: slotW, Height: row.Height - 8}
+			built := h.Has(b.ID)
+			scale := min(slotW*0.85, 78) / hexCell
+			foot := rl.Vector2{X: slot.X + slot.Width/2, Y: slot.Y + slot.Height - 28}
+			tint := rl.White
+			if !built {
+				tint = rl.Fade(rl.White, 0.28)
+			}
+			drawHexTile(citadelSprite(b.ID), foot, scale, tint)
+			if !built {
+				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 13, goldColor)
+			}
+			ui.TextCentered(b.Label(), slot.X+slot.Width/2, slot.Y+slot.Height-22, 14, ui.TextColor)
+			if !built && ui.Clicked(slot) && h.Gold >= b.Price {
+				h.Build(b)
+				v.save()
+			}
+		}
+	}
+}
+
 func (v *QuestView) drawCitadel(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
@@ -392,11 +476,13 @@ func (v *QuestView) drawCitadel(r rl.Rectangle) {
 	ui.Text(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, ui.Accent)
 	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), title.X+title.Width-170, title.Y+8, 24, goldColor)
 	col.Paragraph(text.T("ui.citadel_help", "Spend your gold on buildings. Their bonuses last forever and apply in every duel."), 18, ui.TextColor)
-	col.Y += 8
+	col.Y += 6
+	v.drawCitadelYard(&col, h)
+	col.Y += 10
 	for i := range rpg.Buildings {
 		b := &rpg.Buildings[i]
 		row := col.Next(72)
-		card(row, h.Has(b.ID))
+		plaque(row, h.Has(b.ID))
 		ui.Text(b.Label(), row.X+16, row.Y+10, 24, ui.TextColor)
 		ui.Text(b.About(), row.X+16, row.Y+42, 16, ui.DimText)
 		btn := rl.Rectangle{X: row.X + row.Width - 160, Y: row.Y + 16, Width: 140, Height: 40}

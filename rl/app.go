@@ -29,6 +29,10 @@ const (
 	KeyFour			= ebiten.KeyDigit4
 	KeyFive			= ebiten.KeyDigit5
 	KeySix			= ebiten.KeyDigit6
+	KeyE			= ebiten.KeyE
+	KeyS			= ebiten.KeyS
+	KeyLeftBracket		= ebiten.KeyLeftBracket
+	KeyRightBracket		= ebiten.KeyRightBracket
 
 	MouseLeftButton		= ebiten.MouseButtonLeft
 	MouseRightButton	= ebiten.MouseButtonRight

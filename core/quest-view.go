@@ -92,6 +92,8 @@ type QuestView struct {
 	route   []string
 	legFrom string
 	legT    float32
+
+	hex hexEditor
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
@@ -170,6 +172,7 @@ func (v *QuestView) save() {
 }
 
 func (v *QuestView) Update() {
+	noteMapSave()
 	dt := rl.GetFrameTime()
 	v.time += float64(dt)
 	v.effects.Update(dt)
@@ -192,6 +195,7 @@ func (v *QuestView) Update() {
 	}
 	switch v.Screen {
 	case ScreenWorld:
+		v.updateHexEdit()
 		v.updateTravel(dt)
 	case ScreenDuel:
 		v.updateDuel(dt)
