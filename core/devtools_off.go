@@ -6,3 +6,5 @@ package core
 const devTools = false
 
 func (v *QuestView) devTour() {}
+
+func (c *GameController) devTitle() {}
