@@ -15,5 +15,4 @@ Some of it is placeholder and will be replaced.
 
 ## Other resources
 
-- Background photo by Ricky Esquivel, from [Pexels](https://www.pexels.com/) (Pexels License)
 - [Noto Mono](https://fonts.google.com/noto) font by Google, under the SIL Open Font License 1.1

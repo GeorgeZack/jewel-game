@@ -56,8 +56,7 @@ go test ./...        # game, RPG and story checks, no window needed
 ```
 
 Images, fonts and `assets/` are embedded in the binary, but files on disk take priority, so dev
-builds pick up edits live. The background photo is stored with Git LFS (`git lfs pull`); without
-it the game uses a gradient.
+builds pick up edits live.
 
 **Writing the story:** the world, foes, quests, characters, dialogue and cutscenes are YAML files in
 `assets/story/`, with art in its `portraits/`, `backgrounds/` and `foes/` folders. They reload live

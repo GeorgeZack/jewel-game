@@ -187,7 +187,6 @@ log:
   gem_texture_ok: "Loaded new texture for gem: %s from %s"
   gem_loaded: "Gem types loaded: %v"
   unloaded: GameController resources unloaded.
-  background: "Background missing or not an image (git lfs pull?), using a gradient"
   watch_create: "Hot reload disabled, failed to create file watcher: %v"
   watch_dir: "Hot reload disabled, failed to watch %s: %v"
   watch_skip: "Not watching %s: %v"

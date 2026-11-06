@@ -19,7 +19,6 @@ type GameController struct {
 	Watcher       *fsnotify.Watcher
 	WatcherErrors chan error
 	WatcherEvents chan fsnotify.Event
-	bkg           rl.Texture2D
 	title         titleScreen
 	helpScroll    ui.Scroll
 }
@@ -34,11 +33,7 @@ func NewGameController() *GameController {
 		Quest:         NewQuestView(dm),
 		WatcherErrors: make(chan error, 1),
 		WatcherEvents: make(chan fsnotify.Event, 10),
-		bkg:           rl.LoadTexture("_res/bkg.jpg"),
 		title:         titleScreen{on: true},
-	}
-	if gc.bkg.ID == 0 {
-		ui.AddMessage("%s", text.T("log.background", "Background missing or not an image (git lfs pull?), using a gradient"))
 	}
 
 	if !devTools {
@@ -83,9 +78,6 @@ func NewGameController() *GameController {
 func (c *GameController) Active() *TileManager { return c.Quest.TM }
 
 func (c *GameController) Unload() {
-	if c.bkg.ID != 0 {
-		rl.UnloadTexture(c.bkg)
-	}
 	c.DataManager.Unload()
 	if c.Watcher != nil {
 		// closing the watcher ends the forwarding goroutine
@@ -258,15 +250,6 @@ func (c *GameController) Draw() {
 func (c *GameController) drawBackground() {
 	w, h := int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight())
 	rl.DrawRectangleGradientV(0, 0, w, h, color.RGBA{38, 22, 70, 255}, color.RGBA{8, 10, 28, 255})
-	if c.bkg.ID == 0 {
-		return
-	}
-	// cover the window, keeping the photo's aspect ratio
-	scale := max(float32(w)/float32(c.bkg.Width), float32(h)/float32(c.bkg.Height))
-	dw, dh := float32(c.bkg.Width)*scale, float32(c.bkg.Height)*scale
-	src := rl.Rectangle{Width: float32(c.bkg.Width), Height: float32(c.bkg.Height)}
-	dst := rl.Rectangle{X: (float32(w) - dw) / 2, Y: (float32(h) - dh) / 2, Width: dw, Height: dh}
-	rl.DrawTexturePro(c.bkg, src, dst, rl.Vector2{}, 0, color.RGBA{255, 255, 255, 105})
 }
 
 func (c *GameController) drawLeftPanel() {
