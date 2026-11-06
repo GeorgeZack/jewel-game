@@ -412,6 +412,9 @@ func itemIcon(id string) rl.Texture2D {
 	return tex
 }
 
+// tooDear colors a price the hero can't pay yet.
+var tooDear = rl.Color{R: 220, G: 110, B: 100, A: 230}
+
 func (v *QuestView) drawShopRow(col *ui.Column, h *rpg.Hero, it *rpg.Item) {
 	row := col.Next(64)
 	worn := h.Gear[it.Slot] == it.ID
@@ -445,8 +448,10 @@ func (v *QuestView) drawShopRow(col *ui.Column, h *rpg.Hero, it *rpg.Item) {
 		}
 	case it.Level > h.Level:
 		ui.ButtonIf(btn, text.Tf("ui.need_level", "Level %d", it.Level), false)
+	case h.Gold < it.Price:
+		ui.DisabledButton(btn, text.Tf("ui.buy", "Buy %d", it.Price), tooDear)
 	default:
-		if ui.ButtonIf(btn, text.Tf("ui.buy", "Buy %d", it.Price), h.Gold >= it.Price) {
+		if ui.Button(btn, text.Tf("ui.buy", "Buy %d", it.Price), false) {
 			h.Buy(it)
 			v.save()
 		}
@@ -506,7 +511,11 @@ func (v *QuestView) drawCitadelYard(col *ui.Column, h *rpg.Hero) {
 			}
 			drawHexTile(citadelSprite(b.ID), foot, scale, tint)
 			if !built {
-				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 16, goldColor)
+				price := goldColor
+				if h.Gold < b.Price {
+					price = tooDear
+				}
+				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 16, price)
 			}
 			ui.TextCentered(b.Label(), slot.X+slot.Width/2, slot.Y+slot.Height-22, 16, ui.TextColor)
 			if !built && ui.Clicked(slot) && h.Gold >= b.Price {
@@ -542,7 +551,9 @@ func (v *QuestView) drawCitadel(r rl.Rectangle) {
 		btn := rl.Rectangle{X: row.X + row.Width - 124, Y: row.Y + 8, Width: 112, Height: 34}
 		if h.Has(b.ID) {
 			ui.Button(btn, text.T("ui.built", "Built"), true)
-		} else if ui.ButtonIf(btn, text.Tf("ui.build", "Build %d", b.Price), h.Gold >= b.Price) {
+		} else if h.Gold < b.Price {
+			ui.DisabledButton(btn, text.Tf("ui.build", "Build %d", b.Price), tooDear)
+		} else if ui.Button(btn, text.Tf("ui.build", "Build %d", b.Price), false) {
 			h.Build(b)
 			v.save()
 		}
