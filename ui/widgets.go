@@ -45,7 +45,27 @@ func TextCentered(s string, cx, y, size float32, col rl.Color) {
 	Text(s, cx-TextWidth(s, size)/2, y, size, col)
 }
 
+// TextOutlined draws a 1px black rim so light letters stay readable on the hex map.
+func TextOutlined(s string, x, y, size float32, col rl.Color) {
+	ink := rl.Color{ R: 0, G: 0, B: 0, A: 230 }
+	for _, d := range [][2]float32{
+		{-2, 0}, {2, 0}, {0, -2}, {0, 2},
+		{-1, 0}, {1, 0}, {0, -1}, {0, 1},
+		{-1, -1}, {1, -1}, {-1, 1}, {1, 1},
+	} {
+		Text(s, x+d[0], y+d[1], size, ink)
+	}
+	Text(s, x, y, size, col)
+}
+
+func TextCenteredOutlined(s string, cx, y, size float32, col rl.Color) {
+	TextOutlined(s, cx-TextWidth(s, size)/2, y, size, col)
+}
+
 func Panel(r rl.Rectangle) {
+	if stone(r, true) {
+		return
+	}
 	rl.DrawRectangleRounded(r, 0.04, 8, PanelColor)
 	rl.DrawRectangleRoundedLines(r, 0.04, 8, 2, PanelEdge)
 }
@@ -67,6 +87,17 @@ func clicked(r rl.Rectangle) bool {
 }
 
 func box(r rl.Rectangle, on bool) {
+	ensureTheme()
+	tex := themeButton
+	if on {
+		tex = themeButtonOn
+	}
+	if nine(tex, r, 10, rl.White) {
+		if !on && Hover(r) {
+			nine(themeButtonOn, r, 10, rl.Fade(rl.White, 0.45))
+		}
+		return
+	}
 	col := buttonIdle
 	if on {
 		col = buttonOn
@@ -83,7 +114,11 @@ func Button(r rl.Rectangle, label string, on bool) bool {
 	for size > 10 && TextWidth(label, size) > r.Width-8 {
 		size--
 	}
-	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, TextColor)
+	col := TextColor
+	if on {
+		col = rl.Color{ R: 48, G: 28, B: 12, A: 255 }
+	}
+	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
 	return clicked(r)
 }
 
@@ -92,7 +127,10 @@ func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
 	if enabled {
 		return Button(r, label, false)
 	}
-	rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.5))
+	ensureTheme()
+	if !nine(themeButton, r, 10, rl.Fade(rl.White, 0.45)) {
+		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.5))
+	}
 	size := min(r.Height*0.55, 22)
 	for size > 10 && TextWidth(label, size) > r.Width-8 {
 		size--
@@ -103,13 +141,30 @@ func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
 
 // Bar draws a meter like an HP bar, with "label  value/max" on it.
 func Bar(r rl.Rectangle, label string, value, maxValue int, col rl.Color) {
-	rl.DrawRectangleRounded(r, 0.4, 6, rl.Color{ R: 0, G: 0, B: 0, A: 140 })
+	ensureTheme()
+	framed := nine(themeBar, r, 5, rl.White)
+	if !framed {
+		rl.DrawRectangleRounded(r, 0.4, 6, rl.Color{ R: 0, G: 0, B: 0, A: 140 })
+		rl.DrawRectangleRoundedLines(r, 0.4, 6, 1.5, PanelEdge)
+	}
 	if maxValue > 0 && value > 0 {
 		fill := r
 		fill.Width = r.Width * float32(min(value, maxValue)) / float32(maxValue)
-		rl.DrawRectangleRounded(fill, 0.4, 6, col)
+		if framed && themeBarFill.ID != 0 {
+			inset := min(5, min(r.Height, r.Width)*0.22)
+			inner := rl.Rectangle{ X: r.X + inset, Y: r.Y + inset, Width: fill.Width - inset, Height: r.Height - inset*2 }
+			if maxW := r.X + r.Width - inset - inner.X; inner.Width > maxW {
+				inner.Width = maxW
+			}
+			if inner.Width > 1 && inner.Height > 1 {
+				rl.DrawTexturePro(themeBarFill,
+					rl.Rectangle{ Width: float32(themeBarFill.Width), Height: float32(themeBarFill.Height) },
+					inner, rl.Vector2{}, 0, col)
+			}
+		} else {
+			rl.DrawRectangleRounded(fill, 0.4, 6, col)
+		}
 	}
-	rl.DrawRectangleRoundedLines(r, 0.4, 6, 1.5, PanelEdge)
 	size := min(r.Height*0.62, 18)
 	y := r.Y + (r.Height-size)/2
 	Text(label, r.X+10, y, size, TextColor)

@@ -165,6 +165,18 @@ ui:
   save_failed_short: "Saving failed, see F1 log"
   menu: Menu
   world_map: World map
+  map_edit: "Edit map  [E]"
+  map_save: "Save  [S]"
+  map_done: "Done  [E]"
+  map_edit_help: "Drag a place. Click a road to bend it."
+  map_image: Image
+  map_no_image: No image
+  map_hexes: Hexes
+  hex_overworld: Overworld
+  hex_towns: Towns
+  hex_lava: Lava
+  hex_sea: Sea
+  hex_parchment: Parchment
   hero: Hero
   hero_points: "Hero  (%d points)"
   spells: Spells
@@ -189,6 +201,13 @@ ui:
   cast_popup: "%s!"
 
 log:
+  map_read: "Could not read assets/maps/world.yaml: %v"
+  map_saved: Map saved
+  map_save: "Could not save the map: %v"
+  map_save_web: Could not save the map. Use ./start.sh --dev so the browser can write assets/maps/world.yaml.
+  map_image: "Could not use that image: %v"
+  map_image_bad: That file is not a PNG or JPEG the map can show.
+  map_image_missing: No file chooser. Save a PNG as assets/maps/background.png, then press Image again.
   moves_first: "%s moves first."
   falls: "%s falls!"
   extra_turn: "%s earns an extra turn!"

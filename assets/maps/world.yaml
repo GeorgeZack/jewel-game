@@ -1,0 +1,31 @@
+# World map. nodes are [x, y] from 0 to 1 across the picture.
+# roads.via bends the path from `from` to `to`.
+cols: 16
+rows: 14
+tiles: []
+nodes:
+    barrow:
+        - 0.40680474
+        - 0.5022342
+    emberfield:
+        - 0.17774658
+        - 0.8105553
+    greyfen:
+        - 0.2372568
+        - 0.40541843
+    highwatch:
+        - 0.540422
+        - 0.3890342
+    mossgate:
+        - 0.31024104
+        - 0.6675658
+    redtusk:
+        - 0.6033007
+        - 0.6928869
+    silverlake:
+        - 0.7268125
+        - 0.80161846
+    stonebridge:
+        - 0.4539638
+        - 0.7509764
+background: assets/maps/background.png

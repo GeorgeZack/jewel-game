@@ -63,9 +63,8 @@ if [ "$web" = 1 ]; then
 		exit 1
 	fi
 	./build-web.sh
-	port="${PORT:-8000}"
-	echo "Open http://localhost:$port  (Ctrl+C to stop; rerun ./build-web.sh and reload after changes)"
-	exec python3 -m http.server "$port" --bind 127.0.0.1 -d web
+	echo "Open http://localhost:${PORT:-8000}  (Ctrl+C to stop; rerun ./build-web.sh and reload after code changes)"
+	JEWEL_WATCH=0 exec python3 devserver.py
 fi
 
 echo "Building (the first build takes a little while)..."

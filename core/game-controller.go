@@ -24,16 +24,16 @@ const (
 )
 
 type GameController struct {
-	DataManager		*DataManager
-	Mode			Mode
-	Classic			*TileManager
-	Sandbox			*TileManager
-	Quest			*QuestView
-	Quit			bool
-	Watcher			*fsnotify.Watcher
-	WatcherErrors	chan error
-	WatcherEvents	chan fsnotify.Event
-	bkg				rl.Texture2D
+	DataManager   *DataManager
+	Mode          Mode
+	Classic       *TileManager
+	Sandbox       *TileManager
+	Quest         *QuestView
+	Quit          bool
+	Watcher       *fsnotify.Watcher
+	WatcherErrors chan error
+	WatcherEvents chan fsnotify.Event
+	bkg           rl.Texture2D
 }
 
 func NewGameController() *GameController {
@@ -45,13 +45,13 @@ func NewGameController() *GameController {
 	sandbox.UndoEnabled = true
 
 	gc := &GameController{
-		DataManager:	dm,
-		Classic:		NewTileManager(board.DefaultSettings(), dm),
-		Sandbox:		sandbox,
-		Quest:			NewQuestView(dm),
-		WatcherErrors:	make(chan error, 1),
-		WatcherEvents:	make(chan fsnotify.Event, 10),
-		bkg:			rl.LoadTexture("_res/bkg.jpg"),
+		DataManager:   dm,
+		Classic:       NewTileManager(board.DefaultSettings(), dm),
+		Sandbox:       sandbox,
+		Quest:         NewQuestView(dm),
+		WatcherErrors: make(chan error, 1),
+		WatcherEvents: make(chan fsnotify.Event, 10),
+		bkg:           rl.LoadTexture("_res/bkg.jpg"),
 	}
 	if gc.bkg.ID == 0 {
 		ui.AddMessage("%s", text.T("log.background", "Background missing or not an image (git lfs pull?), using a gradient"))
@@ -120,7 +120,7 @@ func (c *GameController) watchExtra() {
 	if c.Watcher == nil {
 		return
 	}
-	dirs := append([]string{ langDir }, storyDirs(defaultStoryDir)...)
+	dirs := append([]string{langDir}, storyDirs(defaultStoryDir)...)
 	if storyRoot != defaultStoryDir {
 		dirs = append(dirs, storyDirs(storyRoot)...)
 	}
@@ -169,6 +169,17 @@ func (c *GameController) handleKeys() {
 	tm := c.Active()
 	// a dialog or scene in Quest mode takes the keys, apart from the debug log and mode switch
 	busy := c.Mode == ModeQuest && c.Quest.HasModal()
+	if !busy && c.Mode == ModeQuest && c.Quest != nil && c.Quest.hex.on {
+		switch {
+		case rl.IsKeyPressed(rl.KeyF1):
+			ui.ShowDebug = !ui.ShowDebug
+		case rl.IsKeyPressed(rl.KeyE), rl.IsKeyPressed(rl.KeyEscape):
+			c.Quest.hex.on = false
+		case rl.IsKeyPressed(rl.KeyS):
+			c.Quest.saveHexMap()
+		}
+		return
+	}
 	switch {
 	case busy && !rl.IsKeyPressed(rl.KeyF1) && !rl.IsKeyPressed(rl.KeyTab):
 	case rl.IsKeyPressed(rl.KeyF1):
@@ -188,6 +199,10 @@ func (c *GameController) handleKeys() {
 		}
 	case rl.IsKeyPressed(rl.KeyZ), rl.IsKeyPressed(rl.KeyBackspace):
 		tm.Undo()
+	case rl.IsKeyPressed(rl.KeyE):
+		if c.Mode == ModeQuest && c.Quest != nil && c.Quest.Screen == ScreenWorld && !c.Quest.HasModal() {
+			c.Quest.hex.on = true
+		}
 	case rl.IsKeyPressed(rl.KeyEscape):
 		if tm.Brush != nil {
 			tm.Brush = nil
@@ -198,7 +213,7 @@ func (c *GameController) handleKeys() {
 }
 
 const MARGIN = 20
-const DESIGN_HEIGHT = 1058	// side panels are laid out for this height and scaled down in smaller windows
+const DESIGN_HEIGHT = 1058 // side panels are laid out for this height and scaled down in smaller windows
 
 // uiScale shrinks the side panels so they always fit the window height.
 func uiScale() float32 {
@@ -208,26 +223,23 @@ func uiScale() float32 {
 // leftPanel and rightPanel are in panel space, which is screen space divided by uiScale.
 func (c *GameController) leftPanel() rl.Rectangle {
 	h := float32(rl.GetScreenHeight()) / uiScale()
-	return rl.Rectangle{ X: MARGIN, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN }
+	return rl.Rectangle{X: MARGIN, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN}
 }
 
 func (c *GameController) rightPanel() rl.Rectangle {
 	w, h := float32(rl.GetScreenWidth())/uiScale(), float32(rl.GetScreenHeight())/uiScale()
-	return rl.Rectangle{ X: w - MARGIN - utils.SIDE_PANEL_WIDTH, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN }
+	return rl.Rectangle{X: w - MARGIN - utils.SIDE_PANEL_WIDTH, Y: MARGIN, Width: utils.SIDE_PANEL_WIDTH, Height: h - 2*MARGIN}
 }
 
 // centerPanel is the space between the side panels, in panel space.
-func (c *GameController) centerPanel() rl.Rectangle {
-	l, r := c.leftPanel(), c.rightPanel()
-	return rl.Rectangle{ X: l.X + l.Width + 16, Y: l.Y, Width: r.X - l.X - l.Width - 32, Height: l.Height }
-}
+func (c *GameController) centerPanel() rl.Rectangle { return centerPanelRect() }
 
 // boardArea is in screen space.
 func (c *GameController) boardArea() rl.Rectangle {
 	s := uiScale()
 	l, r := c.leftPanel(), c.rightPanel()
 	x := (l.X+l.Width)*s + 60
-	return rl.Rectangle{ X: x, Y: 70, Width: r.X*s - 60 - x, Height: float32(rl.GetScreenHeight()) - 140 }
+	return rl.Rectangle{X: x, Y: 70, Width: r.X*s - 60 - x, Height: float32(rl.GetScreenHeight()) - 140}
 }
 
 func (c *GameController) Draw() {
@@ -245,7 +257,7 @@ func (c *GameController) Draw() {
 
 	// draw panels scaled, and scale the mouse to match so the widgets' hit tests line up
 	s := uiScale()
-	rl.BeginMode2D(rl.Camera2D{ Zoom: s })
+	rl.BeginMode2D(rl.Camera2D{Zoom: s})
 	rl.SetMouseScale(1/s, 1/s)
 	ui.Blocked = quest && c.Quest.HasModal()
 	c.drawLeftPanel(tm)
@@ -257,7 +269,7 @@ func (c *GameController) Draw() {
 		c.Quest.DrawRight(c.rightPanel())
 		c.Quest.DrawEffects()
 		ui.Blocked = false
-		c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{ Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s })
+		c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s})
 	default:
 		c.drawGuide(c.rightPanel())
 	}
@@ -270,22 +282,22 @@ func (c *GameController) Draw() {
 
 func (c *GameController) drawBackground() {
 	w, h := int32(rl.GetScreenWidth()), int32(rl.GetScreenHeight())
-	rl.DrawRectangleGradientV(0, 0, w, h, color.RGBA{ 38, 22, 70, 255 }, color.RGBA{ 8, 10, 28, 255 })
+	rl.DrawRectangleGradientV(0, 0, w, h, color.RGBA{38, 22, 70, 255}, color.RGBA{8, 10, 28, 255})
 	if c.bkg.ID == 0 {
 		return
 	}
 	// cover the window, keeping the photo's aspect ratio
 	scale := max(float32(w)/float32(c.bkg.Width), float32(h)/float32(c.bkg.Height))
 	dw, dh := float32(c.bkg.Width)*scale, float32(c.bkg.Height)*scale
-	src := rl.Rectangle{ Width: float32(c.bkg.Width), Height: float32(c.bkg.Height) }
-	dst := rl.Rectangle{ X: (float32(w) - dw) / 2, Y: (float32(h) - dh) / 2, Width: dw, Height: dh }
-	rl.DrawTexturePro(c.bkg, src, dst, rl.Vector2{}, 0, color.RGBA{ 255, 255, 255, 105 })
+	src := rl.Rectangle{Width: float32(c.bkg.Width), Height: float32(c.bkg.Height)}
+	dst := rl.Rectangle{X: (float32(w) - dw) / 2, Y: (float32(h) - dh) / 2, Width: dw, Height: dh}
+	rl.DrawTexturePro(c.bkg, src, dst, rl.Vector2{}, 0, color.RGBA{255, 255, 255, 105})
 }
 
 func (c *GameController) drawLeftPanel(tm *TileManager) {
 	r := c.leftPanel()
 	ui.Panel(r)
-	col := ui.Column{ X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6 }
+	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6}
 	title := col.Next(44)
 	ui.Text(text.T("ui.title", "JEWEL GAME"), title.X, title.Y, 40, ui.Accent)
 
@@ -352,7 +364,7 @@ func (c *GameController) drawLeftPanel(tm *TileManager) {
 
 func (c *GameController) drawGuide(r rl.Rectangle) {
 	ui.Panel(r)
-	col := ui.Column{ X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 4 }
+	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 4}
 	para := func(s string) {
 		col.Paragraph(s, 16, ui.TextColor)
 		col.Y += 6

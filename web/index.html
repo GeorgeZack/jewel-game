@@ -14,8 +14,15 @@
 <script src="wasm_exec.js"></script>
 <script>
 	const go = new Go();
-	WebAssembly.instantiateStreaming(fetch("game.wasm"), go.importObject)
-		.then(r => { document.getElementById("status").remove(); go.run(r.instance); })
+	const mapYAML = fetch("/assets/maps/world.yaml", { cache: "no-store" })
+		.then(r => r.ok ? r.text() : "")
+		.catch(() => "");
+	Promise.all([WebAssembly.instantiateStreaming(fetch("game.wasm"), go.importObject), mapYAML])
+		.then(([r, yaml]) => {
+			window.jewelMapYAML = yaml;
+			document.getElementById("status").remove();
+			go.run(r.instance);
+		})
 		.catch(e => { document.getElementById("status").textContent = "Could not start the game: " + e; });
 </script>
 </body>

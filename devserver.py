@@ -39,6 +39,8 @@ RELOAD = b"""
 
 def interesting(path: Path) -> bool:
     rel = path.relative_to(ROOT)
+    if rel.as_posix() == "assets/maps/world.yaml":
+        return False  # the map editor writes this; it must not rebuild and reload the page
     parts = rel.parts
     if not parts or parts[0] in {"web", ".git"} or any(p.startswith(".") for p in parts):
         return False
@@ -105,8 +107,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
+    def do_POST(self):
+        path = self.path.split("?", 1)[0]
+        if path != "/__map":
+            self.send_error(404)
+            return
+        try:
+            n = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self.send_error(400)
+            return
+        if n < 0 or n > 2_000_000:
+            self.send_error(413)
+            return
+        body = self.rfile.read(n)
+        dest = ROOT / "assets" / "maps" / "world.yaml"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_suffix(".yaml.tmp")
+        tmp.write_bytes(body)
+        tmp.replace(dest)
+        self.send_response(204)
+        self.end_headers()
+
     def do_GET(self):
         path = self.path.split("?", 1)[0]
+        if path == "/assets/maps/world.yaml":
+            self.serve_file(ROOT / "assets" / "maps" / "world.yaml", "application/yaml; charset=utf-8")
+            return
         if path == "/__dev":
             with gen_lock:
                 body = str(generation).encode()
@@ -120,6 +147,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.serve_index()
             return
         super().do_GET()
+
+    def serve_file(self, path: Path, content_type: str):
+        try:
+            data = path.read_bytes()
+        except OSError:
+            self.send_error(404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
 
     def serve_index(self):
         data = (WEB / "index.html").read_bytes()
@@ -156,9 +196,11 @@ def watch() -> None:
 
 
 def main() -> None:
-    if not build():
-        raise SystemExit(1)
-    threading.Thread(target=watch, daemon=True).start()
+    watch_sources = os.environ.get("JEWEL_WATCH", "1") != "0"
+    if watch_sources:
+        if not build():
+            raise SystemExit(1)
+        threading.Thread(target=watch, daemon=True).start()
     print(f"Open http://localhost:{PORT}", flush=True)
     print("Saving a source, asset, or story file rebuilds the wasm and reloads the page.", flush=True)
     http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
