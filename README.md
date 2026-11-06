@@ -1,51 +1,14 @@
-# jewel-game
-A **Bejewelled** clone.
+# Jewel Game
 
-## Requirements
+A fantasy RPG where every fight is a match-3 duel. Pick a hero, travel the world map, take on
+quests, and battle monsters on a shared gem board.
 
-- `go` to build the game from scratch
+**Play it in your browser:** https://georgezack.github.io/jewel-game-web/
 
-## Running
-
-```sh
-./start.sh           # dev build: map editor and hot reload (or: go run -tags dev .)
-./start.sh --watch   # rebuild and restart on save, needs CompileDaemon
-go test ./...        # game and RPG rules, no window needed
-./start.sh --web     # public browser build (no editor), served on http://localhost:8000
-./deploy-web.sh      # publish the public build to GitHub Pages
-./start.sh --dev     # same, and rebuild the wasm and reload the page on save
-```
-
-The game draws with [Ebitengine](https://ebitengine.org), so the same code runs on the desktop and in a
-browser through WebAssembly. Desktop builds on Linux need the X11/OpenGL development headers; there is
-no C compiler needed for the web build. Images, fonts and `assets/` are embedded in the binary, but files
-on disk take priority, so editing `assets/gemtypes.yaml` still hot reloads on the desktop. In a browser the
-hero is saved to `localStorage` instead of `~/.config/jewel-game/hero.json`.
-
-The background photo is stored with Git LFS (`git lfs pull`); without it the game uses a gradient.
+This is a vertical slice: the first area of the story, playable start to finish. Some art is
+still placeholder.
 
 ## How to play
-
-| Input | Action |
-| --- | --- |
-| Left drag, or click two gems | Swap |
-| Right click | Lock / unlock a gem (not in duels) |
-| Space | Release every lock at once |
-| H | Hint |
-| 1-6 | Cast spells (duels) |
-| F1 | Debug log |
-| E | Edit the world map (dev builds only) |
-| Esc | Deselect / quit |
-
-**Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
-5 in a row makes a **Prism** (swap it with a gem to clear that color). Swapping two specials together
-combines them; Prism + Bolt/Bomb turns a whole color into that special.
-
-**Locks:** a locked gem hangs in place: it doesn't fall, match, or break, and other gems fall past it.
-Lock pieces of several lines, finish them, then release them all together. Making more than one
-special in a single step pays a Synchro bonus.
-
-**Quest:** an RPG in the style of Puzzle Quest: Challenge of the Warlords, with its own world, story and art.
 
 - *Duels:* you and a monster take turns on one 8x8 board. Red, blue, yellow and green gems fill your
   Fire, Water, Air and Earth mana. Skulls damage the foe, and +5 skulls hit harder and blast the gems
@@ -60,8 +23,40 @@ special in a single step pays a Synchro bonus.
 - *Story:* dialogue with portraits and choices, title cards, people to talk to in towns, and story
   flags that quests and scenes can check.
 
-Losing a duel costs nothing but keeps only what you picked up on the board. The hero is saved to
-`~/.config/jewel-game/hero.json`.
+
+Losing a duel costs nothing, but you only keep what you picked up on the board. Progress saves
+automatically (in the browser's local storage, or `~/.config/jewel-game/hero.json` on the desktop).
+
+**Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
+and 5 in a row makes a **Prism** (swap it with a gem to clear that color). Swapping two specials
+together combines them.
+
+| Input | Action |
+| --- | --- |
+| Left drag, or click two gems | Swap |
+| 1-6 | Cast spells (duels) |
+| H | Hint |
+| F1 | Debug log |
+| Esc | Deselect / quit |
+
+## Building
+
+You need [Go](https://go.dev/doc/install). The game draws with [Ebitengine](https://ebitengine.org),
+so the same code runs on the desktop and in a browser through WebAssembly. Desktop builds on Linux
+need the X11/OpenGL development headers; the web build needs no C compiler.
+
+```sh
+./start.sh           # dev build with the map editor (E) and hot reload (or: go run -tags dev .)
+./start.sh --watch   # rebuild and restart on save, needs CompileDaemon
+./start.sh --dev     # browser dev build; rebuilds the wasm and reloads the page on save
+./start.sh --web     # the public browser build (no editor), on http://localhost:8000
+./deploy-web.sh      # publish the public build to GitHub Pages
+go test ./...        # game, RPG and story checks, no window needed
+```
+
+Images, fonts and `assets/` are embedded in the binary, but files on disk take priority, so dev
+builds pick up edits live. The background photo is stored with Git LFS (`git lfs pull`); without
+it the game uses a gradient.
 
 **Writing the story:** the world, foes, quests, characters, dialogue and cutscenes are YAML files in
 `assets/story/`, with art in its `portraits/`, `backgrounds/` and `foes/` folders. They reload live
