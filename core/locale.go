@@ -51,7 +51,7 @@ func loadLocale() {
 	if _, err := rl.ReadFile(filepath.Join(alt, "story.yaml")); err == nil {
 		storyRoot = alt
 	}
-	rl.SetWindowTitle(text.T("ui.window_title", "Jewel Game"))
+	rl.SetWindowTitle(text.T("ui.window_title", "The Hollow King"))
 }
 
 // storyPath is a file inside the active story, falling back to the English

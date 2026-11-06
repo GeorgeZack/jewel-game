@@ -19,8 +19,7 @@ ui:
   back: Back
   thanks_title: Thanks for playing!
   thanks_body: That's the end of this slice of the game. Your hero can keep exploring, and more is on the way.
-  window_title: Jewel Game
-  title: JEWEL GAME
+  window_title: The Hollow King
   fps: "FPS %.0f"
   specials: Specials
   help_bolt: "4 in a row makes a Bolt. It clears its whole row or column."

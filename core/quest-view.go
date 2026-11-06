@@ -359,7 +359,8 @@ func (v *QuestView) myTurn() bool {
 
 func (v *QuestView) updateDuel(dt float32) {
 	d := v.Duel
-	v.TM.Paused = !v.myTurn()
+	auto := devAutoplay()
+	v.TM.Paused = !v.myTurn() || auto
 	if v.TM.Busy() {
 		return
 	}
@@ -367,7 +368,7 @@ func (v *QuestView) updateDuel(dt float32) {
 		v.finishDuel()
 		return
 	}
-	if v.myTurn() {
+	if v.myTurn() && !auto {
 		for i, key := range []rl.Key{rl.KeyOne, rl.KeyTwo, rl.KeyThree, rl.KeyFour, rl.KeyFive, rl.KeySix} {
 			if rl.IsKeyPressed(key) && i < len(d.Sides[rpg.Player].Spells) {
 				v.cast(d.Sides[rpg.Player].Spells[i])

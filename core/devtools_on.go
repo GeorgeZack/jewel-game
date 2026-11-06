@@ -32,7 +32,11 @@ func (v *QuestView) devTour() {
 	if n < len(screens) {
 		v.Screen = screens[n]
 	} else if n == len(screens) {
-		v.startDuel("goblin", 2, v.Hero.Location)
+		foe := os.Getenv("JEWEL_TOUR_FOE")
+		if foe == "" {
+			foe = "goblin"
+		}
+		v.startDuel(foe, v.Hero.Level, v.Hero.Location)
 	}
 }
 
@@ -42,3 +46,9 @@ func (c *GameController) devTitle() {
 		c.title.on = false
 	}
 }
+
+// devAutoplay lets the AI play the hero's side of duels too (JEWEL_AUTOPLAY), for screenshots.
+func devAutoplay() bool { return os.Getenv("JEWEL_AUTOPLAY") != "" }
+
+// devHideEditor hides the map editor's button while taking screenshots.
+func devHideEditor() bool { return os.Getenv("JEWEL_SHOTS") != "" }
