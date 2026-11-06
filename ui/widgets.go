@@ -72,14 +72,14 @@ func Panel(r rl.Rectangle) {
 
 // Hover reports whether the mouse is over r and free to interact with it.
 func Hover(r rl.Rectangle) bool {
-	return !Blocked && rl.CheckCollisionPointRec(rl.GetMousePosition(), r)
+	return !Blocked && inClip() && rl.CheckCollisionPointRec(rl.GetMousePosition(), r)
 }
 
 // Clicked reports a click on r, for custom widgets.
 func Clicked(r rl.Rectangle) bool { return clicked(r) }
 
 func clicked(r rl.Rectangle) bool {
-	if Blocked || clickTaken || !rl.IsMouseButtonPressed(rl.MouseLeftButton) || !rl.CheckCollisionPointRec(rl.GetMousePosition(), r) {
+	if Blocked || clickTaken || !inClip() || !rl.IsMouseButtonPressed(rl.MouseLeftButton) || !rl.CheckCollisionPointRec(rl.GetMousePosition(), r) {
 		return false
 	}
 	clickTaken = true
