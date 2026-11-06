@@ -8,3 +8,6 @@ const devTools = false
 func (v *QuestView) devTour() {}
 
 func (c *GameController) devTitle() {}
+
+func devAutoplay() bool   { return false }
+func devHideEditor() bool { return false }

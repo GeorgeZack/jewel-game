@@ -2,6 +2,7 @@ package core
 
 import (
 	"image/color"
+	"jewel-game/rpg"
 	"jewel-game/text"
 	"jewel-game/ui"
 	"jewel-game/utils"
@@ -257,7 +258,12 @@ func (c *GameController) drawLeftPanel() {
 	ui.Panel(r)
 	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6}
 	title := col.Next(44)
-	ui.Text(text.T("ui.title", "JEWEL GAME"), title.X, title.Y, 40, ui.Accent)
+	name := rpg.Story.Title
+	size := float32(40)
+	for size > 20 && ui.TextWidth(name, size) > title.Width {
+		size--
+	}
+	ui.Text(name, title.X, title.Y+(40-size)/2, size, ui.Accent)
 	c.Quest.DrawLeft(&col, r)
 }
 

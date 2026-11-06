@@ -93,7 +93,7 @@ func noteMapSave() {
 }
 
 func (v *QuestView) drawHexEditor(panel rl.Rectangle) {
-	if !devTools {
+	if !devTools || devHideEditor() {
 		return
 	}
 	if !v.hex.on {
