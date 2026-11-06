@@ -167,7 +167,7 @@ func (c *GameController) handleKeys() {
 			c.Quest.hex.on = true
 		}
 	case rl.IsKeyPressed(rl.KeyEscape):
-		if !tm.ClearSelection() {
+		if !tm.ClearSelection() && canQuit {
 			c.Quit = true
 		}
 	}

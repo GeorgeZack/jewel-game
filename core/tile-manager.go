@@ -49,6 +49,7 @@ type TileManager struct {
 	UndoEnabled      bool
 	Brush            *Brush
 	Paused           bool                       // ignore board input, e.g. during the enemy's turn
+	holdInput        float32                    // seconds left ignoring board input, so a double click on a popup doesn't land on the board
 	OnStep           func(*board.StepResult)    // called for every cascade step
 	OnMoveDone       func()                     // called when a swap has fully resolved
 	OnShuffle        func()                     // called when the board ran out of moves
@@ -140,10 +141,14 @@ func (tm *TileManager) CellAt(pos rl.Vector2) (board.Point, bool) {
 
 func (tm *TileManager) Busy() bool { return tm.Phase != PhaseIdle }
 
+// HoldInput ignores clicks on the board for a moment, after a popup closes.
+func (tm *TileManager) HoldInput() { tm.holdInput = 0.35 }
+
 func (tm *TileManager) Update() {
 	dt := rl.GetFrameTime() * tm.Speed
 	tm.time += float64(rl.GetFrameTime())
-	if tm.Phase == PhaseIdle && !tm.Paused {
+	tm.holdInput = max(0, tm.holdInput-rl.GetFrameTime())
+	if tm.Phase == PhaseIdle && !tm.Paused && tm.holdInput == 0 {
 		tm.handleInput()
 	}
 	tm.syncTiles()

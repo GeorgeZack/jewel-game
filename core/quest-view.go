@@ -498,6 +498,7 @@ func (v *QuestView) DrawModal(area, full rl.Rectangle) {
 	for i, b := range m.Buttons {
 		if ui.Button(row[i], b.Label, false) {
 			v.modals = v.modals[1:]
+			v.TM.HoldInput()
 			if b.Action != nil {
 				b.Action()
 			}
