@@ -14,10 +14,6 @@ if ! command -v go >/dev/null; then
 	exit 1
 fi
 
-if head -c 40 _res/bkg.jpg 2>/dev/null | grep -q "git-lfs"; then
-	echo "Note: background image not downloaded, run 'git lfs pull' to get it (a gradient is used meanwhile)."
-fi
-
 watch=0
 web=0
 dev=0

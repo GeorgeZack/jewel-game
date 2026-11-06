@@ -4,9 +4,12 @@ cols: 16
 rows: 14
 tiles: []
 nodes:
+    ashen:
+        - 0.78679174
+        - 0.35925493
     barrow:
-        - 0.40680474
-        - 0.5022342
+        - 0.42283627
+        - 0.528149
     emberfield:
         - 0.17774658
         - 0.8105553
@@ -16,16 +19,103 @@ nodes:
     highwatch:
         - 0.540422
         - 0.3890342
+    hollow:
+        - 0.90253735
+        - 0.2125389
+    ironpeak:
+        - 0.7314912
+        - 0.17330089
     mossgate:
         - 0.31024104
         - 0.6675658
     redtusk:
-        - 0.6033007
-        - 0.6928869
+        - 0.6080292
+        - 0.678277
     silverlake:
         - 0.7268125
         - 0.80161846
     stonebridge:
         - 0.4539638
         - 0.7509764
+    sunken:
+        - 0.8536671
+        - 0.53838503
+roads:
+    - from: silverlake
+      to: sunken
+      via:
+        - - 0.79450816
+          - 0.66974705
+        - - 0.8446645
+          - 0.6731591
+    - from: redtusk
+      to: silverlake
+      via:
+        - - 0.6980535
+          - 0.7362811
+    - from: redtusk
+      to: stonebridge
+      via:
+        - - 0.5270073
+          - 0.7431051
+    - from: highwatch
+      to: redtusk
+      via:
+        - - 0.55015635
+          - 0.49402902
+        - - 0.60545707
+          - 0.54179704
+    - from: barrow
+      to: stonebridge
+      via:
+        - - 0.42540836
+          - 0.66974705
+    - from: mossgate
+      to: stonebridge
+      via:
+        - - 0.37010774
+          - 0.6765711
+    - from: emberfield
+      to: mossgate
+      via:
+        - - 0.21578029
+          - 0.7362811
+    - from: greyfen
+      to: mossgate
+      via:
+        - - 0.2466458
+          - 0.531561
+    - from: barrow
+      to: greyfen
+      via:
+        - - 0.3598192
+          - 0.534973
+        - - 0.335384
+          - 0.468439
+    - from: barrow
+      to: highwatch
+      via:
+        - - 0.46141812
+          - 0.461615
+    - from: highwatch
+      to: ironpeak
+      via:
+        - - 0.5964547
+          - 0.35584292
+        - - 0.60159886
+          - 0.29783893
+        - - 0.72634685
+          - 0.2091269
+    - from: ashen
+      to: sunken
+      via:
+        - - 0.7842196
+          - 0.48038098
+    - from: ironpeak
+      to: sunken
+      via:
+        - - 0.6440389
+          - 0.28589693
+        - - 0.73406327
+          - 0.49402902
 background: assets/maps/background.png
