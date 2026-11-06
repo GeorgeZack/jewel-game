@@ -188,6 +188,7 @@ func (v *QuestView) Update() {
 	if v.scenes.WaitingForDuel() && v.Screen != ScreenDuel && len(v.modals) == 0 {
 		v.scenes.DuelDone(v.lastWon)
 	}
+	v.thankOnce()
 	if len(v.modals) > 0 {
 		v.TM.Paused = true
 		return
@@ -892,4 +893,22 @@ func drawFoe(shape string, col rl.Color, c rl.Vector2, rad float32, t float64, h
 func lerp(a, b rl.Color, t float32) rl.Color {
 	l := func(x, y uint8) uint8 { return uint8(float32(x) + (float32(y)-float32(x))*t) }
 	return rl.Color{R: l(a.R, b.R), G: l(a.G, b.G), B: l(a.B, b.B), A: a.A}
+}
+
+// thankOnce shows a thank-you once the story is beaten and its last scene is over.
+func (v *QuestView) thankOnce() {
+	h := v.Hero
+	if h == nil || !h.Finished || h.Flags["thanked"] || v.scenes.Showing() || len(v.modals) > 0 {
+		return
+	}
+	if h.Flags == nil {
+		h.Flags = map[string]bool{}
+	}
+	h.Flags["thanked"] = true
+	v.save()
+	v.show(Modal{
+		Title:   text.T("ui.thanks_title", "Thanks for playing!"),
+		Body:    text.T("ui.thanks_body", "That's the end of this slice of the game. Your hero can keep exploring, and more is on the way."),
+		Buttons: []ModalButton{{text.T("ui.keep_playing", "Keep playing"), nil}},
+	})
 }

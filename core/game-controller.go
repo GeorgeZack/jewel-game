@@ -20,6 +20,8 @@ type GameController struct {
 	WatcherErrors chan error
 	WatcherEvents chan fsnotify.Event
 	bkg           rl.Texture2D
+	title         titleScreen
+	helpScroll    ui.Scroll
 }
 
 func NewGameController() *GameController {
@@ -33,6 +35,7 @@ func NewGameController() *GameController {
 		WatcherErrors: make(chan error, 1),
 		WatcherEvents: make(chan fsnotify.Event, 10),
 		bkg:           rl.LoadTexture("_res/bkg.jpg"),
+		title:         titleScreen{on: true},
 	}
 	if gc.bkg.ID == 0 {
 		ui.AddMessage("%s", text.T("log.background", "Background missing or not an image (git lfs pull?), using a gradient"))
@@ -129,6 +132,13 @@ func (c *GameController) Update() {
 	default:
 	}
 
+	c.devTitle()
+	if c.title.on {
+		if rl.IsKeyPressed(rl.KeyF1) {
+			ui.ShowDebug = !ui.ShowDebug
+		}
+		return
+	}
 	c.handleKeys()
 	c.Quest.Update()
 	if !c.Quest.InDuel() {
@@ -210,6 +220,17 @@ func (c *GameController) Draw() {
 	rl.BeginDrawing()
 	ui.NewFrame()
 	c.drawBackground()
+	if c.title.on {
+		s := uiScale()
+		rl.BeginMode2D(rl.Camera2D{Zoom: s})
+		rl.SetMouseScale(1/s, 1/s)
+		c.drawTitle(float32(rl.GetScreenWidth())/s, float32(rl.GetScreenHeight())/s)
+		rl.SetMouseScale(1, 1)
+		rl.EndMode2D()
+		ui.Draw(c.DataManager.Consts.DebugFont)
+		rl.EndDrawing()
+		return
+	}
 	tm := c.Active()
 	if c.Quest.InDuel() {
 		tm.Draw()

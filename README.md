@@ -5,8 +5,9 @@ quests, and battle monsters on a shared gem board.
 
 **Play it in your browser:** https://georgezack.github.io/jewel-game-web/
 
-This is a vertical slice: the first area of the story, playable start to finish. Some art is
-still placeholder.
+This is a vertical slice: the first story arc, eight main quests through to the Hollow King,
+playable start to finish. The pixel art was made with the help of an AI image tool (Retro
+Diffusion), and some of it is still placeholder. See [attributions.md](attributions.md).
 
 ## How to play
 

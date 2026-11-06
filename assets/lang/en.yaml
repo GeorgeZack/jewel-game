@@ -7,6 +7,18 @@
 # Patterns use Go formatting: %s text, %d number, %[2]s to swap argument order.
 
 ui:
+  title_sub: A match-3 adventure
+  title_confirm: Start over? This deletes your current hero for good.
+  keep_hero: Keep my hero
+  continue_hero: "Continue  (Level %d %s)"
+  new_game: New game
+  how_to_play: How to play
+  title_foot: Vertical slice. Some art is placeholder.
+  controls: Controls
+  help_controls: Drag a gem, or click two gems, to swap them. Keys 1-6 cast spells, H shows a hint.
+  back: Back
+  thanks_title: Thanks for playing!
+  thanks_body: That's the end of this slice of the game. Your hero can keep exploring, and more is on the way.
   window_title: Jewel Game
   title: JEWEL GAME
   fps: "FPS %.0f"
