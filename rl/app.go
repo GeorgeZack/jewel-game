@@ -42,16 +42,18 @@ const (
 // so animation runs at the display rate. Input edges are gathered every tick and handed to the
 // next frame, so a press is seen exactly once whether ticks outnumber frames or the reverse.
 var (
-	screen     *ebiten.Image // the current draw target, possibly a scissored sub-image
-	fullScreen *ebiten.Image
-	screenW    = 1280
-	screenH    = 720
-	dpi        = 1.0 // physical pixels per logical pixel
-	zoom       = float32(1)
-	camOffset  Vector2
-	mouseScale = Vector2{X: 1, Y: 1}
-	frameTime  float32
-	lastFrame  time.Time
+	screen       *ebiten.Image // the current draw target, possibly a scissored sub-image
+	fullScreen   *ebiten.Image
+	screenW      = 1280
+	screenH      = 720
+	dpi          = 1.0 // physical pixels per logical pixel
+	zoom         = float32(1)
+	camOffset    Vector2
+	mouseScale   = Vector2{X: 1, Y: 1}
+	frameTime    float32
+	pendingWheel float32 // wheel movement gathered over the ticks since the last frame
+	frameWheel   float32
+	lastFrame    time.Time
 
 	pendingKeys    = map[Key]bool{}
 	pendingPress   = map[MouseButton]bool{}
@@ -77,6 +79,8 @@ func (g *game) Update() error {
 	for _, k := range inpututil.AppendJustPressedKeys(nil) {
 		pendingKeys[k] = true
 	}
+	_, wy := ebiten.Wheel()
+	pendingWheel += float32(wy)
 	for _, b := range []MouseButton{MouseLeftButton, MouseRightButton} {
 		if inpututil.IsMouseButtonJustPressed(b) {
 			pendingPress[b] = true
@@ -100,6 +104,7 @@ func (g *game) Draw(s *ebiten.Image) {
 	frameKeys, pendingKeys = pendingKeys, frameKeys
 	framePress, pendingPress = pendingPress, framePress
 	frameRelease, pendingRelease = pendingRelease, frameRelease
+	frameWheel, pendingWheel = pendingWheel, 0
 	clear(pendingKeys)
 	clear(pendingPress)
 	clear(pendingRelease)
@@ -180,10 +185,7 @@ func IsMouseButtonReleased(b MouseButton) bool { return frameRelease[b] }
 func IsMouseButtonDown(b MouseButton) bool     { return ebiten.IsMouseButtonPressed(b) }
 
 // Wheel is the vertical scroll this frame. Positive is away from the user.
-func Wheel() float32 {
-	_, y := ebiten.Wheel()
-	return float32(y)
-}
+func Wheel() float32 { return frameWheel }
 
 func SetMouseScale(x, y float32) {
 	mouseScale = Vector2{X: x, Y: y}

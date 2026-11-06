@@ -56,14 +56,22 @@ func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 			v.save()
 			v.scenes.Play(rpg.Story.Opening)
 		}
-		drawFoe("hero", foeColor(c.Color), rl.Vector2{X: box.X + box.Width/2, Y: box.Y + 70}, 42, v.time, 0, true)
-		col := ui.Column{X: box.X + 20, Y: box.Y + 125, W: box.Width - 40, Gap: 4}
+		drawFoe("hero", foeColor(c.Color), rl.Vector2{X: box.X + box.Width/2, Y: box.Y + 58}, 36, v.time, 0, true)
+		col := ui.Column{X: box.X + 20, Y: box.Y + 104, W: box.Width - 40, Gap: 4}
 		name := col.Next(32)
 		ui.TextCentered(c.Label(), name.X+name.Width/2, name.Y, 28, foeColor(c.Color))
 		col.Paragraph(c.About(), 17, ui.TextColor)
 		col.Y += 6
+		// stats in two columns, left out if the card is too short for them
+		rows := (len(c.Stats) + 1) / 2
+		if col.Y+float32(rows)*(ui.MinText+6) > box.Y+box.Height-12 {
+			continue
+		}
+		half := col.W / 2
 		for stat, n := range c.Stats {
-			col.Line(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), n), 15, ui.DimText)
+			x := col.X + float32(stat%2)*half
+			y := col.Y + float32(stat/2)*(ui.MinText+6)
+			ui.Text(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), n), x, y, ui.MinText, ui.DimText)
 		}
 	}
 }
