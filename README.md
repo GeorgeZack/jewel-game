@@ -8,10 +8,11 @@ A **Bejewelled** clone.
 ## Running
 
 ```sh
-./start.sh           # build and run (or: go run .)
+./start.sh           # dev build: map editor and hot reload (or: go run -tags dev .)
 ./start.sh --watch   # rebuild and restart on save, needs CompileDaemon
 go test ./...        # game and RPG rules, no window needed
-./start.sh --web     # browser build, served on http://localhost:8000
+./start.sh --web     # public browser build (no editor), served on http://localhost:8000
+./deploy-web.sh      # publish the public build to GitHub Pages
 ./start.sh --dev     # same, and rebuild the wasm and reload the page on save
 ```
 
@@ -31,13 +32,10 @@ The background photo is stored with Git LFS (`git lfs pull`); without it the gam
 | Right click | Lock / unlock a gem (not in duels) |
 | Space | Release every lock at once |
 | H | Hint |
-| R | New board (not in duels) |
-| Z / Backspace | Undo (sandbox) |
-| Enter | Clear matches sitting on the board (sandbox) |
-| Tab | Switch Classic / Sandbox / Quest |
 | 1-6 | Cast spells (duels) |
 | F1 | Debug log |
-| Esc | Drop brush / deselect / quit |
+| E | Edit the world map (dev builds only) |
+| Esc | Deselect / quit |
 
 **Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
 5 in a row makes a **Prism** (swap it with a gem to clear that color). Swapping two specials together
@@ -46,10 +44,6 @@ combines them; Prism + Bolt/Bomb turns a whole color into that special.
 **Locks:** a locked gem hangs in place: it doesn't fall, match, or break, and other gems fall past it.
 Lock pieces of several lines, finish them, then release them all together. Making more than one
 special in a single step pays a Synchro bonus.
-
-**Sandbox:** presets (Chill / Playground / Insane), board size and color count, lock limit, free swaps,
-diagonal swaps, overcharged specials, gravity direction, chaos gravity, special rain, animation speed,
-and a paint brush for placing any gem or special by hand.
 
 **Quest:** an RPG in the style of Puzzle Quest: Challenge of the Warlords, with its own world, story and art.
 

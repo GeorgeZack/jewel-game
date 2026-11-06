@@ -41,7 +41,7 @@ const (
 const hexSwatch = 30
 
 func (v *QuestView) updateHexEdit() {
-	if !v.hex.on || v.Screen != ScreenWorld || v.HasModal() {
+	if !devTools || !v.hex.on || v.Screen != ScreenWorld || v.HasModal() {
 		return
 	}
 	if !rl.IsMouseButtonDown(rl.MouseLeftButton) {
@@ -93,6 +93,9 @@ func noteMapSave() {
 }
 
 func (v *QuestView) drawHexEditor(panel rl.Rectangle) {
+	if !devTools {
+		return
+	}
 	if !v.hex.on {
 		btn := rl.Rectangle{X: panel.X + panel.Width - 210, Y: panel.Y + 18, Width: 150, Height: 34}
 		if ui.Button(btn, text.T("ui.map_edit", "Edit map  [E]"), false) {

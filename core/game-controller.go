@@ -38,6 +38,9 @@ func NewGameController() *GameController {
 		ui.AddMessage("%s", text.T("log.background", "Background missing or not an image (git lfs pull?), using a gradient"))
 	}
 
+	if !devTools {
+		return gc
+	}
 	// Watch for gem type edits; events are forwarded here and handled in Update so
 	// textures are only ever loaded on the main (OpenGL) thread.
 	watcher, err := fsnotify.NewWatcher()
@@ -160,7 +163,7 @@ func (c *GameController) handleKeys() {
 	case rl.IsKeyPressed(rl.KeySpace):
 		tm.ReleaseLocks()
 	case rl.IsKeyPressed(rl.KeyE):
-		if c.Quest.Screen == ScreenWorld && !c.Quest.HasModal() {
+		if devTools && c.Quest.Screen == ScreenWorld && !c.Quest.HasModal() {
 			c.Quest.hex.on = true
 		}
 	case rl.IsKeyPressed(rl.KeyEscape):
