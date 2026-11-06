@@ -174,11 +174,14 @@ func (c *GameController) handleKeys() {
 }
 
 const MARGIN = 20
-const DESIGN_HEIGHT = 1058 // side panels are laid out for this height and scaled down in smaller windows
+const DESIGN_HEIGHT = 860 // the panels are laid out for this height and scaled to the window
 
-// uiScale shrinks the side panels so they always fit the window height.
+// uiScale fits the panels to the window height, growing on big screens, and shrinks them
+// further if the window is too narrow for both side panels and a usable map.
 func uiScale() float32 {
-	return max(0.55, min(1, float32(rl.GetScreenHeight())/DESIGN_HEIGHT))
+	s := float32(rl.GetScreenHeight()) / DESIGN_HEIGHT
+	s = min(s, float32(rl.GetScreenWidth())/(2*utils.SIDE_PANEL_WIDTH+620))
+	return max(0.5, min(1.4, s))
 }
 
 // leftPanel and rightPanel are in panel space, which is screen space divided by uiScale.

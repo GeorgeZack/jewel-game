@@ -177,6 +177,7 @@ func (v *QuestView) save() {
 
 func (v *QuestView) Update() {
 	noteMapSave()
+	v.devTour()
 	dt := rl.GetFrameTime()
 	v.time += float64(dt)
 	v.effects.Update(dt)
@@ -523,11 +524,12 @@ func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
 			v.flee()
 		}
 	default:
-		v.drawHeroSummary(col)
+		v.drawHeroSummary(col, r.Y+r.Height-14)
 	}
 }
 
-func (v *QuestView) drawHeroSummary(col *ui.Column) {
+// drawHeroSummary fills the column down to bottom, dropping guide lines that don't fit.
+func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 	h := v.Hero
 	c := rpg.NewHeroCombatant(h)
 	col.Heading(text.Tf("ui.level_class", "Level %d %s", h.Level, rpg.ClassByName(h.Class).Label()))
@@ -566,14 +568,21 @@ func (v *QuestView) drawHeroSummary(col *ui.Column) {
 		v.Screen = ScreenWorld
 	}
 
-	col.Heading(text.T("ui.how_duels", "How duels work"))
-	for _, s := range []string{
+	guide := []string{
 		text.T("ui.duel_1", "You and your foe take turns on one board."),
 		text.T("ui.duel_2", "Colored gems fill your mana, for spells."),
 		text.T("ui.duel_3", "Skulls hurt the foe. +5 skulls hit hard and blast the gems around them."),
 		text.T("ui.duel_4", "Gold and stars pay out after the duel."),
 		text.T("ui.duel_5", "Match 4 for an extra turn. Match 5 for a turn and a Wild, which completes any mana match and multiplies it."),
-	} {
+	}
+	if col.Y+40+ui.MeasureParagraph(guide[0], 15, col.W) > bottom {
+		return
+	}
+	col.Heading(text.T("ui.how_duels", "How duels work"))
+	for _, s := range guide {
+		if col.Y+ui.MeasureParagraph(s, 15, col.W) > bottom {
+			break
+		}
 		col.Paragraph(s, 15, ui.DimText)
 		col.Y += 3
 	}
@@ -625,7 +634,7 @@ func (v *QuestView) drawSide(col *ui.Column, side int) {
 		rl.DrawRectangleRec(v.hpBars[side], rl.Fade(rl.White, 0.45*hit))
 	}
 	for i := range c.Mana {
-		r := col.Next(22)
+		r := col.Next(26)
 		if i == 0 {
 			v.manaBars[side] = r
 		}
@@ -704,7 +713,7 @@ func (v *QuestView) drawManaCosts(x, y, size float32, cost [rpg.NUM_MANA]int, ha
 		num := fmt.Sprint(n)
 		col := rl.ColorBrightness(manaColors[m], 0.25)
 		if have != nil && have[m] < n {
-			col = rl.Fade(col, 0.45)
+			col = rl.Fade(col, 0.6)
 		}
 		ui.Text(num, x+size+3, y, size, col)
 		x += size + 3 + ui.TextWidth(num, size) + 8
