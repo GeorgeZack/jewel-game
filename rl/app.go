@@ -61,6 +61,15 @@ var (
 	frameKeys      = map[Key]bool{}
 	framePress     = map[MouseButton]bool{}
 	frameRelease   = map[MouseButton]bool{}
+
+	// A finger is the left mouse button. touchShow keeps the lift position for the
+	// frame the finger comes up, so a tap lands on the widget under the finger.
+	// swallow drops the click a mobile browser also synthesizes from that tap.
+	touching  bool
+	touchShow bool
+	touchX    int
+	touchY    int
+	swallow   int
 )
 
 // ErrQuit stops Run cleanly when the update function asks to.
@@ -89,7 +98,39 @@ func (g *game) Update() error {
 			pendingRelease[b] = true
 		}
 	}
+	sampleTouch()
 	return nil
+}
+
+// sampleTouch maps the first finger onto the left mouse button.
+func sampleTouch() {
+	ids := ebiten.AppendTouchIDs(nil)
+	if len(ids) > 0 {
+		touchX, touchY = ebiten.TouchPosition(ids[0])
+		touchShow = true
+		swallow = 45
+		if !touching {
+			pendingPress[MouseLeftButton] = true
+			touching = true
+		}
+		pendingRelease[MouseLeftButton] = false
+		return
+	}
+	released := false
+	if touching {
+		pendingRelease[MouseLeftButton] = true
+		touching = false
+		touchShow = true
+		released = true
+	}
+	if swallow > 0 {
+		swallow--
+		if !released {
+			pendingPress[MouseLeftButton] = false
+			pendingRelease[MouseLeftButton] = false
+			touchShow = false
+		}
+	}
 }
 
 func (g *game) Draw(s *ebiten.Image) {
@@ -122,6 +163,9 @@ func (g *game) Draw(s *ebiten.Image) {
 	maybeShot(fullScreen)
 	trimTextCaches()
 	zoom, camOffset, mouseScale = 1, Vector2{}, Vector2{X: 1, Y: 1}
+	if !touching {
+		touchShow = false
+	}
 }
 
 func (g *game) Layout(w, h int) (int, int) {
@@ -182,7 +226,15 @@ func EndScissorMode() {
 func IsKeyPressed(k Key) bool                  { return frameKeys[k] }
 func IsMouseButtonPressed(b MouseButton) bool  { return framePress[b] }
 func IsMouseButtonReleased(b MouseButton) bool { return frameRelease[b] }
-func IsMouseButtonDown(b MouseButton) bool     { return ebiten.IsMouseButtonPressed(b) }
+func IsMouseButtonDown(b MouseButton) bool {
+	if b == MouseLeftButton && touching {
+		return true
+	}
+	if b == MouseLeftButton && swallow > 0 {
+		return false
+	}
+	return ebiten.IsMouseButtonPressed(b)
+}
 
 // Wheel is the vertical scroll this frame. Positive is away from the user.
 func Wheel() float32 { return frameWheel }
@@ -194,6 +246,12 @@ func SetMouseScale(x, y float32) {
 // GetMousePosition is in screen space, scaled by SetMouseScale.
 func GetMousePosition() Vector2 {
 	x, y := ebiten.CursorPosition()
+	if touchShow {
+		x, y = touchX, touchY
+	} else if swallow > 0 {
+		// the finger is up; don't leave a hover stuck on the last tap
+		x, y = -100000, -100000
+	}
 	return Vector2{X: float32(float64(x)/dpi) * mouseScale.X, Y: float32(float64(y)/dpi) * mouseScale.Y}
 }
 
@@ -207,6 +265,9 @@ func transform(x, y float32) (float32, float32) {
 func scale() float32 {
 	return zoom * float32(dpi)
 }
+
+// ScreenScale is the same ratio, for callers that need a one-pixel outline.
+func ScreenScale() float32 { return scale() }
 
 // GetFPS is the measured frame rate.
 func GetFPS() float64 { return ebiten.ActualFPS() }

@@ -18,7 +18,8 @@ type titleScreen struct {
 func (c *GameController) drawTitle(w, h float32) {
 	t := &c.title
 	q := c.Quest
-	box := rl.Rectangle{X: w/2 - 360, Y: max(20, h/2-270), Width: 720, Height: min(540, h-40)}
+	boxW := min(float32(720), w-24)
+	box := rl.Rectangle{X: (w - boxW) / 2, Y: max(12, h/2-270), Width: boxW, Height: min(540, h-24)}
 	ui.Panel(box)
 	col := ui.Column{X: box.X + 50, Y: box.Y + 36, W: box.Width - 100, Gap: 10}
 	if t.help {
@@ -27,7 +28,7 @@ func (c *GameController) drawTitle(w, h float32) {
 	}
 
 	head := col.Next(64)
-	ui.TextCentered(rpg.Story.Title, head.X+head.Width/2, head.Y, 56, ui.Accent)
+	ui.TextCenteredFit(rpg.Story.Title, head.X+head.Width/2, head.Y, 56, head.Width, ui.Accent)
 	sub := col.Next(28)
 	ui.TextCentered(text.T("ui.title_sub", "A match-3 adventure"), sub.X+sub.Width/2, sub.Y, 22, ui.DimText)
 	col.Y += 12
@@ -36,7 +37,11 @@ func (c *GameController) drawTitle(w, h float32) {
 
 	button := func(label string) bool {
 		r := col.Next(50)
-		r.X, r.Width = r.X+110, r.Width-220
+		inset := float32(110)
+		if r.Width < 520 {
+			inset = 16
+		}
+		r.X, r.Width = r.X+inset, r.Width-2*inset
 		return ui.Button(r, label, false)
 	}
 	switch {
@@ -107,7 +112,7 @@ func (c *GameController) drawHowToPlay(col *ui.Column, box rl.Rectangle) {
 	para(text.T("ui.help_prism_mix", "Prism + Bolt/Bomb: every gem of that color turns into one and goes off."))
 	para(text.T("ui.help_prism_prism", "Prism + Prism: clears the board."))
 	col.Heading(text.T("ui.controls", "Controls"))
-	para(text.T("ui.help_controls", "Drag a gem, or click two gems, to swap them. Keys 1-6 cast spells, H shows a hint."))
+	para(text.T("ui.help_controls", "Drag a gem, or tap two gems, to swap them. Tap a spell to cast it. On a keyboard, keys 1-6 cast spells and H shows a hint."))
 	c.helpScroll.End(col.Y)
 	if ui.Button(back, text.T("ui.back", "Back"), false) || rl.IsKeyPressed(rl.KeyEscape) {
 		c.title.help = false

@@ -179,14 +179,6 @@ func (c *GameController) handleKeys() {
 const MARGIN = 20
 const DESIGN_HEIGHT = 860 // the panels are laid out for this height and scaled to the window
 
-// uiScale fits the panels to the window height, growing on big screens, and shrinks them
-// further if the window is too narrow for both side panels and a usable map.
-func uiScale() float32 {
-	s := float32(rl.GetScreenHeight()) / DESIGN_HEIGHT
-	s = min(s, float32(rl.GetScreenWidth())/(2*utils.SIDE_PANEL_WIDTH+620))
-	return max(0.5, min(1.4, s))
-}
-
 // leftPanel and rightPanel are in panel space, which is screen space divided by uiScale.
 func (c *GameController) leftPanel() rl.Rectangle {
 	h := float32(rl.GetScreenHeight()) / uiScale()
@@ -203,6 +195,9 @@ func (c *GameController) centerPanel() rl.Rectangle { return centerPanelRect() }
 
 // boardArea is in screen space.
 func (c *GameController) boardArea() rl.Rectangle {
+	if narrow() {
+		return phoneBoardRect(float32(rl.GetScreenWidth()), float32(rl.GetScreenHeight()))
+	}
 	s := uiScale()
 	l, r := c.leftPanel(), c.rightPanel()
 	x := (l.X+l.Width)*s + 60
@@ -217,6 +212,7 @@ func (c *GameController) Draw() {
 		s := uiScale()
 		rl.BeginMode2D(rl.Camera2D{Zoom: s})
 		rl.SetMouseScale(1/s, 1/s)
+		ui.ArmPointer()
 		c.drawTitle(float32(rl.GetScreenWidth())/s, float32(rl.GetScreenHeight())/s)
 		rl.SetMouseScale(1, 1)
 		rl.EndMode2D()
@@ -234,10 +230,15 @@ func (c *GameController) Draw() {
 	s := uiScale()
 	rl.BeginMode2D(rl.Camera2D{Zoom: s})
 	rl.SetMouseScale(1/s, 1/s)
+	ui.ArmPointer()
 	ui.Blocked = c.Quest.HasModal()
-	c.drawLeftPanel()
-	c.Quest.DrawCenter(c.centerPanel())
-	c.Quest.DrawRight(c.rightPanel())
+	if narrow() {
+		c.drawNarrow(float32(rl.GetScreenWidth())/s, float32(rl.GetScreenHeight())/s)
+	} else {
+		c.drawLeftPanel()
+		c.Quest.DrawCenter(c.centerPanel())
+		c.Quest.DrawRight(c.rightPanel())
+	}
 	c.Quest.DrawEffects()
 	ui.Blocked = false
 	c.Quest.DrawModal(c.centerPanel(), rl.Rectangle{Width: float32(rl.GetScreenWidth()) / s, Height: float32(rl.GetScreenHeight()) / s})

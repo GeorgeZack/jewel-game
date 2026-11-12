@@ -343,6 +343,9 @@ func centerPanelRect() rl.Rectangle {
 	w := float32(rl.GetScreenWidth()) / s
 	h := float32(rl.GetScreenHeight()) / s
 	left := float32(MARGIN)
+	if narrow() {
+		return rl.Rectangle{X: 8, Y: 8, Width: w - 16, Height: h - 16}
+	}
 	side := float32(utils.SIDE_PANEL_WIDTH)
 	return rl.Rectangle{X: left + side + 16, Y: left, Width: w - 2*left - 2*side - 32, Height: h - 2*left}
 }

@@ -41,6 +41,7 @@ type SceneRunner struct {
 	bg			string
 	skipping	bool
 	duel		*rpg.DuelStep	// waiting for this duel to end
+	lineScroll	ui.Scroll
 }
 
 // Play queues a scene; scenes play one after another.
@@ -321,9 +322,10 @@ func (s *SceneRunner) Draw(area rl.Rectangle, t float64) {
 		a := min(1, s.titleT/0.6)
 		rl.DrawRectangleRec(area, rl.Fade(rl.Black, 0.8*a))
 		cy := area.Y + area.Height*0.42
-		ui.TextCentered(s.title.Title, area.X+area.Width/2, cy-40, 64, rl.Fade(ui.Accent, a))
+		fade := func(c rl.Color) rl.Color { return rl.Fade(c, a) }
+		ui.TextCenteredFit(s.title.Title, area.X+area.Width/2, cy-40, 64, area.Width-32, fade(ui.Accent))
 		if s.title.Subtitle != "" {
-			ui.TextCentered(s.title.Subtitle, area.X+area.Width/2, cy+40, 26, rl.Fade(ui.TextColor, a))
+			ui.TextCenteredFit(s.title.Subtitle, area.X+area.Width/2, cy+36, 26, area.Width-32, fade(ui.TextColor))
 		}
 	}
 	if s.line != nil {
@@ -334,7 +336,11 @@ func (s *SceneRunner) Draw(area rl.Rectangle, t float64) {
 		rl.DrawRectangleRec(rl.Rectangle{ X: area.X - 10, Y: area.Y - 10, Width: area.Width + 20, Height: area.Height + 20 }, rl.Fade(rl.Black, s.fade))
 	}
 	// Skip runs through to the next choice (or the end), fades and pauses included
-	skip := rl.Rectangle{ X: area.X + area.Width - 150, Y: area.Y + 20, Width: 130, Height: 36 }
+	skipW := float32(130)
+	if narrow() {
+		skipW = 108
+	}
+	skip := rl.Rectangle{ X: area.X + area.Width - skipW - 12, Y: area.Y + 12, Width: skipW, Height: 40 }
 	if len(s.choices) == 0 && ui.Button(skip, text.T("ui.skip", "Skip  >>"), false) {
 		s.skipping = true
 		s.title, s.line = nil, nil
@@ -348,13 +354,36 @@ func (s *SceneRunner) Draw(area rl.Rectangle, t float64) {
 
 func (s *SceneRunner) drawLine(area rl.Rectangle, t float64) {
 	st := s.line
-	w := min(1200, area.Width-80)
-	box := rl.Rectangle{ X: area.X + (area.Width-w)/2, Y: area.Y + area.Height - 270, Width: w, Height: 240 }
+	phone := narrow()
+	margin := float32(40)
+	boxH := float32(240)
+	textSize := float32(24)
+	if phone {
+		margin = 10
+		textSize = 20
+		boxH = min(float32(300), max(float32(188), area.Height*0.40))
+	}
+	choiceH := float32(46)
+	choiceGap := float32(8)
+	choiceBlock := float32(len(s.choices)) * (choiceH + choiceGap)
+	if room := area.Height - 64 - choiceBlock - 12; boxH > room && room > 140 {
+		boxH = room
+	}
+	w := min(float32(1200), area.Width-margin*2)
+	if w < 64 {
+		w = max(64, area.Width-8)
+	}
+	y := area.Y + area.Height - boxH - 10
+	if y < area.Y+52 {
+		y = area.Y + 52
+	}
+	box := rl.Rectangle{ X: area.X + (area.Width-w)/2, Y: y, Width: w, Height: boxH }
 
-	// choices stack up above the box
+	// choices stack up above the box, as wide as the box when the screen is narrow
+	choiceW := min(float32(560), box.Width-8)
 	for i := len(s.choices) - 1; i >= 0; i-- {
 		n := len(s.choices) - i
-		r := rl.Rectangle{ X: box.X + box.Width - 560, Y: box.Y - float32(n)*54, Width: 560, Height: 46 }
+		r := rl.Rectangle{ X: box.X + box.Width - choiceW, Y: box.Y - float32(n)*(choiceH+choiceGap), Width: choiceW, Height: choiceH }
 		if int(s.shown) >= len([]rune(st.Text)) && ui.Button(r, s.choices[i].Text, false) {
 			s.choose(s.choices[i])
 			return
@@ -362,21 +391,39 @@ func (s *SceneRunner) drawLine(area rl.Rectangle, t float64) {
 	}
 
 	ui.Panel(box)
-	textX := box.X + 30
+	textX := box.X + 20
 	name, col := s.speaker(st.Who)
-	if st.Who != "" {
-		pr := rl.Rectangle{ X: box.X + 20, Y: box.Y + 20, Width: 200, Height: 200 }
+	// a 200px portrait only fits when the line still has a readable column beside it
+	if st.Who != "" && box.Width >= 460 {
+		pr := rl.Rectangle{ X: box.X + 16, Y: box.Y + 16, Width: 200, Height: min(200, box.Height-32) }
 		if img := s.portrait(st.Who, st.Mood); img.ID != 0 {
 			drawContain(img, pr)
 		} else {
-			drawFoe("hero", col, rl.Vector2{ X: pr.X + pr.Width/2, Y: pr.Y + pr.Height/2 }, 70, t, 0, true)
+			drawFoe("hero", col, rl.Vector2{ X: pr.X + pr.Width/2, Y: pr.Y + pr.Height/2 }, min(70, pr.Height*0.35), t, 0, true)
 		}
-		textX = pr.X + pr.Width + 24
+		textX = pr.X + pr.Width + 16
+	} else if st.Who != "" && box.Width >= 280 {
+		pr := rl.Rectangle{ X: box.X + 12, Y: box.Y + 12, Width: 64, Height: 64 }
+		if img := s.portrait(st.Who, st.Mood); img.ID != 0 {
+			drawContain(img, pr)
+		} else {
+			drawFoe("hero", col, rl.Vector2{ X: pr.X + 32, Y: pr.Y + 32 }, 26, t, 0, true)
+		}
+		textX = pr.X + pr.Width + 12
 	}
-	c := ui.Column{ X: textX, Y: box.Y + 22, W: box.X + box.Width - 30 - textX, Gap: 6 }
+	padR := float32(20)
+	view := rl.Rectangle{ X: textX, Y: box.Y + 12, Width: box.X + box.Width - padR - textX, Height: box.Height - 24 }
+	if view.Width < 40 {
+		view.Width = 40
+	}
+	c := ui.Column{ X: view.X, Y: view.Y, W: view.Width, Gap: 6 }
+	c.Y = s.lineScroll.Begin(view, uiScale())
+	if s.lineScroll.Overflows() {
+		c.W -= 12
+	}
 	if name != "" {
-		r := c.Next(34)
-		ui.Text(name, r.X, r.Y, 30, col)
+		r := c.Next(30)
+		ui.TextFit(name, r.X, r.Y, 26, r.Width, col)
 	}
 	text := []rune(st.Text)
 	n := min(len(text), int(s.shown))
@@ -384,10 +431,14 @@ func (s *SceneRunner) drawLine(area rl.Rectangle, t float64) {
 	if st.Who == "" {
 		textCol = rl.Color{ R: 210, G: 205, B: 230, A: 255 }
 	}
-	c.Paragraph(string(text[:n]), 24, textCol)
+	c.Paragraph(string(text[:n]), textSize, textCol)
+	s.lineScroll.End(c.Y)
+	if n < len(text) {
+		s.lineScroll.Pos = s.lineScroll.Max
+	}
 	if n >= len(text) && len(s.choices) == 0 {
 		a := float32(0.5 + 0.5*math.Sin(t*5))
-		ui.Text(">", box.X+box.Width-40, box.Y+box.Height-44, 28, rl.Fade(ui.Accent, a))
+		ui.Text(">", box.X+box.Width-36, box.Y+box.Height-40, 26, rl.Fade(ui.Accent, a))
 	}
 }
 

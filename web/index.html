@@ -2,18 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>The Hollow King</title>
 <meta name="description" content="A fantasy RPG where every fight is a match-3 duel. Plays in the browser.">
 <style>
-	html, body { margin: 0; height: 100%; background: #080a1c; overflow: hidden; }
+	html, body { margin: 0; height: 100%; background: #080a1c; overflow: hidden; touch-action: none; overscroll-behavior: none; }
 	#status { position: fixed; inset: 0; display: grid; place-items: center; color: #ece8f8; font: 20px monospace; text-align: center; }
+	canvas { touch-action: none; }
 </style>
 </head>
 <body>
 <div id="status">Loading…</div>
 <noscript><p style="color:#ece8f8;font:20px monospace;text-align:center">The game needs JavaScript and WebAssembly.</p></noscript>
 <script src="wasm_exec.js"></script>
+<script>
+	document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+	document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+</script>
 <script>
 	const status = document.getElementById("status");
 	const go = new Go();

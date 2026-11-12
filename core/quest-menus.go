@@ -44,7 +44,7 @@ func card(r rl.Rectangle, selected bool) bool {
 
 func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 	ui.Panel(r)
-	ui.TextCentered(text.T("ui.choose_class", "Choose your class"), r.X+r.Width/2, r.Y+30, 42, ui.Accent)
+	ui.TextCenteredFit(text.T("ui.choose_class", "Choose your class"), r.X+r.Width/2, r.Y+30, 42, r.Width-24, ui.Accent)
 	grid := rl.Rectangle{X: r.X + 30, Y: r.Y + 100, Width: r.Width - 60, Height: r.Height - 130}
 	w, h := (grid.Width-20)/2, (grid.Height-20)/2
 	for i := range rpg.Classes {
@@ -59,7 +59,7 @@ func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 		drawFoe("hero", foeColor(c.Color), rl.Vector2{X: box.X + box.Width/2, Y: box.Y + 58}, 36, v.time, 0, true)
 		col := ui.Column{X: box.X + 20, Y: box.Y + 104, W: box.Width - 40, Gap: 4}
 		name := col.Next(32)
-		ui.TextCentered(c.Label(), name.X+name.Width/2, name.Y, 28, foeColor(c.Color))
+		ui.TextCenteredFit(c.Label(), name.X+name.Width/2, name.Y, 28, name.Width, foeColor(c.Color))
 		col.Paragraph(c.About(), 17, ui.TextColor)
 		col.Y += 6
 		// stats in two columns, left out if the card is too short for them
@@ -105,6 +105,7 @@ func (v *QuestView) drawWorld(r rl.Rectangle) {
 			}
 		}
 	}
+	mapLabelBoxes = mapLabelBoxes[:0]
 	for i := range rpg.Locations {
 		v.drawMapNode(r, &rpg.Locations[i])
 	}
@@ -119,9 +120,13 @@ func (v *QuestView) drawWorld(r rl.Rectangle) {
 		at = pointAlong(roadScreen(r, from, v.route[0]), v.legT)
 	}
 	drawFoe("hero", foeColor(rpg.ClassByName(h.Class).Color), rl.Vector2{X: at.X, Y: at.Y - 34}, 20, v.time, 0, true)
-	ui.TextOutlined(rpg.Story.MapName, r.X+30, r.Y+24, 30, ui.Accent)
+	mapTitle := rpg.Story.MapName
+	ui.TextOutlined(mapTitle, r.X+16, r.Y+16, ui.FitSize(mapTitle, 28, r.Width-32, 16), ui.Accent)
 	v.drawHexEditor(r)
 }
+
+// mapLabelBoxes keeps place names from stacking on a small map. Cleared each time the map is drawn.
+var mapLabelBoxes []rl.Rectangle
 
 func (v *QuestView) drawMapNode(r rl.Rectangle, l *rpg.Location) {
 	h := v.Hero
@@ -151,7 +156,27 @@ func (v *QuestView) drawMapNode(r rl.Rectangle, l *rpg.Location) {
 			rl.DrawPoly(p, 6, 19, 0, col)
 		}
 	}
-	ui.TextCenteredOutlined(text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level), p.X, p.Y+26, 17, ui.TextColor)
+	label := text.Tf("ui.place_level", "%s (%d)", l.Name, l.Level)
+	size := float32(17)
+	if narrow() {
+		label = l.Name
+		size = 16
+	}
+	tw := ui.TextWidth(label, size)
+	lab := rl.Rectangle{X: p.X - tw/2 - 2, Y: p.Y + 22, Width: tw + 4, Height: size + 2}
+	skipLabel := false
+	if narrow() && l.ID != h.Location {
+		for _, o := range mapLabelBoxes {
+			if lab.X < o.X+o.Width && lab.X+lab.Width > o.X && lab.Y < o.Y+o.Height && lab.Y+lab.Height > o.Y {
+				skipLabel = true
+				break
+			}
+		}
+	}
+	if !skipLabel {
+		mapLabelBoxes = append(mapLabelBoxes, lab)
+		ui.TextCenteredOutlined(label, p.X, p.Y+22, size, ui.TextColor)
+	}
 	if len(h.OfferedQuests(l.ID)) > 0 || len(h.QuestsHere(l.ID)) > 0 {
 		ui.TextCenteredOutlined("!", p.X+18, p.Y-36, 30, ui.Accent)
 	}
@@ -170,7 +195,7 @@ func (v *QuestView) drawLocation(col *ui.Column) {
 	h := v.Hero
 	l := rpg.LocationByID(h.Location)
 	name := col.Next(36)
-	ui.Text(l.Name, name.X, name.Y, 30, ui.Accent)
+	ui.TextFit(l.Name, name.X, name.Y, 30, name.Width, ui.Accent)
 	col.Paragraph(l.Desc, 16, ui.TextColor)
 	travelling := len(v.route) > 0
 	if travelling {

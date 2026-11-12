@@ -97,6 +97,10 @@ type QuestView struct {
 
 	shopScroll ui.Scroll
 	leftScroll ui.Scroll
+	rightScroll ui.Scroll
+	dockScroll  ui.Scroll
+	modalScroll ui.Scroll
+	modalKey    string
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
@@ -482,21 +486,64 @@ func (v *QuestView) DrawModal(area, full rl.Rectangle) {
 		return
 	}
 	m := v.modals[0]
-	rl.DrawRectangleRec(rl.Rectangle{X: -50, Y: -50, Width: 6000, Height: 4000}, rl.Fade(rl.Black, 0.55))
-	w, h := float32(640), float32(180)
-	measure := ui.Column{W: w - 60, Gap: 4}
-	measure.Y = ui.MeasureParagraph(m.Body, 20, measure.W)
-	h += measure.Y
-	box := rl.Rectangle{X: area.X + (area.Width-w)/2, Y: area.Y + (area.Height-h)/2, Width: w, Height: h}
-	ui.Panel(box)
-	title := float32(38)
-	for title > 20 && ui.TextWidth(m.Title, title) > w-40 {
-		title--
+	if key := m.Title + "\n" + m.Body; key != v.modalKey {
+		v.modalKey = key
+		v.modalScroll = ui.Scroll{}
 	}
-	ui.TextCentered(m.Title, box.X+w/2, box.Y+24, title, ui.Accent)
-	col := ui.Column{X: box.X + 30, Y: box.Y + 80, W: w - 60, Gap: 4}
-	col.Paragraph(m.Body, 20, ui.TextColor)
-	row := ui.Row(rl.Rectangle{X: box.X + 30, Y: box.Y + h - 66, Width: w - 60, Height: 44}, len(m.Buttons), 12)
+	rl.DrawRectangleRec(rl.Rectangle{X: -50, Y: -50, Width: 6000, Height: 4000}, rl.Fade(rl.Black, 0.55))
+	pad := float32(28)
+	bodySize := float32(20)
+	if narrow() {
+		pad = 16
+		bodySize = 18
+	}
+	w := min(float32(640), full.Width-24)
+	bodyW := w - pad*2
+	bodyH := ui.MeasureParagraph(m.Body, bodySize, bodyW)
+	nBtn := max(1, len(m.Buttons))
+	btnH := float32(44)
+	btnBlock := btnH
+	if narrow() && nBtn > 1 {
+		btnBlock = float32(nBtn)*btnH + float32(nBtn-1)*8
+	}
+	h := 24 + 36 + 12 + bodyH + 16 + btnBlock + 16
+	host := area
+	if narrow() {
+		host = full
+	}
+	if h > full.Height-16 {
+		h = full.Height - 16
+	}
+	box := rl.Rectangle{X: host.X + (host.Width-w)/2, Y: host.Y + (host.Height-h)/2, Width: w, Height: h}
+	if box.Y < 8 {
+		box.Y = 8
+	}
+	if box.Y+box.Height > full.Height-8 {
+		box.Y = max(float32(8), full.Height-8-box.Height)
+	}
+	ui.Panel(box)
+	ui.TextCenteredFit(m.Title, box.X+w/2, box.Y+16, 34, w-pad*2, ui.Accent)
+	btnTop := box.Y + box.Height - 16 - btnBlock
+	view := rl.Rectangle{X: box.X + pad, Y: box.Y + 58, Width: bodyW, Height: btnTop - 12 - (box.Y + 58)}
+	if view.Height < 36 {
+		view.Height = 36
+	}
+	col := ui.Column{X: view.X, Y: view.Y, W: view.Width, Gap: 4}
+	col.Y = v.modalScroll.Begin(view, uiScale())
+	if v.modalScroll.Overflows() {
+		col.W -= 14
+	}
+	col.Paragraph(m.Body, bodySize, ui.TextColor)
+	v.modalScroll.End(col.Y)
+	var row []rl.Rectangle
+	if narrow() && nBtn > 1 {
+		row = make([]rl.Rectangle, nBtn)
+		for i := range row {
+			row[i] = rl.Rectangle{X: box.X + pad, Y: btnTop + float32(i)*(btnH+8), Width: bodyW, Height: btnH}
+		}
+	} else {
+		row = ui.Row(rl.Rectangle{X: box.X + pad, Y: btnTop, Width: bodyW, Height: btnH}, nBtn, 12)
+	}
 	for i, b := range m.Buttons {
 		if ui.Button(row[i], b.Label, false) {
 			v.modals = v.modals[1:]
@@ -669,7 +716,11 @@ func (v *QuestView) drawSide(col *ui.Column, side int) {
 }
 
 func (v *QuestView) drawSpell(col *ui.Column, c *rpg.Combatant, s *rpg.Spell, i, side int) {
-	r := col.Next(32)
+	h := float32(32)
+	if narrow() {
+		h = 46
+	}
+	r := col.Next(h)
 	const size = 18
 	costW := manaCostWidth(s.Cost, size)
 	gap := float32(8)
@@ -751,6 +802,14 @@ func (v *QuestView) drawManaIcon(m int, x, y, size float32) {
 func (v *QuestView) DrawRight(r rl.Rectangle) {
 	ui.Panel(r)
 	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6}
+	if narrow() {
+		view := rl.Rectangle{X: r.X + 4, Y: r.Y + 8, Width: r.Width - 8, Height: r.Height - 16}
+		col.Y = v.rightScroll.Begin(view, uiScale())
+		if v.rightScroll.Overflows() {
+			col.W -= 14
+		}
+		defer func() { v.rightScroll.End(col.Y) }()
+	}
 	switch {
 	case v.Hero == nil:
 		col.Heading(text.T("ui.new_hero_heading", "A new hero"))

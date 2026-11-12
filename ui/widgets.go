@@ -28,9 +28,42 @@ var Blocked bool
 
 var clickTaken bool
 
+// A tap counts only if the finger comes up on the same widget without having
+// dragged. That lets a drag scroll a list instead of pressing every row it crosses.
+var (
+	armed          bool
+	sloppy         bool
+	armX, armY     float32
+	releasePending bool
+)
+
+const pointerSlop = 16
+
 // NewFrame re-arms clicks; one click only ever activates one widget, even if it changes the screen.
 func NewFrame() {
 	clickTaken = false
+}
+
+// ArmPointer reads the pointer for this frame. Call it after the mouse scale is set,
+// before widgets.
+func ArmPointer() {
+	if releasePending {
+		armed, sloppy = false, false
+		releasePending = false
+	}
+	m := rl.GetMousePosition()
+	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+		armed = true
+		sloppy = false
+		armX, armY = m.X, m.Y
+	} else if armed {
+		if m.X-armX > pointerSlop || armX-m.X > pointerSlop || m.Y-armY > pointerSlop || armY-m.Y > pointerSlop {
+			sloppy = true
+		}
+	}
+	if rl.IsMouseButtonReleased(rl.MouseLeftButton) {
+		releasePending = true
+	}
 }
 
 func Text(s string, x, y, size float32, col rl.Color) {
@@ -45,17 +78,43 @@ func TextCentered(s string, cx, y, size float32, col rl.Color) {
 	Text(s, cx-TextWidth(s, size)/2, y, size, col)
 }
 
-// TextOutlined draws a 1px black rim so light letters stay readable on the hex map.
+// TextOutlined draws a one-device-pixel black rim so light letters stay readable on the map.
+// A rim of several logical pixels turns into a fat blur once the screen is scaled.
 func TextOutlined(s string, x, y, size float32, col rl.Color) {
 	ink := rl.Color{ R: 0, G: 0, B: 0, A: 230 }
+	off := float32(1)
+	if s := rl.ScreenScale(); s > 0 {
+		off = 1 / s
+	}
 	for _, d := range [][2]float32{
-		{-2, 0}, {2, 0}, {0, -2}, {0, 2},
-		{-1, 0}, {1, 0}, {0, -1}, {0, 1},
-		{-1, -1}, {1, -1}, {-1, 1}, {1, 1},
+		{-off, 0}, {off, 0}, {0, -off}, {0, off},
+		{-off, -off}, {off, -off}, {-off, off}, {off, off},
 	} {
 		Text(s, x+d[0], y+d[1], size, ink)
 	}
 	Text(s, x, y, size, col)
+}
+
+// FitSize shrinks size until s fits in maxW, and stops at floor.
+func FitSize(s string, size, maxW, floor float32) float32 {
+	if maxW <= 0 {
+		return size
+	}
+	for size > floor && TextWidth(s, size) > maxW {
+		size--
+	}
+	return size
+}
+
+// TextFit draws s at size, smaller if it would run past maxW.
+func TextFit(s string, x, y, size, maxW float32, col rl.Color) {
+	Text(s, x, y, FitSize(s, size, maxW, 16), col)
+}
+
+// TextCenteredFit is TextCentered that shrinks to maxW.
+func TextCenteredFit(s string, cx, y, size, maxW float32, col rl.Color) {
+	size = FitSize(s, size, maxW, 16)
+	TextCentered(s, cx, y, size, col)
 }
 
 func TextCenteredOutlined(s string, cx, y, size float32, col rl.Color) {
@@ -79,7 +138,10 @@ func Hover(r rl.Rectangle) bool {
 func Clicked(r rl.Rectangle) bool { return clicked(r) }
 
 func clicked(r rl.Rectangle) bool {
-	if Blocked || clickTaken || !inClip() || !rl.IsMouseButtonPressed(rl.MouseLeftButton) || !rl.CheckCollisionPointRec(rl.GetMousePosition(), r) {
+	if Blocked || clickTaken || sloppy || !armed || !inClip() || !rl.IsMouseButtonReleased(rl.MouseLeftButton) {
+		return false
+	}
+	if !rl.CheckCollisionPointRec(rl.GetMousePosition(), r) || !rl.CheckCollisionPointRec(rl.Vector2{X: armX, Y: armY}, r) {
 		return false
 	}
 	clickTaken = true
@@ -110,8 +172,8 @@ func box(r rl.Rectangle, on bool) {
 // Button draws a button and reports whether it was clicked this frame.
 func Button(r rl.Rectangle, label string, on bool) bool {
 	box(r, on)
-	size := min(r.Height*0.55, 22)
-	for size > 10 && TextWidth(label, size) > r.Width-8 {
+	size := min(r.Height*0.5, 22)
+	for size > 16 && TextWidth(label, size) > r.Width-12 {
 		size--
 	}
 	col := TextColor
@@ -137,8 +199,8 @@ func DisabledButton(r rl.Rectangle, label string, col rl.Color) {
 	if !nine(themeButton, r, 10, rl.Color{R: 120, G: 115, B: 135, A: 150}) {
 		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.4))
 	}
-	size := min(r.Height*0.55, 22)
-	for size > 10 && TextWidth(label, size) > r.Width-8 {
+	size := min(r.Height*0.5, 22)
+	for size > 16 && TextWidth(label, size) > r.Width-12 {
 		size--
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
@@ -171,10 +233,16 @@ func Bar(r rl.Rectangle, label string, value, maxValue int, col rl.Color) {
 		}
 	}
 	size := min(r.Height*0.62, 18)
+	for size > 14 && r.Height > 0 && size > r.Height-4 {
+		size--
+	}
 	y := r.Y + (r.Height-size)/2
-	Text(label, r.X+10, y, size, TextColor)
 	v := fmt.Sprintf("%d / %d", value, maxValue)
-	Text(v, r.X+r.Width-10-TextWidth(v, size), y, size, TextColor)
+	vw := TextWidth(v, size)
+	if label != "" && TextWidth(label, size)+vw+28 <= r.Width {
+		Text(label, r.X+10, y, size, TextColor)
+	}
+	Text(v, r.X+r.Width-10-vw, y, size, TextColor)
 }
 
 // Toggle draws a labelled switch and returns its new value.
