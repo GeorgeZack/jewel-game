@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -567,5 +568,93 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 	}
 	if high < low {
 		t.Errorf("higher level noticed fewer combos: L1 %d, L16 %d", low, high)
+	}
+}
+
+// spendLikeAPlayer is the simulator's fixed policy: points go to the stats the class raises
+// cheapest, gold buys the best gear the hero can afford in each slot and then buildings in list
+// order, and quest rewards are worn when they beat what's on.
+func spendLikeAPlayer(h *Hero) {
+	cost := ClassByName(h.Class).Cost
+	for c := 1; c <= 3; c++ {
+		for stat := range NUM_STATS {
+			for cost[stat] == c && h.Points >= c {
+				h.RaiseStat(stat)
+			}
+		}
+	}
+	// quest items cost nothing, so rank by level
+	worth := func(id string) int {
+		if it := ItemByID(id); it != nil {
+			return it.Level
+		}
+		return 0
+	}
+	for _, slot := range Slots {
+		var best *Item
+		for i := range Items {
+			it := &Items[i]
+			owned := slices.Contains(h.Owned, it.ID)
+			if it.Slot != slot || (!owned && (it.QuestOnly || it.Price > h.Gold || it.Level > h.Level)) {
+				continue
+			}
+			if it.Slot == SlotMount && !h.Has("stables") {
+				continue
+			}
+			if worth(it.ID) > worth(h.Gear[slot]) && (best == nil || worth(it.ID) > worth(best.ID)) {
+				best = it
+			}
+		}
+		if best != nil {
+			h.Buy(best)
+		}
+	}
+	for i := range Buildings {
+		h.Build(&Buildings[i])
+	}
+}
+
+// TestProgression plays the main quests in order with the AI as the hero, one hero per class,
+// and logs level and gold after each quest (see the table with -v). A lost duel is fought
+// again, keeping what the board paid, as a player would. Economy numbers should come from here.
+func TestProgression(t *testing.T) {
+	const MAX_TRIES = 30	// duels per kill before the hero counts as stuck
+	for _, class := range Classes {
+		h := NewHero(class.Name)
+		seed := int64(0)
+		t.Logf("%-8s %-14s %3s %5s %4s %5s", class.Name, "quest", "lvl", "duels", "lost", "gold")
+		for i := range Quests {
+			q := &Quests[i]
+			if !q.Main {
+				continue
+			}
+			h.Location = q.Giver
+			h.Accept(q)
+			h.Location = q.At
+			card := RuleCardByID(FoeByID(q.Foe).Card)
+			duels, lost := 0, 0
+			for !slices.Contains(h.Done, q.ID) && duels < MAX_TRIES*q.Count {
+				seed++
+				duels++
+				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(q.Foe), q.FoeLevel), seed)
+				d.Board = board.NewBoard(BoardSettings(card), seed)
+				d.Card = card
+				playOut(d)
+				if d.Winner < 0 {
+					t.Fatalf("%s vs %s never finished", class.Name, q.Foe)
+				}
+				if d.Settle(h).Won {
+					h.RecordKill(q.Foe, q.At)
+				} else {
+					lost++
+				}
+				spendLikeAPlayer(h)
+			}
+			t.Logf("%-8s %-14s %3d %5d %4d %5d", class.Name, q.ID, h.Level, duels, lost, h.Gold)
+			if !slices.Contains(h.Done, q.ID) {
+				t.Errorf("%s is stuck on %s at level %d", class.Name, q.ID, h.Level)
+				break
+			}
+		}
 	}
 }
