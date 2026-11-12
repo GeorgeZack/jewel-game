@@ -25,6 +25,28 @@ func (it *Item) About() string { return text.T("item."+it.ID+".desc", it.Desc) }
 func (b *Building) Label() string { return text.T("building."+b.ID+".name", b.Name) }
 func (b *Building) About() string { return text.T("building."+b.ID+".desc", b.Desc) }
 
+// NodeLabel is an Orrery node's name, or its rite's when it has none.
+func NodeLabel(n *OrreryNode) string {
+	if s := SpellByID(n.Rite); s != nil && n.Name == "" {
+		return s.Label()
+	}
+	return n.Name
+}
+
+// NodeAbout is what buying a node gives.
+func NodeAbout(n *OrreryNode) string {
+	var parts []string
+	for i, v := range n.Stats {
+		if v != 0 {
+			parts = append(parts, text.Tf("ui.node_stat", "%+d %s", v, StatLabel(i)))
+		}
+	}
+	if s := SpellByID(n.Rite); s != nil {
+		parts = append(parts, text.Tf("ui.node_rite", "Rite: %s. %s", s.Label(), s.About()))
+	}
+	return strings.Join(parts, ", ")
+}
+
 func StatLabel(i int) string { return text.T("stat."+slug(StatNames[i])+".name", StatNames[i]) }
 func StatAbout(i int) string { return text.T("stat."+slug(StatNames[i])+".help", StatHelp[i]) }
 

@@ -202,7 +202,7 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	}
 	if st.XP > 0 {
 		if h.AddXP(st.XP) > 0 {
-			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.Tf("ui.level_up_short", "You have %d points to spend in Hero.", h.Points) })
+			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
 		}
 	}
 	h.GiveItem(st.Item)

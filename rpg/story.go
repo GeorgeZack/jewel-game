@@ -204,6 +204,7 @@ type storyData struct {
 	characters	[]Character
 	scenes		map[string][]Step
 	cards		[]RuleCard
+	orrery		[]OrreryNode
 }
 
 // LoadStory reads the story from dir and makes it current. A file that can't be read or parsed is
@@ -235,6 +236,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		{ "quests.yaml", &s.quests, true },
 		{ "characters.yaml", &s.characters, false },
 		{ "cards.yaml", &s.cards, false },
+		{ "orrery.yaml", &s.orrery, false },
 	} {
 		if err := parse(f.name, f.out, f.required); err != nil {
 			return nil, err
@@ -272,6 +274,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 			f.HPPct = 100
 		}
 	}
+	problems = append(problems, linkOrrery(s.orrery)...)
 	for i := range s.quests {
 		if s.quests[i].Count == 0 {
 			s.quests[i].Count = 1
@@ -281,7 +284,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 	if len(s.foes) == 0 || len(s.locations) == 0 {
 		return nil, fmt.Errorf("the story needs at least one foe and one location")
 	}
-	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards
+	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery
 	if LocationByID(Story.Start) == nil {
 		problems = append(problems, fmt.Sprintf("story.yaml: start location %q doesn't exist, using %q", Story.Start, Locations[0].ID))
 		Story.Start = Locations[0].ID
@@ -333,6 +336,7 @@ func Validate() []string {
 	}
 
 	p = append(p, checkCards()...)
+	p = append(p, checkOrrery()...)
 	for _, f := range Foes {
 		for _, s := range f.Spells {
 			if SpellByID(s) == nil {

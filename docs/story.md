@@ -40,6 +40,7 @@ assets/story/
   foes.yaml         monsters
   quests.yaml       quests
   cards.yaml        rule cards: a different board or payouts for a duel (optional)
+  orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
   backgrounds/      cutscene backdrops
@@ -177,8 +178,40 @@ winning. A card that changes balance should get a simulated duel in `rpg/rpg_tes
 In a dev build, `JEWEL_CARD=sideways ./start.sh` plays every duel on that card, to try one out.
 
 `go test ./rpg -run TestProgression -v` plays the main quests in order with the AI as the hero
-and prints each class's level and gold after every quest. It plays the quests in the order they
-are listed in quests.yaml.
+and prints each class's level, gold, the residue earned in each color and the Orrery nodes owned
+after every quest. It plays the quests in the order they are listed in quests.yaml.
+
+## orrery.yaml
+
+The Orrery is the upgrade grid. Its nodes sit on rings and are joined by links; each belongs to a
+color's region and costs that color's **residue**. A hero earns residue on their own turns in a
+duel: a match of four, a match of five or more, and matches later in a cascade leave residue of
+their color (a plain three on the first step leaves none). It is kept after a lost duel, like
+the gold and XP the board paid. Colorless residue, made from colored residue at a loss with the
+Convert buttons, pays for any node; when a color's pool is short, colorless makes up the rest.
+
+Each class starts owning its **seat** and can buy any node linked to one it owns. A node gives
+stats, a rite (a hero spell, from any class), or both. A class always knows its own rites up to
+level 4 (its starting kit); every other rite must be bought here, and is castable from its
+spell's level. Respec refunds every bought node into its region's pool for some gold.
+
+```yaml
+- { id: water_seat, name: Tide Seat, color: water, ring: 3, angle: 90, seat: Knight, links: [brine] }
+- id: brine
+  name: Brine                # optional for a rite node: the rite's name is shown
+  color: water               # region: fire, water, air or earth
+  ring: 3                    # 1 is the innermost ring
+  angle: 60                  # degrees clockwise from the top
+  cost: 10                   # residue of the region's color
+  stats: { water: 4, morale: 2 }
+  rite: shield_bash          # optional spell ID
+  links: [loam]              # joined both ways, so list each link once
+```
+
+Loading checks that ids and links exist, every class has a seat, rites are hero spells
+not already in a starting kit, and every node can be reached from every seat. The other numbers
+(residue per match, the conversion rate, the respec price) are placeholders, kept together at the
+top of `rpg/orrery.go`.
 
 ## quests.yaml
 

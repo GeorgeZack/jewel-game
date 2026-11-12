@@ -40,25 +40,23 @@ var StatHelp = [NUM_STATS]string{
 }
 
 const MAX_SPELLS = 6
-const POINTS_PER_LEVEL = 6
 
 type Class struct {
 	Name	string
 	Desc	string
 	Stats	[NUM_STATS]int
-	Cost	[NUM_STATS]int	// points to raise each stat
 	Color	[3]uint8
 }
 
 var Classes = []Class{
 	{ "Knight", "Holy armor and steady damage. Forgiving, and hard to kill.",
-		[NUM_STATS]int{ 2, 2, 1, 3, 5, 2, 6 }, [NUM_STATS]int{ 2, 2, 3, 2, 1, 2, 1 }, [3]uint8{ 210, 215, 235 } },
+		[NUM_STATS]int{ 2, 2, 1, 3, 5, 2, 6 }, [3]uint8{ 210, 215, 235 } },
 	{ "Warrior", "Rage and big skull hits. Wins by ending fights early.",
-		[NUM_STATS]int{ 4, 1, 2, 2, 7, 2, 3 }, [NUM_STATS]int{ 1, 3, 2, 2, 1, 2, 2 }, [3]uint8{ 225, 90, 70 } },
+		[NUM_STATS]int{ 4, 1, 2, 2, 7, 2, 3 }, [3]uint8{ 225, 90, 70 } },
 	{ "Druid", "Poison, healing and control of the Earth and the board.",
-		[NUM_STATS]int{ 1, 3, 2, 6, 2, 4, 3 }, [NUM_STATS]int{ 3, 2, 2, 1, 3, 1, 2 }, [3]uint8{ 95, 190, 100 } },
+		[NUM_STATS]int{ 1, 3, 2, 6, 2, 4, 3 }, [3]uint8{ 95, 190, 100 } },
 	{ "Wizard", "Fragile, with the deepest mana and the strongest spells.",
-		[NUM_STATS]int{ 5, 5, 4, 1, 1, 3, 2 }, [NUM_STATS]int{ 1, 1, 1, 3, 3, 2, 3 }, [3]uint8{ 110, 130, 240 } },
+		[NUM_STATS]int{ 5, 5, 4, 1, 1, 3, 2 }, [3]uint8{ 110, 130, 240 } },
 }
 
 func ClassByName(name string) *Class {
@@ -99,8 +97,9 @@ type Hero struct {
 	Level		int
 	XP			int
 	Gold		int
-	Points		int				// unspent level-up points
-	Stats		[NUM_STATS]int
+	Stats		[NUM_STATS]int	// the class's; the Orrery adds to them
+	Nodes		[]string		// Orrery nodes owned, the seat first. Nil in a run from before the Orrery
+	Residue		[NUM_RESIDUE]int
 	Gear		map[string]string	// slot → item ID
 	Owned		[]string
 	Spells		[]string		// equipped, at most MAX_SPELLS
@@ -127,6 +126,7 @@ func NewHero(class string) *Hero {
 		Flags:		map[string]bool{},
 		Seen:		map[string]bool{},
 	}
+	h.takeSeat()
 	h.learnSpells()
 	return h
 }
@@ -143,7 +143,6 @@ func (h *Hero) AddXP(n int) int {
 	for h.XP >= XPToNext(h.Level) {
 		h.XP -= XPToNext(h.Level)
 		h.Level++
-		h.Points += POINTS_PER_LEVEL
 		gained++
 	}
 	if gained > 0 {
@@ -161,11 +160,11 @@ func (h *Hero) learnSpells() {
 	}
 }
 
-// KnownSpells is every spell the hero's class and level have unlocked.
+// KnownSpells is every rite the hero's kit, Orrery and level have unlocked.
 func (h *Hero) KnownSpells() []*Spell {
 	var out []*Spell
 	for i := range Spells {
-		if s := &Spells[i]; s.Class == h.Class && s.Level <= h.Level {
+		if s := &Spells[i]; h.Knows(s) {
 			out = append(out, s)
 		}
 	}
@@ -181,18 +180,7 @@ func (h *Hero) ToggleSpell(id string) {
 	}
 }
 
-// RaiseStat spends level-up points on a stat.
-func (h *Hero) RaiseStat(stat int) bool {
-	cost := ClassByName(h.Class).Cost[stat]
-	if h.Points < cost {
-		return false
-	}
-	h.Points -= cost
-	h.Stats[stat]++
-	return true
-}
-
-// TotalBonus adds up gear and buildings.
+// TotalBonus adds up gear, buildings and Orrery nodes.
 func (h *Hero) TotalBonus() Bonus {
 	var b Bonus
 	for _, id := range h.Gear {
@@ -203,6 +191,11 @@ func (h *Hero) TotalBonus() Bonus {
 	for _, id := range h.Buildings {
 		if bd := BuildingByID(id); bd != nil {
 			b.add(bd.Bonus)
+		}
+	}
+	for _, id := range h.Nodes {
+		if n := NodeByID(id); n != nil {
+			b.add(Bonus{ Stats: n.Stats })
 		}
 	}
 	return b

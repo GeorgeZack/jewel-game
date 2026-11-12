@@ -102,23 +102,20 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 		enabled bool
 	}
 	here := rpg.LocationByID(h.Location)
-	hero := text.T("ui.hero", "Hero")
-	if h.Points > 0 {
-		hero = text.Tf("ui.hero_points_short", "Hero %d", h.Points)
-	}
 	items := []item{
 		{ScreenWorld, text.T("ui.map_short", "Map"), true},
-		{ScreenHero, hero, true},
+		{ScreenHero, text.T("ui.hero", "Hero"), true},
+		{ScreenOrrery, text.T("ui.orrery_nav", "Orrery"), true},
 		{ScreenSpells, text.T("ui.spells", "Spells"), true},
 		{ScreenQuests, text.T("ui.quests_short", "Quests"), true},
 		{ScreenShop, text.T("ui.shop", "Shop"), here.Town},
 		{ScreenCitadel, text.T("ui.citadel_short", "Citadel"), true},
 	}
-	cols := 6
-	btnW := (w - 16 - 5*6) / 6
+	cols := len(items)
+	btnW := (w - 16 - float32(cols-1)*6) / float32(cols)
 	if btnW < 78 {
-		cols = 3
-		btnW = (w - 16 - 2*6) / 3
+		cols = 4
+		btnW = (w - 16 - 3*6) / 4
 	}
 	rows := (len(items) + cols - 1) / cols
 	bh := float32(36)

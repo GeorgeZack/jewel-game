@@ -33,6 +33,7 @@ type Combatant struct {
 	Armor			int
 	GoldPct, XPPct	int
 	Gold, XP		int		// collected this duel
+	Residue			[NUM_MANA]int	// collected this duel, on the hero's turns only
 	Foe				*Foe	// nil for the hero
 }
 
@@ -180,7 +181,21 @@ type Gain struct {
 	Damage	int
 	Gold	int
 	XP		int
+	Residue	[NUM_MANA]int
 	Extra	bool
+}
+
+// MatchResidue is what one mana match pays in its color: a plain three on the first step pays
+// nothing, longer runs and later cascade steps pay more.
+func MatchResidue(size, chain int) int {
+	n := max(chain-1, 0) * RESIDUE_CHAIN
+	switch {
+	case size >= 5:
+		n += RESIDUE_FIVE
+	case size == 4:
+		n += RESIDUE_FOUR
+	}
+	return n
 }
 
 // ApplyStep credits a cascade step to whoever's turn it is, whether a swap or a spell started it.
@@ -207,6 +222,11 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 		}
 		switch {
 		case m.Color < NUM_MANA:
+			if me.Foe == nil {
+				n := MatchResidue(m.Size, res.Chain)
+				me.Residue[m.Color] += n
+				g.Residue[m.Color] += n
+			}
 			// the Wild itself isn't in Cleared by color; count it, then multiply the run
 			counts[m.Color] += m.Size*m.Mult - (m.Size - m.Wilds)
 			counts[m.Color] += me.Stats[m.Color] / 6
@@ -346,14 +366,15 @@ func (d *Duel) logf(key, fallback string, a ...any) {
 type Reward struct {
 	Won			bool
 	Gold, XP	int
+	Residue		[NUM_MANA]int
 	Levels		int
 }
 
-// Settle banks a finished duel. Whatever was collected from the board is kept either way, as a
-// loss costs nothing but the time; only a win pays the bounty.
+// Settle banks a finished duel. Whatever was collected from the board, residue included, is kept
+// either way, as a loss costs nothing but the time; only a win pays the bounty.
 func (d *Duel) Settle(h *Hero) Reward {
 	me, foe := d.Sides[Player], d.Sides[Enemy]
-	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP }
+	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP, Residue: me.Residue }
 	if r.Won {
 		h.Wins++
 		r.Gold += foe.Level * 8 * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
@@ -362,6 +383,9 @@ func (d *Duel) Settle(h *Hero) Reward {
 		h.Losses++
 	}
 	h.Gold += r.Gold
+	for i, n := range r.Residue {
+		h.Residue[i] += n
+	}
 	r.Levels = h.AddXP(r.XP)
 	return r
 }

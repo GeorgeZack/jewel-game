@@ -45,6 +45,7 @@ const (
 	ScreenQuests
 	ScreenShop
 	ScreenCitadel
+	ScreenOrrery
 	ScreenDuel
 )
 
@@ -103,6 +104,7 @@ type QuestView struct {
 	dockScroll  ui.Scroll
 	modalScroll ui.Scroll
 	modalKey    string
+	orrerySel   string // the Orrery node being looked at
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
@@ -444,11 +446,20 @@ func (v *QuestView) finishDuel() {
 	levelBefore := h.Level
 	r := d.Settle(h)
 	v.lastWon = r.Won
+	residue := ""
+	for i, n := range r.Residue {
+		if n > 0 {
+			residue += text.Tf("ui.residue_gain", " +%d %s", n, rpg.ManaLabel(i))
+		}
+	}
+	if residue != "" {
+		residue = text.Tf("ui.residue_line", "\n\nResidue:%s.", residue)
+	}
 	back := []ModalButton{{text.T("ui.continue", "Continue"), func() { v.Screen = ScreenWorld; v.Duel = nil }}}
 	if r.Won {
 		v.show(Modal{
 			Title: text.T("ui.victory", "Victory!"),
-			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP),
+			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP) + residue,
 		})
 		for _, q := range h.RecordKill(v.foeID, v.duelAt) {
 			body := text.Tf("ui.quest_done_body", "%s\n\nReward: %d gold, %d XP.", q.Outro, q.Gold, q.XP)
@@ -461,13 +472,13 @@ func (v *QuestView) finishDuel() {
 	} else {
 		v.show(Modal{
 			Title: text.T("ui.defeated", "Defeated"),
-			Body:  text.Tf("ui.defeated_body", "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost.", r.Gold, r.XP),
+			Body:  text.Tf("ui.defeated_body", "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost.", r.Gold, r.XP) + residue,
 		})
 	}
 	if h.Level > levelBefore {
 		v.show(Modal{
 			Title: text.Tf("ui.level_up", "Level %d!", h.Level),
-			Body:  text.Tf("ui.level_up_body", "You have %d points to spend. Open Hero to raise your stats, and Spells to check for new ones.", h.Points),
+			Body:  text.T("ui.level_up_body", "Your HP rises. Open Spells to check for new rites, and the Orrery to spend residue."),
 		})
 	}
 	v.modals[len(v.modals)-1].Buttons = back
@@ -626,11 +637,8 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 		}
 	}
 	nav(ScreenWorld, text.T("ui.world_map", "World map"), true)
-	label := text.T("ui.hero", "Hero")
-	if h.Points > 0 {
-		label = text.Tf("ui.hero_points", "Hero  (%d points)", h.Points)
-	}
-	nav(ScreenHero, label, true)
+	nav(ScreenHero, text.T("ui.hero", "Hero"), true)
+	nav(ScreenOrrery, text.T("ui.orrery_nav", "Orrery"), true)
 	nav(ScreenSpells, text.T("ui.spells", "Spells"), true)
 	nav(ScreenQuests, text.Tf("ui.quests_count", "Quests  (%d)", len(h.Active)), true)
 	nav(ScreenShop, text.T("ui.shop_towns", "Shop (in towns)"), here.Town)
