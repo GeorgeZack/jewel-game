@@ -41,6 +41,7 @@ assets/story/
   quests.yaml       quests
   cards.yaml        rule cards: a different board or payouts for a duel (optional)
   orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
+  facilities.yaml   the academy's facilities, built and upgraded with gold (optional)
   puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
@@ -214,6 +215,35 @@ not already in a starting kit, and every node can be reached from every seat. Th
 (residue per match, the conversion rate, the respec price) are placeholders, kept together at the
 top of `rpg/orrery.go`.
 
+## facilities.yaml
+
+Facilities are the academy's buildings. The academy itself opens when a scene sets the flag
+`academy_founded` (for now the done scene of the first main quest does). A facility is available
+once its `requires` conditions hold (the same conditions as everywhere else), and then each of its
+levels is bought with gold, in order. A level's perks add to the levels below it.
+
+```yaml
+- id: treasury
+  name: Treasury
+  desc: More gold from every duel.   # shown under the name
+  requires: [quest:toll]             # optional; available once these hold
+  levels:
+    - { cost: 150, gold_pct: 10 }    # cost is gold, and every level needs one
+    - { cost: 300, gold_pct: 10 }
+```
+
+A level's perks: `gold_pct` and `xp_pct` (more from every duel), `hp`, `start_mana` (of every color
+at the start of a duel), `skull_damage` (per skull match), `armor` (blocks skull damage),
+`henchmen` (more henchmen can be hired) and `chapter_pct` (completed chapters pay more). Facilities
+give no stats: those come from the Orrery.
+
+Loading checks that ids are unique, every facility has a level, every level has a cost, and the
+conditions are valid. Henchmen, chapters and dues are tuned with the placeholder numbers at the
+top of `rpg/academy.go`: henchmen are hired and trained with gold and hold one item the hero
+owns; a henchman posted to an open site completes a chapter after a number of the hero's wins
+(anywhere), which sets that site's holder to the academy and leaves a report of gold and residue;
+each later win at a held site adds dues to the ledger. Nothing moves while the game is closed.
+
 ## puzzles/*.yaml
 
 A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
@@ -372,6 +402,7 @@ when a scene ends.
 | `accept_quest: id` | start a quest |
 | `unlock: id` | open a location on the map |
 | `travel: id` | move the hero there |
+| `set_holder: { at: id, holder: crown }` | say who holds a location; `holder: academy` is the player's own, and an empty holder means no one. Sites the academy holds pay dues |
 | `end: true` | mark the story beaten |
 
 ### Flow
@@ -444,7 +475,8 @@ backgrounds fill the window and crop to keep their shape.
 These parts aren't story files yet, and changing them means editing Go:
 
 - classes and their spells: `rpg/hero.go`, `rpg/spells.go`
-- items, the shop and citadel buildings: `rpg/hero.go`
+- items and the shop: `rpg/hero.go`
+- henchmen, chapters and dues: `rpg/academy.go`
 - duel rules and balance numbers: `rpg/duel.go`
 - the scene player: `core/scene-view.go`; the loader and the checks: `rpg/story.go`
 
