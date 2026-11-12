@@ -117,6 +117,30 @@ func TextCenteredFit(s string, cx, y, size, maxW float32, col rl.Color) {
 	TextCentered(s, cx, y, size, col)
 }
 
+// Wrapped draws s word-wrapped to maxW and returns the total height it used.
+func Wrapped(s string, x, y, size, maxW float32, col rl.Color) float32 {
+	size = max(size, MinText)
+	line := ""
+	yy := y
+	for _, word := range strings.Fields(s) {
+		next := word
+		if line != "" {
+			next = line + " " + word
+		}
+		if line != "" && TextWidth(next, size) > maxW {
+			Text(line, x, yy, size, col)
+			yy += size + 6
+			next = word
+		}
+		line = next
+	}
+	if line != "" {
+		Text(line, x, yy, size, col)
+		yy += size + 6
+	}
+	return yy - y
+}
+
 func TextCenteredOutlined(s string, cx, y, size float32, col rl.Color) {
 	TextOutlined(s, cx-TextWidth(s, size)/2, y, size, col)
 }
@@ -173,7 +197,7 @@ func box(r rl.Rectangle, on bool) {
 func Button(r rl.Rectangle, label string, on bool) bool {
 	box(r, on)
 	size := min(r.Height*0.5, 22)
-	for size > 16 && TextWidth(label, size) > r.Width-12 {
+	for size > 13 && TextWidth(label, size) > r.Width-12 {
 		size--
 	}
 	col := TextColor
@@ -200,7 +224,7 @@ func DisabledButton(r rl.Rectangle, label string, col rl.Color) {
 		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.4))
 	}
 	size := min(r.Height*0.5, 22)
-	for size > 16 && TextWidth(label, size) > r.Width-12 {
+	for size > 13 && TextWidth(label, size) > r.Width-12 {
 		size--
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
@@ -305,7 +329,8 @@ const MinText = 17
 func (c *Column) Line(s string, size float32, col rl.Color) {
 	size = max(size, MinText)
 	r := c.Next(size + 2)
-	Text(s, r.X, r.Y, size, col)
+	// Shrink rather than let a long label run past the panel edge.
+	TextFit(s, r.X, r.Y, size, r.Width, col)
 }
 
 // Paragraph word-wraps s to the column width.

@@ -33,6 +33,10 @@ func uiScale() float32 {
 	return uiScaleFor(rl.GetScreenWidth(), rl.GetScreenHeight())
 }
 
+// phoneFoeH is the height of the foe panel in a phone duel: enough for its name, HP, mana and a
+// scrolling list of its moves and the battle log, so the phone sees what the desktop panel does.
+const phoneFoeH = 160
+
 // phoneBoardRect is the board in screen pixels. Portrait puts a dock under it.
 // Landscape puts the dock beside it, so the gems stay large enough to tap.
 func phoneBoardRect(sw, sh float32) rl.Rectangle {
@@ -44,8 +48,8 @@ func phoneBoardRect(sw, sh float32) rl.Rectangle {
 		}
 		return rl.Rectangle{X: 6, Y: (sh - size) / 2, Width: size, Height: size}
 	}
-	top := float32(86)
-	dock := sh * 0.42
+	top := float32(6 + phoneFoeH + 22)
+	dock := sh * 0.36
 	if dock < 240 {
 		dock = 240
 	}
@@ -76,12 +80,12 @@ func (c *GameController) drawNarrow(w, h float32) {
 	if q.Hero != nil && q.Screen == ScreenWorld {
 		if w > h {
 			mapW := content.Width * 0.62
-			q.DrawCenter(rl.Rectangle{X: content.X, Y: content.Y, Width: mapW - 6, Height: content.Height})
+			q.DrawCenter(rl.Rectangle{X: content.X, Y: content.Y, Width: mapW - 14, Height: content.Height})
 			q.DrawRight(rl.Rectangle{X: content.X + mapW, Y: content.Y, Width: content.Width - mapW, Height: content.Height})
 			return
 		}
 		mapH := content.Height * 0.56
-		q.DrawCenter(rl.Rectangle{X: content.X, Y: content.Y, Width: content.Width, Height: mapH - 6})
+		q.DrawCenter(rl.Rectangle{X: content.X, Y: content.Y, Width: content.Width, Height: mapH - 14})
 		q.DrawRight(rl.Rectangle{X: content.X, Y: content.Y + mapH, Width: content.Width, Height: content.Height - mapH})
 		return
 	}
@@ -117,7 +121,7 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 		btnW = (w - 16 - 2*6) / 3
 	}
 	rows := (len(items) + cols - 1) / cols
-	bh := float32(42)
+	bh := float32(36)
 	for i, it := range items {
 		col := i % cols
 		row := i / cols
@@ -142,13 +146,14 @@ func (c *GameController) drawPhoneDuel(w, h float32) {
 	b := c.boardArea()
 	if w > h {
 		dock := rl.Rectangle{X: (b.X+b.Width)/s + 8, Y: 8, Width: w - (b.X+b.Width)/s - 16, Height: h - 16}
-		q.drawPhoneEnemy(rl.Rectangle{X: dock.X, Y: dock.Y, Width: dock.Width, Height: 92})
-		q.drawPhoneDock(rl.Rectangle{X: dock.X, Y: dock.Y + 98, Width: dock.Width, Height: dock.Height - 98})
+		eh := min(float32(phoneFoeH), dock.Height*0.5)
+		q.drawPhoneEnemy(rl.Rectangle{X: dock.X, Y: dock.Y, Width: dock.Width, Height: eh})
+		q.drawPhoneDock(rl.Rectangle{X: dock.X, Y: dock.Y + eh + 6, Width: dock.Width, Height: dock.Height - eh - 6})
 		return
 	}
-	q.drawPhoneEnemy(rl.Rectangle{X: 8, Y: 6, Width: w - 16, Height: 74})
+	q.drawPhoneEnemy(rl.Rectangle{X: 8, Y: 6, Width: w - 16, Height: phoneFoeH})
 	top := (b.Y + b.Height) / s
-	q.drawPhoneDock(rl.Rectangle{X: 8, Y: top + 6, Width: w - 16, Height: h - top - 14})
+	q.drawPhoneDock(rl.Rectangle{X: 8, Y: top + 8, Width: w - 16, Height: h - top - 16})
 }
 
 func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
@@ -157,11 +162,55 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 	}
 	ui.Panel(r)
 	e := v.Duel.Sides[rpg.Enemy]
-	v.portraits[rpg.Enemy] = rl.Vector2{X: r.X + 28, Y: r.Y + r.Height/2}
-	ui.TextFit(text.Tf("ui.level_short", "%s  L%d", e.Name, e.Level), r.X+12, r.Y+8, 22, r.Width-24, ui.TextColor)
-	bar := rl.Rectangle{X: r.X + 12, Y: r.Y + r.Height - 34, Width: r.Width - 24, Height: 26}
+	col := ui.Column{X: r.X + 20, Y: r.Y + 12, W: r.Width - 40, Gap: 4}
+	v.portraits[rpg.Enemy] = rl.Vector2{X: r.X + 30, Y: col.Y + 14}
+	name := col.Next(28)
+	ui.TextFit(text.Tf("ui.level_short", "%s  L%d", e.Name, e.Level), name.X, name.Y, 22, name.Width, ui.TextColor)
+	bar := col.Next(24)
 	v.hpBars[rpg.Enemy] = bar
 	ui.Bar(bar, text.T("ui.hp", "HP"), e.HP, e.MaxHP, hpColor)
+	mana := col.Next(20)
+	v.drawPhoneMana(mana, e)
+	status := ""
+	for _, ef := range e.Effects {
+		status += text.Tf("ui.effect", "%s(%d) ", rpg.EffectLabel(ef.Kind), ef.Turns)
+	}
+	if status != "" {
+		col.Paragraph(status, 15, ui.Accent)
+	}
+	// The foe's moves and the battle log scroll, matching what the desktop's right panel shows.
+	view := rl.Rectangle{X: r.X + 14, Y: col.Y + 2, Width: r.Width - 28, Height: r.Y + r.Height - 6 - (col.Y + 2)}
+	if view.Height < 8 {
+		return
+	}
+	col.Y = v.rightScroll.Begin(view, uiScale())
+	for i, s := range e.Spells {
+		v.drawFoeMove(&col, e, s, i)
+	}
+	col.Heading(text.T("ui.battle_log", "Battle log"))
+	for _, line := range v.Duel.Log {
+		col.Paragraph(line.Text(), 13, ui.DimText)
+	}
+	v.rightScroll.End(col.Y)
+}
+
+// drawFoeMove is one compact row of a foe's spell: its name and cost, dimmed when it can't cast it.
+func (v *QuestView) drawFoeMove(col *ui.Column, c *rpg.Combatant, s *rpg.Spell, i int) {
+	r := col.Next(28)
+	const size = 16
+	costW := manaCostWidth(s.Cost, size)
+	ink := ui.DimText
+	if c.CanCast(s) {
+		ink = ui.TextColor
+	}
+	label := s.Label()
+	if cd := c.Cooldowns[s.ID]; cd > 0 {
+		label += text.Tf("ui.cooldown", " (%d)", cd)
+	}
+	ui.TextFit(label, r.X+4, r.Y+4, size, r.Width-12-costW, ink)
+	if costW > 0 {
+		v.drawManaCosts(r.X+r.Width-costW, r.Y+4, size, s.Cost, &c.Mana)
+	}
 }
 
 func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
@@ -170,7 +219,7 @@ func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
 	}
 	ui.Panel(r)
 	p := v.Duel.Sides[rpg.Player]
-	col := ui.Column{X: r.X + 10, Y: r.Y + 8, W: r.Width - 20, Gap: 4}
+	col := ui.Column{X: r.X + 20, Y: r.Y + 12, W: r.Width - 40, Gap: 4}
 	v.portraits[rpg.Player] = rl.Vector2{X: r.X + r.Width/2, Y: r.Y + 20}
 	ui.TextFit(text.Tf("ui.level_short", "%s  L%d", p.Name, p.Level), col.X, col.Y, 22, col.W, ui.Accent)
 	col.Y += 28
@@ -179,6 +228,13 @@ func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
 	ui.Bar(bar, text.T("ui.hp", "HP"), p.HP, p.MaxHP, hpColor)
 	mana := col.Next(24)
 	v.drawPhoneMana(mana, p)
+	status := ""
+	for _, ef := range p.Effects {
+		status += text.Tf("ui.effect", "%s(%d) ", rpg.EffectLabel(ef.Kind), ef.Turns)
+	}
+	if status != "" {
+		col.Paragraph(status, 15, ui.Accent)
+	}
 	btns := col.Next(44)
 	gap := float32(8)
 	half := (btns.Width - gap) / 2

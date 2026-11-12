@@ -42,6 +42,21 @@ func card(r rl.Rectangle, selected bool) bool {
 	return ui.Clicked(r)
 }
 
+// menuContent lays out a menu panel's inner column. On phones it starts a scroll view and pads the
+// content clear of the ornate frame corners; the returned func ends the scroll.
+func (v *QuestView) menuContent(r rl.Rectangle, gap float32) (*ui.Column, func()) {
+	top, cx, cw := r.Y+24, r.X+30, r.Width-60
+	if narrow() {
+		top = v.menuScroll.Begin(rl.Rectangle{X: r.X + 18, Y: r.Y + 30, Width: r.Width - 36, Height: r.Height - 46}, uiScale())
+		cx, cw = r.X+38, r.Width-84
+	}
+	col := &ui.Column{X: cx, Y: top, W: cw, Gap: gap}
+	if narrow() {
+		return col, func() { v.menuScroll.End(col.Y) }
+	}
+	return col, func() {}
+}
+
 func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 	ui.Panel(r)
 	ui.TextCenteredFit(text.T("ui.choose_class", "Choose your class"), r.X+r.Width/2, r.Y+30, 42, r.Width-24, ui.Accent)
@@ -121,7 +136,11 @@ func (v *QuestView) drawWorld(r rl.Rectangle) {
 	}
 	drawFoe("hero", foeColor(rpg.ClassByName(h.Class).Color), rl.Vector2{X: at.X, Y: at.Y - 34}, 20, v.time, 0, true)
 	mapTitle := rpg.Story.MapName
-	ui.TextOutlined(mapTitle, r.X+16, r.Y+16, ui.FitSize(mapTitle, 28, r.Width-32, 16), ui.Accent)
+	mx, my := r.X+16, r.Y+16
+	if narrow() {
+		mx, my = r.X+38, r.Y+30
+	}
+	ui.TextOutlined(mapTitle, mx, my, ui.FitSize(mapTitle, 28, r.X+r.Width-mx-16, 16), ui.Accent)
 	v.drawHexEditor(r)
 }
 
@@ -284,16 +303,35 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	h := v.Hero
 	c := rpg.NewHeroCombatant(h)
 	ui.Panel(r)
-	col := ui.Column{X: r.X + 30, Y: r.Y + 24, W: r.Width - 60, Gap: 6}
+	col, end := v.menuContent(r, 6)
+	defer end()
 	title := col.Next(44)
-	ui.Text(text.Tf("ui.level_class", "Level %d %s", h.Level, rpg.ClassByName(h.Class).Label()), title.X, title.Y, 38, ui.Accent)
+	class := text.Tf("ui.level_class", "Level %d %s", h.Level, rpg.ClassByName(h.Class).Label())
+	if narrow() {
+		// The New hero button would cover the title, so give it its own row.
+		ui.TextFit(class, title.X, title.Y, 38, title.Width, ui.Accent)
+		if ui.Button(col.Next(38), text.T("ui.new_hero", "New hero..."), false) {
+			v.confirmNewHero()
+		}
+	} else {
+		ui.Text(class, title.X, title.Y, 38, ui.Accent)
+	}
 	col.Line(text.Tf("ui.points", "Points to spend: %d", h.Points), 22, ui.TextColor)
 	col.Heading(text.T("ui.stats", "Stats"))
 	cls := rpg.ClassByName(h.Class)
 	for stat := range rpg.NUM_STATS {
-		row := col.Next(54)
+		rowH := float32(54)
+		if narrow() {
+			// Keep the bonus out from under the +1 button.
+			rowH = 66
+		}
+		row := col.Next(rowH)
 		ui.Text(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), c.Stats[stat]), row.X, row.Y+2, 22, ui.TextColor)
-		ui.Text(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, ui.DimText)
+		if narrow() {
+			ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+42, 16, row.Width, ui.DimText)
+		} else {
+			ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, row.Width-140, ui.DimText)
+		}
 		btn := rl.Rectangle{X: row.X + row.Width - 130, Y: row.Y + 4, Width: 130, Height: 38}
 		if ui.ButtonIf(btn, text.Tf("ui.raise_stat", "+1  (cost %d)", cls.Cost[stat]), h.Points >= cls.Cost[stat]) {
 			h.RaiseStat(stat)
@@ -301,7 +339,7 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 		}
 	}
 	col.Heading(text.T("ui.in_a_duel", "In a duel"))
-	col.Line(text.Tf("ui.duel_totals", "HP %d    Skull damage bonus %+d    Blocks %d    Gold +%d%%    XP +%d%%",
+	col.Paragraph(text.Tf("ui.duel_totals", "HP %d    Skull damage bonus %+d    Blocks %d    Gold +%d%%    XP +%d%%",
 		c.MaxHP, c.SkullDamage+c.Stats[rpg.Battle]/4+c.Level/2, c.Armor+c.Stats[rpg.Morale]/10, c.GoldPct, c.XPPct), 17, ui.TextColor)
 	col.Heading(text.T("ui.equipped", "Equipped"))
 	for _, slot := range rpg.Slots {
@@ -309,41 +347,50 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 		if it := rpg.ItemByID(h.Gear[slot]); it != nil {
 			name = it.Label() + "  " + it.About()
 		}
-		col.Line(text.Tf("ui.gear_line", "%s  %s", rpg.SlotLabel(slot), name), 17, ui.TextColor)
+		col.Paragraph(text.Tf("ui.gear_line", "%s  %s", rpg.SlotLabel(slot), name), 17, ui.TextColor)
 	}
-	if ui.Button(rl.Rectangle{X: r.X + r.Width - 210, Y: r.Y + 24, Width: 180, Height: 38}, text.T("ui.new_hero", "New hero..."), false) {
-		v.show(Modal{
-			Title: text.T("ui.start_over", "Start over?"),
-			Body:  text.T("ui.start_over_body", "This deletes your current hero for good."),
-			Buttons: []ModalButton{
-				{text.T("ui.delete_hero", "Delete hero"), func() {
-					if err := rpg.DeleteSave(rpg.SavePath()); err != nil {
-						ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
-					}
-					v.Hero = nil
-					v.scenes.Stop()
-					v.Screen = ScreenClass
-				}},
-				{text.T("ui.keep_playing", "Keep playing"), nil},
-			},
-		})
+	if !narrow() && ui.Button(rl.Rectangle{X: r.X + r.Width - 210, Y: r.Y + 24, Width: 180, Height: 38}, text.T("ui.new_hero", "New hero..."), false) {
+		v.confirmNewHero()
 	}
+}
+
+func (v *QuestView) confirmNewHero() {
+	v.show(Modal{
+		Title: text.T("ui.start_over", "Start over?"),
+		Body:  text.T("ui.start_over_body", "This deletes your current hero for good."),
+		Buttons: []ModalButton{
+			{text.T("ui.delete_hero", "Delete hero"), func() {
+				if err := rpg.DeleteSave(rpg.SavePath()); err != nil {
+					ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
+				}
+				v.Hero = nil
+				v.scenes.Stop()
+				v.Screen = ScreenClass
+			}},
+			{text.T("ui.keep_playing", "Keep playing"), nil},
+		},
+	})
 }
 
 func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	col := ui.Column{X: r.X + 30, Y: r.Y + 24, W: r.Width - 60, Gap: 6}
+	col, end := v.menuContent(r, 6)
+	defer end()
 	title := col.Next(44)
 	ui.Text(text.T("ui.spellbook", "Spellbook"), title.X, title.Y, 38, ui.Accent)
-	col.Line(text.Tf("ui.spellbook_help", "Equipped %d / %d. Click to swap. New spells come with levels.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
+	col.Paragraph(text.Tf("ui.spellbook_help", "Equipped %d / %d. Click to swap. New spells come with levels.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
 	col.Y += 8
 	for i := range rpg.Spells {
 		s := &rpg.Spells[i]
 		if s.Class != h.Class {
 			continue
 		}
-		row := col.Next(64)
+		rowH := float32(64)
+		if narrow() {
+			rowH = 84
+		}
+		row := col.Next(rowH)
 		known := s.Level <= h.Level
 		equipped := slices.Contains(h.Spells, s.ID)
 		if !known {
@@ -354,11 +401,17 @@ func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 			h.ToggleSpell(s.ID)
 			v.save()
 		}
-		ui.Text(s.Label(), row.X+14, row.Y+8, 22, ui.TextColor)
-		ui.Text(s.About(), row.X+14, row.Y+36, 16, ui.DimText)
 		const size = 20
-		if w := manaCostWidth(s.Cost, size); w > 0 {
-			v.drawManaCosts(row.X+row.Width-14-w, row.Y+10, size, s.Cost, nil)
+		costW := manaCostWidth(s.Cost, size)
+		textW := row.Width - 28 - costW
+		ui.TextFit(s.Label(), row.X+14, row.Y+8, 22, textW, ui.TextColor)
+		aboutW := textW
+		if narrow() {
+			aboutW = row.Width - 28
+		}
+		ui.Wrapped(s.About(), row.X+14, row.Y+36, 16, aboutW, ui.DimText)
+		if costW > 0 {
+			v.drawManaCosts(row.X+row.Width-14-costW, row.Y+10, size, s.Cost, nil)
 		}
 	}
 }
@@ -366,18 +419,19 @@ func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 func (v *QuestView) drawQuestLog(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	col := ui.Column{X: r.X + 30, Y: r.Y + 24, W: r.Width - 60, Gap: 6}
+	col, end := v.menuContent(r, 6)
+	defer end()
 	title := col.Next(44)
 	ui.Text(text.T("ui.quests", "Quests"), title.X, title.Y, 38, ui.Accent)
 	col.Heading(text.T("ui.active", "Active"))
 	if len(h.Active) == 0 {
-		col.Line(text.T("ui.no_quests", "None. Towns marked ! have work for you."), 18, ui.DimText)
+		col.Paragraph(text.T("ui.no_quests", "None. Towns marked ! have work for you."), 18, ui.DimText)
 	}
 	for i := range rpg.Quests {
 		q := &rpg.Quests[i]
 		if n, ok := h.Active[q.ID]; ok {
 			col.Line(q.Title, 22, ui.TextColor)
-			col.Line(text.Tf("ui.quest_task", "Defeat %s (L%d) at %s: %d / %d", rpg.FoeByID(q.Foe).Name, q.FoeLevel, rpg.LocationByID(q.At).Name, n, q.Count), 16, ui.DimText)
+			col.Paragraph(text.Tf("ui.quest_task", "Defeat %s (L%d) at %s: %d / %d", rpg.FoeByID(q.Foe).Name, q.FoeLevel, rpg.LocationByID(q.At).Name, n, q.Count), 16, ui.DimText)
 			col.Y += 4
 		}
 	}
@@ -392,10 +446,14 @@ func (v *QuestView) drawQuestLog(r rl.Rectangle) {
 func (v *QuestView) drawShop(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	ui.Text(text.T("ui.shop", "Shop"), r.X+30, r.Y+20, 38, ui.Accent)
-	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), r.X+r.Width-200, r.Y+28, 24, goldColor)
-
+	tx, ty := r.X+30, r.Y+20
 	view := rl.Rectangle{X: r.X + 18, Y: r.Y + 72, Width: r.Width - 36, Height: r.Height - 90}
+	if narrow() {
+		tx, ty = r.X+38, r.Y+30
+		view = rl.Rectangle{X: r.X + 24, Y: r.Y + 86, Width: r.Width - 48, Height: r.Height - 104}
+	}
+	ui.Text(text.T("ui.shop", "Shop"), tx, ty, 38, ui.Accent)
+	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), r.X+r.Width-200, r.Y+28, 24, goldColor)
 	top := v.shopScroll.Begin(view, uiScale())
 	col := ui.Column{X: view.X + 12, Y: top, W: view.Width - 40, Gap: 8}
 	for _, slot := range rpg.Slots {
@@ -441,20 +499,38 @@ func itemIcon(id string) rl.Texture2D {
 var tooDear = rl.Color{R: 220, G: 110, B: 100, A: 230}
 
 func (v *QuestView) drawShopRow(col *ui.Column, h *rpg.Hero, it *rpg.Item) {
-	row := col.Next(64)
 	worn := h.Gear[it.Slot] == it.ID
 	owned := slices.Contains(h.Owned, it.ID)
 	nameCol := ui.TextColor
 	if it.Level > h.Level && !owned {
 		nameCol = ui.DimText
 	}
-	if icon := itemIcon(it.ID); icon.ID != 0 {
+	icon := itemIcon(it.ID)
+	if narrow() {
+		// The name, description and button can't share one line on a phone.
+		row := col.Next(104)
+		tx := row.X
+		if icon.ID != 0 {
+			rl.DrawTexturePro(icon,
+				rl.Rectangle{Width: float32(icon.Width), Height: float32(icon.Height)},
+				rl.Rectangle{X: row.X, Y: row.Y + 2, Width: 56, Height: 56},
+				rl.Vector2{}, 0, rl.White)
+			tx = row.X + 68
+		}
+		tw := row.X + row.Width - tx
+		ui.TextFit(it.Label(), tx, row.Y+4, 26, tw, nameCol)
+		ui.TextFit(it.About(), tx, row.Y+36, 17, tw, ui.DimText)
+		v.shopButton(rl.Rectangle{X: row.X, Y: row.Y + 62, Width: row.Width, Height: 38}, h, it, worn, owned)
+		return
+	}
+	row := col.Next(64)
+	if icon.ID != 0 {
 		rl.DrawTexturePro(icon,
 			rl.Rectangle{Width: float32(icon.Width), Height: float32(icon.Height)},
 			rl.Rectangle{X: row.X, Y: row.Y + 6, Width: 52, Height: 52},
 			rl.Vector2{}, 0, rl.White)
 	}
-	ui.Text(it.Label(), row.X+62, row.Y+6, 26, nameCol)
+	ui.TextFit(it.Label(), row.X+62, row.Y+6, 26, row.Width-62-160, nameCol)
 	about := it.About()
 	size := float32(18)
 	maxW := row.Width - 62 - 160
@@ -462,7 +538,11 @@ func (v *QuestView) drawShopRow(col *ui.Column, h *rpg.Hero, it *rpg.Item) {
 		size--
 	}
 	ui.Text(about, row.X+62, row.Y+36, size, ui.DimText)
-	btn := rl.Rectangle{X: row.X + row.Width - 148, Y: row.Y + 12, Width: 140, Height: 40}
+	v.shopButton(rl.Rectangle{X: row.X + row.Width - 148, Y: row.Y + 12, Width: 140, Height: 40}, h, it, worn, owned)
+}
+
+// shopButton draws the buy/equip control for an item and applies it when clicked.
+func (v *QuestView) shopButton(btn rl.Rectangle, h *rpg.Hero, it *rpg.Item, worn, owned bool) {
 	switch {
 	case worn:
 		ui.Button(btn, text.T("ui.equipped_tag", "Equipped"), true)
@@ -554,25 +634,38 @@ func (v *QuestView) drawCitadelYard(col *ui.Column, h *rpg.Hero) {
 func (v *QuestView) drawCitadel(r rl.Rectangle) {
 	h := v.Hero
 	ui.Panel(r)
-	col := ui.Column{X: r.X + 30, Y: r.Y + 24, W: r.Width - 60, Gap: 8}
+	col, end := v.menuContent(r, 8)
+	defer end()
 	title := col.Next(44)
-	ui.Text(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, ui.Accent)
-	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), title.X+title.Width-170, title.Y+8, 24, goldColor)
+	if narrow() {
+		// The title and the gold don't both fit on one line.
+		ui.TextFit(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, title.Width, ui.Accent)
+		col.Line(text.Tf("ui.gold", "Gold %d", h.Gold), 24, goldColor)
+	} else {
+		ui.Text(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, ui.Accent)
+		ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), title.X+title.Width-170, title.Y+8, 24, goldColor)
+	}
 	col.Paragraph(text.T("ui.citadel_help", "Spend your gold on buildings. Their bonuses last forever and apply in every duel."), 18, ui.TextColor)
-	col.Y += 6
-	v.drawCitadelYard(&col, h)
-	col.Y += 10
-	// two columns of plaques, so all of them fit under the yard
+	cols := 2
+	if narrow() {
+		// The yard and the plaques overlap on a phone, so list each building once.
+		cols = 1
+	} else {
+		col.Y += 6
+		v.drawCitadelYard(col, h)
+		col.Y += 10
+	}
+
 	var cells []rl.Rectangle
 	for i := range rpg.Buildings {
-		if i%2 == 0 {
-			cells = ui.Row(col.Next(72), 2, 10)
+		if i%cols == 0 {
+			cells = ui.Row(col.Next(72), cols, 10)
 		}
 		b := &rpg.Buildings[i]
-		row := cells[i%2]
+		row := cells[i%cols]
 		plaque(row, h.Has(b.ID))
-		ui.Text(b.Label(), row.X+14, row.Y+10, 22, ui.TextColor)
-		ui.Text(b.About(), row.X+14, row.Y+42, 16, ui.DimText)
+		ui.TextFit(b.Label(), row.X+14, row.Y+10, 22, row.Width-28-124, ui.TextColor)
+		ui.TextFit(b.About(), row.X+14, row.Y+42, 16, row.Width-28, ui.DimText)
 		btn := rl.Rectangle{X: row.X + row.Width - 124, Y: row.Y + 8, Width: 112, Height: 34}
 		if h.Has(b.ID) {
 			ui.Button(btn, text.T("ui.built", "Built"), true)

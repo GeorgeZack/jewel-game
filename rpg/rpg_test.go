@@ -25,6 +25,19 @@ func testDuel() *Duel {
 	return d
 }
 
+func TestManaDrainHalvesBothSides(t *testing.T) {
+	d := testDuel()
+	d.Sides[Player].Mana = [NUM_MANA]int{8, 7, 6, 5}
+	d.Sides[Enemy].Mana = [NUM_MANA]int{4, 3, 2, 1}
+	d.ManaDrain()
+	if d.Sides[Player].Mana != [NUM_MANA]int{4, 3, 3, 2} {
+		t.Fatalf("player mana %v, want [4 3 3 2]", d.Sides[Player].Mana)
+	}
+	if d.Sides[Enemy].Mana != [NUM_MANA]int{2, 1, 1, 0} {
+		t.Fatalf("enemy mana %v, want [2 1 1 0]", d.Sides[Enemy].Mana)
+	}
+}
+
 func TestStatBonusUsesTheCurrentValue(t *testing.T) {
 	if got := StatBonus(Fire, 8); got != "+8 max Fire mana, +1 per match" {
 		t.Fatalf("fire: %s", got)
