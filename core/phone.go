@@ -65,7 +65,7 @@ func phoneBoardRect(sw, sh float32) rl.Rectangle {
 
 func (c *GameController) drawNarrow(w, h float32) {
 	q := c.Quest
-	if q.InDuel() {
+	if q.OnBoard() {
 		c.drawPhoneDuel(w, h)
 		return
 	}
@@ -154,6 +154,11 @@ func (c *GameController) drawPhoneDuel(w, h float32) {
 }
 
 func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
+	if v.Screen == ScreenPuzzle && r.Height >= 8 {
+		ui.Panel(r)
+		v.drawPuzzleInfo(&ui.Column{X: r.X + 20, Y: r.Y + 12, W: r.Width - 40, Gap: 4})
+		return
+	}
 	if v.Duel == nil || r.Height < 8 {
 		return
 	}
@@ -211,6 +216,11 @@ func (v *QuestView) drawFoeMove(col *ui.Column, c *rpg.Combatant, s *rpg.Spell, 
 }
 
 func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
+	if v.Screen == ScreenPuzzle && r.Height >= 20 {
+		ui.Panel(r)
+		v.drawPuzzleTools(&ui.Column{X: r.X + 20, Y: r.Y + 12, W: r.Width - 40, Gap: 4})
+		return
+	}
 	if v.Duel == nil || r.Height < 20 {
 		return
 	}

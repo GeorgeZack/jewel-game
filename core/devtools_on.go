@@ -51,15 +51,29 @@ func (v *QuestView) devTour() {
 	}
 }
 
-// devTitle leaves the title screen after a moment on a tour, so the tour can show the rest.
+// devTitle leaves the title screen after a moment on a tour or a dev puzzle, so they can show the rest.
 func (c *GameController) devTitle() {
-	if os.Getenv("JEWEL_TOUR") != "" && time.Since(tourStart) > 2500*time.Millisecond {
+	if (os.Getenv("JEWEL_TOUR") != "" || devPuzzle() != "") && time.Since(tourStart) > 2500*time.Millisecond {
 		c.title.on = false
 	}
 }
 
 // devAutoplay lets the AI play the hero's side of duels too (JEWEL_AUTOPLAY), for screenshots.
 func devAutoplay() bool { return os.Getenv("JEWEL_AUTOPLAY") != "" }
+
+// devPuzzle opens the puzzle board named by JEWEL_PUZZLE once a hero is loaded, to try one out.
+func devPuzzle() string { return os.Getenv("JEWEL_PUZZLE") }
+
+// devPuzzleSolution is the stored solution of the route named by JEWEL_PUZZLE_ROUTE, which the
+// puzzle screen then plays by itself.
+func devPuzzleSolution(p *rpg.Puzzle) []string {
+	for _, r := range p.Routes {
+		if r.ID == os.Getenv("JEWEL_PUZZLE_ROUTE") {
+			return r.Solution
+		}
+	}
+	return nil
+}
 
 // devCard plays every duel on the rule card named by JEWEL_CARD, to try a card out.
 func devCard() string { return os.Getenv("JEWEL_CARD") }

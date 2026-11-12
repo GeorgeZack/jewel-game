@@ -346,40 +346,49 @@ func (r *PuzzleRun) resolve() {
 	r.Settle()
 }
 
-// Play makes one move written as in a stored solution: "swap x,y x,y", "tool id" or
-// "tool id x,y". It resolves the board, and is false if the move isn't allowed.
-func (r *PuzzleRun) Play(move string) bool {
-	f := strings.Fields(move)
-	point := func(s string) (board.Point, bool) {
-		var p board.Point
+// PuzzleMove is one move of a stored solution, written "swap x,y x,y", "tool id" or "tool id x,y".
+type PuzzleMove struct {
+	Tool	string		// "" for a swap
+	A, C	board.Point	// the swap, or A is where a Force lands
+}
+
+func ParseMove(s string) (PuzzleMove, bool) {
+	var m PuzzleMove
+	f := strings.Fields(s)
+	point := func(s string, p *board.Point) bool {
 		_, err := fmt.Sscanf(s, "%d,%d", &p.X, &p.Y)
-		return p, err == nil && r.Board.In(p)
-	}
-	if r.State != PuzzlePlaying || len(f) < 2 {
-		return false
+		return err == nil
 	}
 	switch {
-	case f[0] == "swap" && len(f) == 3:
-		a, ok1 := point(f[1])
-		c, ok2 := point(f[2])
-		if !ok1 || !ok2 || !r.Board.IsValidSwap(a, c) {
-			return false
-		}
-		r.Board.Swap(a, c)
-		r.Board.BeginMove(a, c)
-	case f[0] == "tool" && len(f) <= 3:
-		var p board.Point
-		if len(f) == 3 {
-			var ok bool
-			if p, ok = point(f[2]); !ok {
-				return false
-			}
-		}
-		if !r.ApplyTool(f[1], p) {
-			return false
-		}
-	default:
+	case len(f) == 3 && f[0] == "swap":
+		return m, point(f[1], &m.A) && point(f[2], &m.C)
+	case len(f) == 2 && f[0] == "tool":
+		m.Tool = f[1]
+		return m, true
+	case len(f) == 3 && f[0] == "tool":
+		m.Tool = f[1]
+		return m, point(f[2], &m.A)
+	}
+	return m, false
+}
+
+// Play makes one move written as in a stored solution, and resolves the board. It is false if
+// the move isn't allowed.
+func (r *PuzzleRun) Play(move string) bool {
+	m, ok := ParseMove(move)
+	if !ok || r.State != PuzzlePlaying {
 		return false
+	}
+	if m.Tool != "" {
+		if !r.ApplyTool(m.Tool, m.A) {
+			return false
+		}
+	} else {
+		if !r.Board.In(m.A) || !r.Board.In(m.C) || !r.Board.Adjacent(m.A, m.C) || !r.Board.IsValidSwap(m.A, m.C) {
+			return false
+		}
+		r.Board.Swap(m.A, m.C)
+		r.Board.BeginMove(m.A, m.C)
 	}
 	r.resolve()
 	return true

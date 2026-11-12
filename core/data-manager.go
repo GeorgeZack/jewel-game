@@ -142,6 +142,30 @@ func (dm *DataManager) DuelGemTypes() []*entities.GemType {
 	}
 }
 
+// PuzzleGemTypes is the palette of a puzzle board, in rpg.PUZZLE_COLORS order. It uses other
+// cuts than a duel's mana gems (topaz and amethyst among them), so the two modes don't read alike.
+func (dm *DataManager) PuzzleGemTypes() []*entities.GemType {
+	var out []*entities.GemType
+	for _, p := range []struct {
+		name string
+		col  rl.Color
+	}{
+		{"Rupee", rl.Color{R: 235, G: 70, B: 60, A: 255}},
+		{"Sapphire", rl.Color{R: 70, G: 130, B: 255, A: 255}},
+		{"Topaz", rl.Color{R: 250, G: 200, B: 70, A: 255}},
+		{"Emerald", rl.Color{R: 70, G: 210, B: 90, A: 255}},
+		{"Amethyst", rl.Color{R: 180, G: 100, B: 240, A: 255}},
+	} {
+		gt := &entities.GemType{Name: p.name, Color: p.col}
+		if src, ok := dm.GemTypes[p.name]; ok {
+			gt.Texture, gt.FullColor = src.Texture, src.FullColor
+			gt.Idle, gt.IdleFrames, gt.IdleFPS = src.Idle, src.IdleFrames, src.IdleFPS
+		}
+		out = append(out, gt)
+	}
+	return out
+}
+
 func (dm *DataManager) Unload() {
 	rl.UnloadFont(dm.Consts.DebugFont)
 	rl.UnloadFont(dm.Consts.UIFont)
