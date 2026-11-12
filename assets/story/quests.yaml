@@ -10,6 +10,7 @@
   xp: 50
   opens: [stonebridge, greyfen]
   offer_scene: goblins_offer
+  done_scene: goblins_done
   intro: Goblins burned the Harlan farm last night. They've never come this far south. Drive them out of Mossgate before they try the town.
   outro: The goblins weren't raiding. They were running, from something in the north.
 - id: toll

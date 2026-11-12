@@ -219,6 +219,9 @@ func (s *SceneRunner) exec(st rpg.Step) {
 		h.Location = st.Travel
 		s.v.route = nil
 	}
+	if hs := st.SetHolder; hs != nil && rpg.LocationByID(hs.At) != nil {
+		h.SetHolder(hs.At, hs.Holder)
+	}
 	if st.End {
 		h.Finished = true
 	}

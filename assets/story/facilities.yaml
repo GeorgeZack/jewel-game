@@ -1,0 +1,44 @@
+# Facilities: the academy's buildings, built and upgraded with gold. See docs/story.md.
+# Costs and perks are placeholders for the prototype. Each level adds its perks to the ones below.
+
+- id: quarters
+  name: Staff Quarters
+  desc: Room for more henchmen.
+  requires: [flag:academy_founded]
+  levels:
+    - { cost: 120, henchmen: 1 }
+    - { cost: 300, henchmen: 1 }
+
+- id: treasury
+  name: Treasury
+  desc: More gold from every duel.
+  requires: [quest:toll]
+  levels:
+    - { cost: 150, gold_pct: 10 }
+    - { cost: 300, gold_pct: 10 }
+    - { cost: 600, gold_pct: 10 }
+
+- id: library
+  name: Library
+  desc: More XP from every duel.
+  requires: [quest:barrow_lord]
+  levels:
+    - { cost: 200, xp_pct: 10 }
+    - { cost: 400, xp_pct: 10 }
+    - { cost: 800, xp_pct: 10 }
+
+- id: infirmary
+  name: Infirmary
+  desc: More HP and starting mana.
+  requires: [quest:warchief]
+  levels:
+    - { cost: 250, hp: 15 }
+    - { cost: 500, hp: 15, start_mana: 2 }
+
+- id: war_room
+  name: War Room
+  desc: Harder hits; chapters pay more.
+  requires: [quest:archive]
+  levels:
+    - { cost: 300, skull_damage: 1, chapter_pct: 25 }
+    - { cost: 700, armor: 1, chapter_pct: 25 }

@@ -22,8 +22,6 @@ func (s *Spell) About() string { return text.T("spell."+s.ID+".desc", s.Desc) }
 func (it *Item) Label() string { return text.T("item."+it.ID+".name", it.Name) }
 func (it *Item) About() string { return text.T("item."+it.ID+".desc", it.Desc) }
 
-func (b *Building) Label() string { return text.T("building."+b.ID+".name", b.Name) }
-func (b *Building) About() string { return text.T("building."+b.ID+".desc", b.Desc) }
 
 // NodeLabel is an Orrery node's name, or its rite's when it has none.
 func NodeLabel(n *OrreryNode) string {
@@ -73,3 +71,26 @@ func EffectLabel(k EffectKind) string {
 }
 
 func SlotLabel(slot string) string { return text.T("slot."+slug(slot), slot) }
+
+// LevelAbout is what one level of a facility adds.
+func LevelAbout(l FacilityLevel) string {
+	var parts []string
+	for _, p := range []struct {
+		n			int
+		key, en		string
+	}{
+		{ l.GoldPct, "gold_pct", "+%d%% gold" },
+		{ l.XPPct, "xp_pct", "+%d%% XP" },
+		{ l.HP, "hp", "+%d HP" },
+		{ l.StartMana, "start_mana", "+%d starting mana" },
+		{ l.SkullDamage, "skull_damage", "+%d skull damage" },
+		{ l.Armor, "armor", "blocks %d" },
+		{ l.Henchmen, "henchmen", "+%d henchmen" },
+		{ l.ChapterPct, "chapter_pct", "+%d%% chapter pay" },
+	} {
+		if p.n != 0 {
+			parts = append(parts, text.Tf("perk."+p.key, p.en, p.n))
+		}
+	}
+	return strings.Join(parts, ", ")
+}

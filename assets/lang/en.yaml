@@ -136,18 +136,45 @@ ui:
   shop: Shop
   map_short: Map
   quests_short: Quests
-  citadel_short: Citadel
+  academy_short: Academy
   hint: Hint
   flee_short: Flee
-  need_stables: Build Stables in your citadel to buy mounts.
   equipped_tag: Equipped
   equip: Equip
   need_level: "Level %d"
   buy: "Buy %d"
-  citadel: Your Citadel
-  citadel_help: Spend your gold on buildings. Their bonuses last forever and apply in every duel.
+  academy: Your Academy
+  academy_help: Gold builds facilities and pays your henchmen. Chapters and dues only move when you win duels.
+  academy_locked: The academy has not been founded yet.
+  facilities: Facilities
+  facility_level: "%s  %d / %d"
+  facility_locked: Not available yet.
   built: Built
   build: "Build %d"
+  upgrade: "Upgrade %d"
+  henchmen: "Henchmen  %d / %d"
+  hire: "Hire %d"
+  henchman: "Rank %d henchman"
+  henchman_gear: "Gear: %s"
+  henchman_free: Free
+  henchman_posted: "At %s, %d / %d wins"
+  henchman_report: "Report from %s"
+  train: "Train %d"
+  max_rank: Top rank
+  gear_none: No gear
+  gear_next: Gear
+  post: Post
+  post_to_label: Post to
+  claim: Claim
+  report_pays: "Pays %d gold, %d %s residue."
+  chapters: Chapters and ledger
+  chapters_help: "A posted henchman's chapter completes after %d of your wins, anywhere. Sites you hold pay %d dues on each win there."
+  ledger_none: No site is held yet.
+  ledger_row: "%s: %s, %d dues"
+  holder_ours: your academy
+  claim_dues: "Claim %d dues"
+  chapter_done: Chapter complete
+  chapter_done_body: "%s\n\nClaim the report at the academy."
   ambush: Ambush!
   ambush_body: "A %s jumps you on the road into %s."
   fight: Fight
@@ -187,7 +214,7 @@ ui:
   spells: Spells
   quests_count: "Quests  (%d)"
   shop_towns: "Shop (in towns)"
-  citadel_nav: Citadel
+  academy_nav: Academy
   how_duels: How duels work
   duel_1: You and your foe take turns on one board.
   duel_2: Colored gems fill your mana, for spells.
@@ -266,7 +293,6 @@ slot:
   armor: Armor
   helm: Helm
   trinket: Trinket
-  mount: Mount
 
 stat:
   fire:
@@ -481,35 +507,18 @@ item:
   heart_stone:
     name: Heartstone
     desc: "+40 HP, +8 starting mana"
-  pony:
-    name: Sturdy Pony
-    desc: "+5 Cunning"
-  warhorse:
-    name: Warhorse
-    desc: "+4 Battle, +15 HP"
-  griffin:
-    name: Griffin
-    desc: "+10 Cunning, +5 Battle, +25% gold"
 
-building:
-  treasury:
-    name: Treasury
-    desc: "+20% gold from every duel"
-  stables:
-    name: Stables
-    desc: Lets you buy mounts in town
-  barracks:
-    name: Barracks
-    desc: "+3 Battle, +1 skull damage"
-  library:
-    name: Library
-    desc: "+20% XP from every duel"
-  temple:
-    name: Temple
-    desc: "+30 HP, +3 Morale"
-  mage_tower:
-    name: Mage Tower
-    desc: "+4 all masteries, +3 starting mana"
-  war_room:
-    name: War Room
-    desc: "+3 skull damage, blocks 1"
+perk:
+  gold_pct: "+%d%% gold"
+  xp_pct: "+%d%% XP"
+  hp: "+%d HP"
+  start_mana: "+%d starting mana"
+  skull_damage: "+%d skull damage"
+  armor: "blocks %d"
+  henchmen: "+%d henchmen"
+  chapter_pct: "+%d%% chapter pay"
+
+academy:
+  report_1: "Rank %d staff kept the books at %s. The site is ours."
+  report_2: "A rank %d chapter at %s took oaths from the locals."
+  report_3: "Our rank %d hand at %s turned a rival's ledger over to us."
