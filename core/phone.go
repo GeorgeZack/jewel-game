@@ -109,7 +109,7 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 		{ScreenSpells, text.T("ui.spells", "Spells"), true},
 		{ScreenQuests, text.T("ui.quests_short", "Quests"), true},
 		{ScreenShop, text.T("ui.shop", "Shop"), here.Town},
-		{ScreenCitadel, text.T("ui.citadel_short", "Citadel"), true},
+		{ScreenAcademy, text.T("ui.academy_short", "Academy"), h.AcademyOpen()},
 	}
 	cols := len(items)
 	btnW := (w - 16 - float32(cols-1)*6) / float32(cols)
@@ -131,7 +131,7 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 			ui.ButtonIf(r, it.label, false)
 		}
 	}
-	if q.Screen == ScreenShop && !here.Town {
+	if (q.Screen == ScreenShop && !here.Town) || (q.Screen == ScreenAcademy && !h.AcademyOpen()) {
 		q.Screen = ScreenWorld
 	}
 	return float32(rows)*(bh+6) + 4

@@ -32,6 +32,14 @@ goblins_offer:
             mood: worried
             text: Don't take long.
 
+# Founds the academy (a placeholder until the founding quest is written). Plays after
+# "Smoke on the Road" (quests.yaml: done_scene).
+goblins_done:
+  - who: mayor
+    text: The old school on the hill has stood empty for years. Take it. You'll need people, and somewhere to keep them.
+  - set_flag: academy_founded
+  - text: The academy is yours. Open it from the menu.
+
 stonebridge_arrival:
   - who: tollkeeper
     text: Toll's two silver. Unless you're the one who cleared the woods? Then it's free, and welcome.

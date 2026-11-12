@@ -24,8 +24,8 @@ func (v *QuestView) DrawCenter(r rl.Rectangle) {
 		v.drawQuestLog(r)
 	case ScreenShop:
 		v.drawShop(r)
-	case ScreenCitadel:
-		v.drawCitadel(r)
+	case ScreenAcademy:
+		v.drawAcademy(r)
 	case ScreenOrrery:
 		v.drawOrrery(r)
 	}
@@ -455,10 +455,6 @@ func (v *QuestView) drawShop(r rl.Rectangle) {
 		head := col.Next(30)
 		ui.Text(rpg.SlotLabel(slot), head.X, head.Y, 24, ui.Accent)
 		rl.DrawLineEx(rl.Vector2{X: head.X, Y: head.Y + 28}, rl.Vector2{X: head.X + head.Width, Y: head.Y + 28}, 1, ui.PanelEdge)
-		if slot == rpg.SlotMount && !h.Has("stables") {
-			col.Line(text.T("ui.need_stables", "Build Stables in your citadel to buy mounts."), 22, ui.DimText)
-			continue
-		}
 		for i := range rpg.Items {
 			it := &rpg.Items[i]
 			owned := slices.Contains(h.Owned, it.ID)
@@ -552,121 +548,6 @@ func (v *QuestView) shopButton(btn rl.Rectangle, h *rpg.Hero, it *rpg.Item, worn
 	default:
 		if ui.Button(btn, text.Tf("ui.buy", "Buy %d", it.Price), false) {
 			h.Buy(it)
-			v.save()
-		}
-	}
-}
-
-// citadelSprite is the hex picture for a building in the yard.
-func citadelSprite(id string) hexRef {
-	switch id {
-	case "treasury":
-		return hx(hexSheetTown, 4, 5)
-	case "stables":
-		return hx(hexSheetTown, 0, 4)
-	case "barracks":
-		return hx(hexSheetTown, 5, 2)
-	case "library":
-		return hx(hexSheetTown, 4, 0)
-	case "temple":
-		return hx(hexSheetOcean, 0, 1)
-	case "mage_tower":
-		return hx(hexSheetTown, 4, 2)
-	case "war_room":
-		return hx(hexSheetTown, 3, 4)
-	default:
-		return hx(hexSheetTown, 2, 0)
-	}
-}
-
-func (v *QuestView) drawCitadelYard(col *ui.Column, h *rpg.Hero) {
-	n := len(rpg.Buildings)
-	if n == 0 {
-		return
-	}
-	gap := float32(8)
-	rowH := float32(128)
-	per := n
-	if slot := (col.W - gap*float32(n-1)) / float32(n); slot < 96 && n > 1 {
-		per = (n + 1) / 2
-	}
-	loadHexSheets()
-	for start := 0; start < n; start += per {
-		end := min(start+per, n)
-		count := end - start
-		row := col.Next(rowH)
-		slotW := (row.Width - gap*float32(count-1)) / float32(count)
-		rl.DrawRectangleRounded(row, 0.04, 6, rl.Color{R: 36, G: 58, B: 40, A: 160})
-		for i := start; i < end; i++ {
-			b := &rpg.Buildings[i]
-			x := row.X + float32(i-start)*(slotW+gap)
-			slot := rl.Rectangle{X: x, Y: row.Y + 4, Width: slotW, Height: row.Height - 8}
-			built := h.Has(b.ID)
-			scale := min(slotW*0.85, 78) / hexCell
-			foot := rl.Vector2{X: slot.X + slot.Width/2, Y: slot.Y + slot.Height - 28}
-			tint := rl.White
-			if !built {
-				tint = rl.Fade(rl.White, 0.28)
-			}
-			drawHexTile(citadelSprite(b.ID), foot, scale, tint)
-			if !built {
-				price := goldColor
-				if h.Gold < b.Price {
-					price = tooDear
-				}
-				ui.TextCentered(text.Tf("ui.build", "Build %d", b.Price), slot.X+slot.Width/2, slot.Y+2, 16, price)
-			}
-			ui.TextCentered(b.Label(), slot.X+slot.Width/2, slot.Y+slot.Height-22, 16, ui.TextColor)
-			if !built && ui.Clicked(slot) && h.Gold >= b.Price {
-				h.Build(b)
-				v.save()
-			}
-		}
-	}
-}
-
-func (v *QuestView) drawCitadel(r rl.Rectangle) {
-	h := v.Hero
-	ui.Panel(r)
-	col, end := v.menuContent(r, 8)
-	defer end()
-	title := col.Next(44)
-	if narrow() {
-		// The title and the gold don't both fit on one line.
-		ui.TextFit(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, title.Width, ui.Accent)
-		col.Line(text.Tf("ui.gold", "Gold %d", h.Gold), 24, goldColor)
-	} else {
-		ui.Text(text.T("ui.citadel", "Your Citadel"), title.X, title.Y, 38, ui.Accent)
-		ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), title.X+title.Width-170, title.Y+8, 24, goldColor)
-	}
-	col.Paragraph(text.T("ui.citadel_help", "Spend your gold on buildings. Their bonuses last forever and apply in every duel."), 18, ui.TextColor)
-	cols := 2
-	if narrow() {
-		// The yard and the plaques overlap on a phone, so list each building once.
-		cols = 1
-	} else {
-		col.Y += 6
-		v.drawCitadelYard(col, h)
-		col.Y += 10
-	}
-
-	var cells []rl.Rectangle
-	for i := range rpg.Buildings {
-		if i%cols == 0 {
-			cells = ui.Row(col.Next(72), cols, 10)
-		}
-		b := &rpg.Buildings[i]
-		row := cells[i%cols]
-		plaque(row, h.Has(b.ID))
-		ui.TextFit(b.Label(), row.X+14, row.Y+10, 22, row.Width-28-124, ui.TextColor)
-		ui.TextFit(b.About(), row.X+14, row.Y+42, 16, row.Width-28, ui.DimText)
-		btn := rl.Rectangle{X: row.X + row.Width - 124, Y: row.Y + 8, Width: 112, Height: 34}
-		if h.Has(b.ID) {
-			ui.Button(btn, text.T("ui.built", "Built"), true)
-		} else if h.Gold < b.Price {
-			ui.DisabledButton(btn, text.Tf("ui.build", "Build %d", b.Price), tooDear)
-		} else if ui.Button(btn, text.Tf("ui.build", "Build %d", b.Price), false) {
-			h.Build(b)
 			v.save()
 		}
 	}
