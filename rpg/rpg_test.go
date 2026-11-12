@@ -379,11 +379,29 @@ func TestOldSaveMigrates(t *testing.T) {
 	if slices.Contains(h.Spells, "fireball") || !slices.Contains(h.Spells, "firebolt") {
 		t.Fatalf("old spells not fixed up: %v", h.Spells)
 	}
+	// the run as it was before converting is kept
+	if kept, _ := os.ReadFile(path + ".bak"); string(kept) != old {
+		t.Fatalf("the pre-Orrery run wasn't backed up: %q", kept)
+	}
+	// a versioned run from before the Orrery is backed up too, and a converted one isn't again
+	os.Remove(path + ".bak")
+	v1 := `{"Version":1,"Run":` + old + `}`
+	os.WriteFile(path, []byte(v1), 0o644)
+	if h, err := LoadRun(path); err != nil || h.Nodes == nil {
+		t.Fatalf("versioned old run: %+v %v", h, err)
+	}
+	if kept, _ := os.ReadFile(path + ".bak"); string(kept) != v1 {
+		t.Fatalf("the versioned pre-Orrery run wasn't backed up: %q", kept)
+	}
+	os.Remove(path + ".bak")
 	if err := SaveRun(path, h); err != nil {
 		t.Fatal(err)
 	}
 	if h, err := LoadRun(path); err != nil || h.Gold != 321 {
 		t.Fatalf("migrated save didn't round trip: %+v %v", h, err)
+	}
+	if _, err := os.Stat(path + ".bak"); err == nil {
+		t.Fatalf("a converted run was backed up again")
 	}
 
 	for name, data := range map[string]string{ "broken": "{not json", "newer": `{"Version":99}` } {
@@ -879,6 +897,16 @@ func TestRespecRefunds(t *testing.T) {
 	}
 	if !h.Respec() || h.Residue != before || len(h.Nodes) != 1 || h.Gold != 5 {
 		t.Fatalf("respec: residue %v (was %v), nodes %v, gold %d", h.Residue, before, h.Nodes, h.Gold)
+	}
+	// colorless that paid for a node goes back to colorless
+	h.Gold = RESPEC_GOLD
+	n := NodeByID(h.Nodes[0]).Near[0]
+	h.Residue = [NUM_RESIDUE]int{ 0, 0, 0, 0, 0 }
+	h.Residue[NodeByID(n).Mana] = 1
+	h.Residue[Colorless] = 50
+	before = h.Residue
+	if !h.BuyNode(n) || !h.Respec() || h.Residue != before {
+		t.Fatalf("respec after paying in colorless: %v, was %v", h.Residue, before)
 	}
 	for _, id := range h.Spells {
 		if !h.Knows(SpellByID(id)) {

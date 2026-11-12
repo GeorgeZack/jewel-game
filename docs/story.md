@@ -193,7 +193,7 @@ Convert buttons, pays for any node; when a color's pool is short, colorless make
 Each class starts owning its **seat** and can buy any node linked to one it owns. A node gives
 stats, a rite (a hero spell, from any class), or both. A class always knows its own rites up to
 level 4 (its starting kit); every other rite must be bought here, and is castable from its
-spell's level. Respec refunds every bought node into its region's pool for some gold.
+spell's level. Respec refunds the residue each bought node took, to the pools that paid it, for some gold.
 
 ```yaml
 - { id: water_seat, name: Tide Seat, color: water, ring: 3, angle: 90, seat: Knight, links: [brine] }

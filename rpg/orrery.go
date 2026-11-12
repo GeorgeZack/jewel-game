@@ -216,6 +216,8 @@ func (h *Hero) BuyNode(id string) bool {
 	paid := min(n.Cost, h.Residue[n.Mana])
 	h.Residue[n.Mana] -= paid
 	h.Residue[Colorless] -= n.Cost - paid
+	h.Spent[n.Mana] += paid
+	h.Spent[Colorless] += n.Cost - paid
 	h.Nodes = append(h.Nodes, id)
 	h.learnSpells()
 	return true
@@ -231,18 +233,17 @@ func (h *Hero) Convert(color int) bool {
 	return true
 }
 
-// Respec refunds every bought node into its region's pool, for gold, and puts the hero back on
-// the seat. Rites that go with the nodes are unequipped.
+// Respec refunds the residue every bought node took, into the pools that paid it, for gold, and
+// puts the hero back on the seat. Rites that go with the nodes are unequipped.
 func (h *Hero) Respec() bool {
 	if h.Gold < RESPEC_GOLD || len(h.Nodes) <= 1 {
 		return false
 	}
 	h.Gold -= RESPEC_GOLD
-	for _, id := range h.Nodes {
-		if n := NodeByID(id); n != nil && n.Seat == "" && n.Mana >= 0 {
-			h.Residue[n.Mana] += n.Cost
-		}
+	for i, n := range h.Spent {
+		h.Residue[i] += n
 	}
+	h.Spent = [NUM_RESIDUE]int{}
 	h.Nodes = nil
 	h.takeSeat()
 	h.Spells = slices.DeleteFunc(h.Spells, func(id string) bool {

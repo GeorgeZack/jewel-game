@@ -113,20 +113,24 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 		if n.Seat != "" {
 			nr *= 1.25
 		}
+		// every state keeps the region's color: owned is solid with a white rim, buyable a dark
+		// region-tinted face with a pulsing rim, locked a dim face with a thin rim
 		mc := residueColor(n.Mana)
+		costCol := ui.TextColor
 		switch {
 		case h.Owns(n.ID):
-			rl.DrawCircleV(p, nr+2, rl.Black)
+			rl.DrawCircleV(p, nr+3, rl.White)
 			rl.DrawCircleV(p, nr, mc)
 		case h.Reaches(n):
-			rl.DrawCircleV(p, nr+2, rl.Fade(mc, pulse))
-			rl.DrawCircleV(p, nr-1, rl.Color{R: 30, G: 26, B: 22, A: 255})
+			rl.DrawCircleV(p, nr+4, rl.Fade(mc, pulse))
+			rl.DrawCircleV(p, nr, rl.ColorBrightness(mc, -0.6))
 		default:
-			rl.DrawCircleV(p, nr+2, rl.Fade(rl.Black, 0.6))
-			rl.DrawCircleV(p, nr, rl.Fade(mc, 0.25))
+			rl.DrawCircleV(p, nr+1, rl.Fade(mc, 0.55))
+			rl.DrawCircleV(p, nr-1, rl.ColorBrightness(mc, -0.8))
+			costCol = ui.DimText
 		}
 		if !h.Owns(n.ID) && n.Seat == "" {
-			ui.TextCentered(text.Tf("ui.node_cost", "%d", n.Cost), p.X, p.Y-ui.MinText/2, ui.MinText, ui.TextColor)
+			ui.TextCentered(text.Tf("ui.node_cost", "%d", n.Cost), p.X, p.Y-ui.MinText/2, ui.MinText, costCol)
 		}
 		if n.ID == v.orrerySel {
 			rl.DrawRing(p, nr+4, nr+7, 0, 360, 32, ui.Accent)
@@ -185,7 +189,7 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 		}
 	}
 	col.Heading(text.T("ui.respec", "Respec"))
-	col.Paragraph(text.T("ui.respec_help", "Refund every node to its color's pool and go back to your seat."), 15, ui.DimText)
+	col.Paragraph(text.T("ui.respec_help", "Refund the residue your nodes took and go back to your seat."), 15, ui.DimText)
 	if ui.ButtonIf(col.Next(38), text.Tf("ui.respec_button", "Respec  (%d gold)", rpg.RESPEC_GOLD), h.Gold >= rpg.RESPEC_GOLD && len(h.Nodes) > 1) && h.Respec() {
 		v.save()
 	}

@@ -95,7 +95,7 @@ ui:
   convert: Convert
   convert_help: "%d of a color becomes %d colorless."
   respec: Respec
-  respec_help: "Refund every node to its color's pool and go back to your seat."
+  respec_help: "Refund the residue your nodes took and go back to your seat."
   respec_button: "Respec  (%d gold)"
   residue_gain: " +%d %s"
   residue_line: "\n\nResidue:%s."
