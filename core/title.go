@@ -58,7 +58,7 @@ func (c *GameController) drawTitle(w, h float32) {
 			t.confirm = false
 		}
 		if button(text.T("ui.delete_hero", "Delete hero")) {
-			if err := rpg.DeleteSave(rpg.SavePath()); err != nil {
+			if err := rpg.DeleteRun(rpg.SavePath()); err != nil {
 				ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
 			}
 			q.Hero = nil

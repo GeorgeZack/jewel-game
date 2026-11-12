@@ -120,6 +120,11 @@ type Board struct {
 	nextID		int
 	swapped		[]Point		// where the last swap landed, preferred spot for new specials
 	pending		[]Point		// cells forced to clear by a special combo
+
+	// authored boards: refills come from Queue (colors, first first) while it lasts, then
+	// from the seeded random source unless NoRefill leaves the cells empty
+	Queue		[]int
+	NoRefill	bool
 }
 
 func NewBoard(s Settings, seed int64) *Board {
@@ -134,6 +139,43 @@ func NewBoard(s Settings, seed int64) *Board {
 	}
 	b.fill()
 	return b
+}
+
+// NewBoardFrom builds an authored board: cells[y][x] gives each gem's color, special and lock;
+// nil leaves a cell empty. The seed drives everything random afterwards, so the same cells and
+// seed play out the same way.
+func NewBoardFrom(s Settings, seed int64, cells [][]*Gem) *Board {
+	s.Width, s.Height = len(cells[0]), len(cells)
+	s.clamp()
+	b := &Board{
+		Settings:	s,
+		rng:		rand.New(rand.NewSource(seed)),
+	}
+	b.Cells = make([][]*Gem, s.Height)
+	for y := range b.Cells {
+		b.Cells[y] = make([]*Gem, s.Width)
+		for x, g := range cells[y] {
+			if g != nil {
+				n := b.newGem(g.Color, g.Special)
+				n.Locked, n.Mult = g.Locked, g.Mult
+				b.Cells[y][x] = n
+			}
+		}
+	}
+	return b
+}
+
+// refillGem is the next gem to drop into an emptied cell, or nil to leave it empty.
+func (b *Board) refillGem() *Gem {
+	if len(b.Queue) > 0 {
+		c := b.Queue[0]
+		b.Queue = b.Queue[1:]
+		return b.newGem(c, None)
+	}
+	if b.NoRefill {
+		return nil
+	}
+	return b.randomGem()
 }
 
 func (b *Board) W() int { return b.Settings.Width }

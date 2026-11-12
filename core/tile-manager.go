@@ -55,6 +55,7 @@ type TileManager struct {
 	OnShuffle        func()                     // called when the board ran out of moves
 	Types            func() []*entities.GemType // overrides the gem palette
 	Duel             bool                       // no locks and no score popups
+	NoShuffle        bool                       // a stuck board stays stuck, for puzzle boards
 	moving           bool
 	selected         *board.Point
 	dragFrom         *board.Point
@@ -87,7 +88,13 @@ func NewTileManager(settings board.Settings, dm *DataManager) *TileManager {
 
 // Reset starts a fresh board with the given settings.
 func (tm *TileManager) Reset(settings board.Settings) {
-	tm.Board = board.NewBoard(settings, time.Now().UnixNano())
+	tm.Load(board.NewBoard(settings, time.Now().UnixNano()))
+	ui.AddMessage("%s", text.Tf("log.new_board", "New board: %+v", settings))
+}
+
+// Load starts on a board made elsewhere, such as an authored puzzle. Empty cells stay empty.
+func (tm *TileManager) Load(b *board.Board) {
+	tm.Board = b
 	tm.Tiles = make(map[int]*Tile)
 	tm.Dying = nil
 	tm.Phase = PhaseIdle
@@ -99,12 +106,14 @@ func (tm *TileManager) Reset(settings board.Settings) {
 	// new boards drop in from above
 	for y, row := range tm.Board.Cells {
 		for x, g := range row {
+			if g == nil {
+				continue
+			}
 			tile := NewTile(g, rl.Vector2{X: float32(x), Y: float32(y - tm.Board.H() - 1)}, 1)
 			tile.Target = rl.Vector2{X: float32(x), Y: float32(y)}
 			tm.Tiles[g.ID] = tile
 		}
 	}
-	ui.AddMessage("%s", text.Tf("log.new_board", "New board: %+v", settings))
 }
 
 // Layout fits the board inside r, as large as allowed, centered.
@@ -254,7 +263,7 @@ func (tm *TileManager) step(dt float32) {
 }
 
 func (tm *TileManager) finishResolve() {
-	if !tm.Board.Settings.FreeSwap && !tm.shuffled && tm.Board.Shuffle() {
+	if !tm.Board.Settings.FreeSwap && !tm.NoShuffle && !tm.shuffled && tm.Board.Shuffle() {
 		tm.shuffled = true
 		if tm.OnShuffle != nil {
 			tm.OnShuffle()

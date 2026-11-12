@@ -45,7 +45,9 @@ const (
 	ScreenQuests
 	ScreenShop
 	ScreenCitadel
+	ScreenOrrery
 	ScreenDuel
+	ScreenPuzzle
 )
 
 type ModalButton struct {
@@ -64,8 +66,10 @@ type QuestView struct {
 	DM          *DataManager
 	TM          *TileManager
 	Hero        *rpg.Hero
+	Profile     rpg.Profile
 	Screen      Screen
 	Duel        *rpg.Duel
+	Puzzle      *rpg.PuzzleRun
 	modals      []Modal
 	scenes      SceneRunner
 	effects     Effects
@@ -102,10 +106,14 @@ type QuestView struct {
 	dockScroll  ui.Scroll
 	modalScroll ui.Scroll
 	modalKey    string
+	orrerySel   string // the Orrery node being looked at
+	puzzleTool  string // a Force waiting for its gem
+	puzzleShown int    // dev: moves of a stored solution replayed so far
+	devPuzzled  bool
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
-	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(), dm)}
+	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(nil), dm)}
 	v.scenes.v = v
 	v.ReloadStory()
 	v.TM.Types = dm.DuelGemTypes
@@ -117,18 +125,23 @@ func NewQuestView(dm *DataManager) *QuestView {
 			v.Duel.ManaDrain()
 		}
 	}
-	hero, err := rpg.LoadHero(rpg.SavePath())
-	if err != nil {
+	var err error
+	if v.Hero, err = rpg.LoadRun(rpg.SavePath()); err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_read", "Could not read save, starting fresh: %v", err))
 	}
-	v.Hero = hero
-	if hero != nil {
+	if v.Profile, err = rpg.LoadProfile(rpg.ProfilePath()); err != nil {
+		ui.AddMessage("%s", text.Tf("log.profile_read", "Could not read profile, starting fresh: %v", err))
+	}
+	if v.Hero != nil {
 		v.Screen = ScreenWorld
 	}
 	return v
 }
 
 func (v *QuestView) InDuel() bool   { return v.Screen == ScreenDuel }
+
+// OnBoard is true when the screen is a board: a duel or a puzzle.
+func (v *QuestView) OnBoard() bool { return v.Screen == ScreenDuel || v.Screen == ScreenPuzzle }
 func (v *QuestView) HasModal() bool { return len(v.modals) > 0 || v.scenes.Showing() }
 
 // ReloadStory reads assets/story again. If the files on disk are broken, the old story stays, or
@@ -171,7 +184,11 @@ func (v *QuestView) save() {
 	if v.Hero == nil {
 		return
 	}
-	if err := v.Hero.Save(rpg.SavePath()); err != nil {
+	err := rpg.SaveRun(rpg.SavePath(), v.Hero)
+	if err == nil {
+		err = rpg.SaveProfile(rpg.ProfilePath(), v.Profile)
+	}
+	if err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_write", "Could not save: %v", err))
 		v.saveErr = true
 		return
@@ -193,6 +210,13 @@ func (v *QuestView) Update() {
 	if v.scenes.WaitingForDuel() && v.Screen != ScreenDuel && len(v.modals) == 0 {
 		v.scenes.DuelDone(v.lastWon)
 	}
+	if v.scenes.puzzle && v.Screen != ScreenPuzzle && len(v.modals) == 0 {
+		v.scenes.puzzle = false
+	}
+	if id := devPuzzle(); id != "" && !v.devPuzzled && v.Hero != nil && len(v.modals) == 0 {
+		v.devPuzzled = true
+		v.startPuzzle(id)
+	}
 	v.thankOnce()
 	if len(v.modals) > 0 {
 		v.TM.Paused = true
@@ -209,6 +233,8 @@ func (v *QuestView) Update() {
 		v.updateTravel(dt)
 	case ScreenDuel:
 		v.updateDuel(dt)
+	case ScreenPuzzle:
+		v.updatePuzzle()
 	}
 }
 
@@ -253,8 +279,15 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 	v.sideHit = [2]float32{}
 	v.blood = [2]float32{}
 	v.sideFlash = 0
-	v.TM.Reset(rpg.BoardSettings())
-	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(rpg.FoeByID(foeID), level), time.Now().UnixNano())
+	foe := rpg.FoeByID(foeID)
+	card := rpg.RuleCardByID(foe.Card)
+	if id := devCard(); id != "" {
+		card = rpg.RuleCardByID(id)
+	}
+	v.TM.Types = v.DM.DuelGemTypes
+	v.TM.Reset(rpg.BoardSettings(card))
+	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
+	d.Card = card
 	d.Board = v.TM.Board
 	d.OnHit = v.onHit
 	d.OnHeal = func(side, n int) {
@@ -284,6 +317,10 @@ func (v *QuestView) onHit(side, n int) {
 }
 
 func (v *QuestView) onStep(res *board.StepResult) {
+	if v.Screen == ScreenPuzzle {
+		v.Puzzle.Observe(res)
+		return
+	}
 	if v.Duel == nil {
 		return
 	}
@@ -350,6 +387,10 @@ func (v *QuestView) floatGain(cleared []board.Cleared, color, total int, size fl
 }
 
 func (v *QuestView) onMoveDone() {
+	if v.Screen == ScreenPuzzle {
+		v.puzzleDone()
+		return
+	}
 	if v.Duel == nil {
 		return
 	}
@@ -431,11 +472,20 @@ func (v *QuestView) finishDuel() {
 	levelBefore := h.Level
 	r := d.Settle(h)
 	v.lastWon = r.Won
+	residue := ""
+	for i, n := range r.Residue {
+		if n > 0 {
+			residue += text.Tf("ui.residue_gain", " +%d %s", n, rpg.ManaLabel(i))
+		}
+	}
+	if residue != "" {
+		residue = text.Tf("ui.residue_line", "\n\nResidue:%s.", residue)
+	}
 	back := []ModalButton{{text.T("ui.continue", "Continue"), func() { v.Screen = ScreenWorld; v.Duel = nil }}}
 	if r.Won {
 		v.show(Modal{
 			Title: text.T("ui.victory", "Victory!"),
-			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP),
+			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP) + residue,
 		})
 		for _, q := range h.RecordKill(v.foeID, v.duelAt) {
 			body := text.Tf("ui.quest_done_body", "%s\n\nReward: %d gold, %d XP.", q.Outro, q.Gold, q.XP)
@@ -448,13 +498,13 @@ func (v *QuestView) finishDuel() {
 	} else {
 		v.show(Modal{
 			Title: text.T("ui.defeated", "Defeated"),
-			Body:  text.Tf("ui.defeated_body", "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost.", r.Gold, r.XP),
+			Body:  text.Tf("ui.defeated_body", "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost.", r.Gold, r.XP) + residue,
 		})
 	}
 	if h.Level > levelBefore {
 		v.show(Modal{
 			Title: text.Tf("ui.level_up", "Level %d!", h.Level),
-			Body:  text.Tf("ui.level_up_body", "You have %d points to spend. Open Hero to raise your stats, and Spells to check for new ones.", h.Points),
+			Body:  text.T("ui.level_up_body", "Your HP rises. Open Spells to check for new rites, and the Orrery to spend residue."),
 		})
 	}
 	v.modals[len(v.modals)-1].Buttons = back
@@ -581,6 +631,8 @@ func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
 		if ui.ButtonIf(col.Next(32), text.T("ui.flee", "Flee (counts as a loss)"), v.myTurn() && !v.TM.Busy()) {
 			v.flee()
 		}
+	case v.Screen == ScreenPuzzle:
+		v.drawPuzzleTools(col)
 	default:
 		v.drawHeroSummary(col, bottom)
 	}
@@ -613,11 +665,8 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 		}
 	}
 	nav(ScreenWorld, text.T("ui.world_map", "World map"), true)
-	label := text.T("ui.hero", "Hero")
-	if h.Points > 0 {
-		label = text.Tf("ui.hero_points", "Hero  (%d points)", h.Points)
-	}
-	nav(ScreenHero, label, true)
+	nav(ScreenHero, text.T("ui.hero", "Hero"), true)
+	nav(ScreenOrrery, text.T("ui.orrery_nav", "Orrery"), true)
 	nav(ScreenSpells, text.T("ui.spells", "Spells"), true)
 	nav(ScreenQuests, text.Tf("ui.quests_count", "Quests  (%d)", len(h.Active)), true)
 	nav(ScreenShop, text.T("ui.shop_towns", "Shop (in towns)"), here.Town)
@@ -813,6 +862,8 @@ func (v *QuestView) DrawRight(r rl.Rectangle) {
 	case v.Hero == nil:
 		col.Heading(text.T("ui.new_hero_heading", "A new hero"))
 		col.Paragraph(rpg.Story.Blurb, 18, ui.TextColor)
+	case v.Screen == ScreenPuzzle:
+		v.drawPuzzleInfo(&col)
 	case v.InDuel():
 		v.drawSide(&col, rpg.Enemy)
 		col.Heading(text.T("ui.battle_log", "Battle log"))

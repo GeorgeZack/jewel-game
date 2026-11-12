@@ -39,6 +39,9 @@ assets/story/
   locations.yaml    the world map
   foes.yaml         monsters
   quests.yaml       quests
+  cards.yaml        rule cards: a different board or payouts for a duel (optional)
+  orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
+  puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
   backgrounds/      cutscene backdrops
@@ -140,6 +143,7 @@ blurb: >-                    # shown next to the class picker
   stats: { fire: 2, air: 2, battle: 2, cunning: 3 }   # at level 1; missing stats are 0
   growth: { fire: 2, water: 1, battle: 2 }            # added per 2 levels
   spells: [frenzy]
+  card: sideways             # optional: the rule card (cards.yaml) this foe fights on
 ```
 
 Stats are fire, water, air, earth, battle, cunning and morale, as on the Hero screen. The spell ids
@@ -148,6 +152,127 @@ bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath and dark
 
 `go test ./rpg` also runs a balance check that duels a geared hero against some of the bosses by
 their ids. If you rename or remove those foes, update the list in `TestDuelsFinishAndAreFair`.
+
+## cards.yaml
+
+A rule card changes the board a duel is played on, or what each cascade pays. A foe names the
+card it fights on with `card:`; a foe without one gets the standard duel, an 8x8 board falling
+down. Anything a card leaves out stays as in the standard duel, so an empty card changes nothing.
+
+```yaml
+- id: sideways
+  name: Sideways
+  width: 10                  # board size, 4 to 10 (default 8)
+  height: 8
+  gravity: left              # the way gems fall: down (default), left, up or right
+  chaos_gravity: true        # gravity turns at random after every move
+  overcharge: true           # bigger bombs, wider bolts
+  gold_pct: 50               # payout modifiers, in percent: 50 pays half again, -50 half
+  xp_pct: 0
+  mana_pct: -25              # mana from matches, before the pool caps it
+  skull_pct: 20              # skull damage
+```
+
+The modifiers apply to what the board pays during the duel, for both sides, not to the bounty for
+winning. A card that changes balance should get a simulated duel in `rpg/rpg_test.go`.
+
+In a dev build, `JEWEL_CARD=sideways ./start.sh` plays every duel on that card, to try one out.
+
+`go test ./rpg -run TestProgression -v` plays the main quests in order with the AI as the hero
+and prints each class's level, gold, the residue earned in each color and the Orrery nodes owned
+after every quest. It plays the quests in the order they are listed in quests.yaml.
+
+## orrery.yaml
+
+The Orrery is the upgrade grid. Its nodes sit on rings and are joined by links; each belongs to a
+color's region and costs that color's **residue**. A hero earns residue on their own turns in a
+duel: a match of four, a match of five or more, and matches later in a cascade leave residue of
+their color (a plain three on the first step leaves none). It is kept after a lost duel, like
+the gold and XP the board paid. Colorless residue, made from colored residue at a loss with the
+Convert buttons, pays for any node; when a color's pool is short, colorless makes up the rest.
+
+Each class starts owning its **seat** and can buy any node linked to one it owns. A node gives
+stats, a rite (a hero spell, from any class), or both. A class always knows its own rites up to
+level 4 (its starting kit); every other rite must be bought here, and is castable from its
+spell's level. Respec refunds the residue each bought node took, to the pools that paid it, for some gold.
+
+```yaml
+- { id: water_seat, name: Tide Seat, color: water, ring: 3, angle: 90, seat: Knight, links: [brine] }
+- id: brine
+  name: Brine                # optional for a rite node: the rite's name is shown
+  color: water               # region: fire, water, air or earth
+  ring: 3                    # 1 is the innermost ring
+  angle: 60                  # degrees clockwise from the top
+  cost: 10                   # residue of the region's color
+  stats: { water: 4, morale: 2 }
+  rite: shield_bash          # optional spell ID
+  links: [loam]              # joined both ways, so list each link once
+```
+
+Loading checks that ids and links exist, every class has a seat, rites are hero spells
+not already in a starting kit, and every node can be reached from every seat. The other numbers
+(residue per match, the conversion rate, the respec price) are placeholders, kept together at the
+top of `rpg/orrery.go`.
+
+## puzzles/*.yaml
+
+A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
+in `puzzles/` is one puzzle. Some gems are **marked**; the board follows them as they fall and
+reports how each was cleared. Puzzles are prototypes: no story scene uses one yet.
+
+```yaml
+id: vault
+name: The Society Vault
+objective: Clear the three tumbler pins.   # shown to the player
+moves: 5                     # swaps allowed; running out loses
+refill: none                 # none (cleared cells stay empty), queue, or seed
+queue: rbyg                  # refill: queue, colors dropped in order, then nothing
+seed: 0                      # drives anything random, so the board always plays the same
+gravity: down
+board:                       # rows, top first; one cell per word
+  - "y  b  g  p  g  b"       # r b y g p are the five colors, . is an empty cell
+  - "p  r  y* p  r  r"       # after the color: # locked, * bomb, - or | bolt
+  - "g  r  b# r  b# r"
+marks:                       # name: [x, y], counting from the top left
+  a: [1, 2]
+goal: { cleared: [a] }       # finishes the puzzle
+fail:                        # optional: any of these holding after a move loses
+  - { cleared: [bell] }
+tools:                       # rites used on the board, a few times a puzzle instead of for mana
+  - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave] }   # clear one gem
+  - { id: lockpick, name: Lockpick, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }
+routes:                      # the first route whose conditions hold when the goal does is taken
+  - id: force
+    name: Forced the lock
+    flag: vault_alarm        # set on the hero
+    when: { blasted: true }
+    solution: ["swap 1,2 2,2", "swap 4,3 5,3"]
+```
+
+A hero can use a tool when they know one of its rites. Conditions, for `goal`, `fail` and `when`
+alike, hold when all of their parts do:
+
+- `cleared: [a, b]` these marks are cleared.
+- `order: [a, b]` these marks are cleared, each in a later cascade step than the one before.
+- `blasted: true` a mark was cleared by a bomb, a bolt or a Force; `false`, none was.
+- `tool: true` or `false` a tool was used, or not.
+- `max_match`, `min_match` the largest match, and `max_moves` the swaps made.
+
+If the goal holds but no route does (the vault's pins matched out of order, say), the puzzle is
+lost as jammed. A lost puzzle can be tried again at no cost.
+
+Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` or `tool id x,y`.
+Loading the story replays each one and reports a problem if it no longer finishes the puzzle by
+its route, so `go test ./rpg` catches a board edit that breaks a route.
+
+To see every way a board can end, run the brute-force solver:
+`SOLVE=vault SOLVE_DEPTH=4 go test ./rpg -run TestSolvePuzzle -v`. It tries every swap and tool
+use up to that many moves and prints, for each route and each kind of loss (jammed, stuck), how
+many sequences end there and the shortest one. Use it to check that every route is reachable and
+none leaks into another; depth 4 on the vault takes about 15 seconds.
+
+In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is loaded, and
+`JEWEL_PUZZLE_ROUTE=quiet` as well plays that route's stored solution by itself.
 
 ## quests.yaml
 
@@ -258,6 +383,7 @@ when a scene ends.
 | `if: [...]` with `then:` / `else:` | branch on conditions |
 | `if: [...]` alone | the rest of the step only happens when the conditions hold |
 | `duel: { foe: id, level: 3, win: scene, lose: scene }` | fight, then continue |
+| `puzzle: vault` | play a puzzle board (puzzles/), then continue whatever the result; check its route flags with `if` |
 
 ```yaml
 bessa_talk:

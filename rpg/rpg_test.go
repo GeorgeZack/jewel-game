@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -20,7 +21,7 @@ func step(cleared []int, matches ...board.Match) *board.StepResult {
 
 func testDuel() *Duel {
 	d := NewDuel(NewHeroCombatant(NewHero("Knight")), NewFoeCombatant(FoeByID("rat"), 1), 1)
-	d.Board = board.NewBoard(BoardSettings(), 1)
+	d.Board = board.NewBoard(BoardSettings(nil), 1)
 	d.Turn = Player
 	return d
 }
@@ -289,14 +290,11 @@ func TestStoryCanBeCompleted(t *testing.T) {
 	}
 }
 
-func TestLevelUpAndStats(t *testing.T) {
+func TestLevelUp(t *testing.T) {
 	h := NewHero("Warrior")
-	if n := h.AddXP(XPToNext(1)); n != 1 || h.Level != 2 || h.Points != POINTS_PER_LEVEL {
+	hp := NewHeroCombatant(h).MaxHP
+	if n := h.AddXP(XPToNext(1)); n != 1 || h.Level != 2 || NewHeroCombatant(h).MaxHP <= hp {
 		t.Fatalf("level up: %d %+v", n, h)
-	}
-	before := h.Stats[Battle]
-	if !h.RaiseStat(Battle) || h.Stats[Battle] != before+1 || h.Points != POINTS_PER_LEVEL-1 {
-		t.Fatalf("raise: %+v", h)
 	}
 	if len(h.Spells) != 2 {
 		t.Fatalf("level 2 should auto-equip the new spell: %v", h.Spells)
@@ -325,19 +323,137 @@ func TestShopAndMountsNeedStables(t *testing.T) {
 }
 
 func TestSaveRoundTrip(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "sub", "hero.json")
-	if h, err := LoadHero(path); h != nil || err != nil {
+	dir := filepath.Join(t.TempDir(), "sub")
+	path, ppath := filepath.Join(dir, "hero.json"), filepath.Join(dir, "profile.json")
+	if h, err := LoadRun(path); h != nil || err != nil {
 		t.Fatalf("no save yet: %v %v", h, err)
+	}
+	if p, err := LoadProfile(ppath); p.Returns != 0 || err != nil {
+		t.Fatalf("no profile yet: %v %v", p, err)
 	}
 	h := NewHero("Druid")
 	h.Gold = 123
 	h.Active["goblins"] = 1
-	if err := h.Save(path); err != nil {
+	if err := SaveRun(path, h); err != nil {
 		t.Fatal(err)
 	}
-	got, err := LoadHero(path)
+	if err := SaveProfile(ppath, Profile{ Returns: 2, Endings: []string{ "a" } }); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadRun(path)
 	if err != nil || got.Gold != 123 || got.Active["goblins"] != 1 || got.Class != "Druid" {
 		t.Fatalf("got %+v %v", got, err)
+	}
+	if err := DeleteRun(path); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := LoadRun(path); err != nil || got != nil {
+		t.Fatalf("run not deleted: %+v %v", got, err)
+	}
+	if p, err := LoadProfile(ppath); err != nil || p.Returns != 2 {
+		t.Fatalf("deleting the run should keep the profile: %+v %v", p, err)
+	}
+}
+
+// A save from before versioning is a bare hero; it loads as the run.
+func TestOldSaveMigrates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "hero.json")
+	old := `{"Class":"Wizard","Level":4,"XP":10,"Gold":321,"Points":5,"Stats":[9,5,4,1,1,3,2],` +
+		`"Gear":null,"Owned":null,"Spells":["fireball"],"Buildings":null,"Location":"nowhere",` +
+		`"Active":null,"Done":["goblins"],"Wins":3,"Losses":1,"Finished":false}`
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	h, err := LoadRun(path)
+	if err != nil || h == nil || h.Gold != 321 || h.Level != 4 || h.Done[0] != "goblins" {
+		t.Fatalf("old save: %+v %v", h, err)
+	}
+	if h.Location != Story.Start || h.Gear == nil || h.Active == nil {
+		t.Fatalf("old save not fixed up: %+v", h)
+	}
+	// raised stats and unspent points from before the Orrery go back to the class's, the levels
+	// pay colorless residue, and spells the hero no longer knows are unequipped
+	if h.Stats != ClassByName("Wizard").Stats || !slices.Equal(h.Nodes, []string{ SeatOf("Wizard").ID }) || h.Residue[Colorless] != 3*OLD_RUN_RESIDUE {
+		t.Fatalf("old stats not moved onto the Orrery: %+v", h)
+	}
+	if slices.Contains(h.Spells, "fireball") || !slices.Contains(h.Spells, "firebolt") {
+		t.Fatalf("old spells not fixed up: %v", h.Spells)
+	}
+	// the run as it was before converting is kept
+	if kept, _ := os.ReadFile(path + ".bak"); string(kept) != old {
+		t.Fatalf("the pre-Orrery run wasn't backed up: %q", kept)
+	}
+	// a versioned run from before the Orrery is backed up too, and a converted one isn't again
+	os.Remove(path + ".bak")
+	v1 := `{"Version":1,"Run":` + old + `}`
+	os.WriteFile(path, []byte(v1), 0o644)
+	if h, err := LoadRun(path); err != nil || h.Nodes == nil {
+		t.Fatalf("versioned old run: %+v %v", h, err)
+	}
+	if kept, _ := os.ReadFile(path + ".bak"); string(kept) != v1 {
+		t.Fatalf("the versioned pre-Orrery run wasn't backed up: %q", kept)
+	}
+	os.Remove(path + ".bak")
+	if err := SaveRun(path, h); err != nil {
+		t.Fatal(err)
+	}
+	if h, err := LoadRun(path); err != nil || h.Gold != 321 {
+		t.Fatalf("migrated save didn't round trip: %+v %v", h, err)
+	}
+	if _, err := os.Stat(path + ".bak"); err == nil {
+		t.Fatalf("a converted run was backed up again")
+	}
+
+	for name, data := range map[string]string{ "broken": "{not json", "newer": `{"Version":99}` } {
+		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if h, err := LoadRun(path); err == nil || h != nil {
+			t.Errorf("%s save should be an error and start fresh: %+v %v", name, h, err)
+		}
+		if kept, _ := os.ReadFile(path + ".bak"); string(kept) != data {
+			t.Errorf("%s save wasn't kept as a backup: %q", name, kept)
+		}
+	}
+}
+
+func TestCardsSetTheBoardAndPayouts(t *testing.T) {
+	defer LoadStory(diskFiles{}, "../assets/story")
+	files := memFiles{
+		"s/story.yaml":     "start: a",
+		"s/foes.yaml":      "- { id: rat, name: Rat, card: chaos }\n- { id: bat, name: Bat, card: nope }",
+		"s/locations.yaml": "- { id: a, name: A, open: true }",
+		"s/quests.yaml":    "[]",
+		"s/cards.yaml": "- { id: chaos, name: Chaos, width: 10, height: 6, gravity: left, chaos_gravity: true, overcharge: true, gold_pct: 100, mana_pct: -50, skull_pct: 50 }\n" +
+			"- { id: chaos, name: Twice }\n- { id: huge, width: 12, gravity: sideways, xp_pct: -200 }",
+	}
+	problems, err := LoadStory(files, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	all := strings.Join(problems, "\n")
+	for _, w := range []string{ "nope", "defined twice", "size 12", "sideways", "-200" } {
+		if !strings.Contains(all, w) {
+			t.Errorf("no problem mentioning %q in:\n%s", w, all)
+		}
+	}
+
+	card := RuleCardByID(FoeByID("rat").Card)
+	b := board.NewBoard(BoardSettings(card), 1)
+	if b.W() != 10 || b.H() != 6 || !b.Settings.Overcharge || !b.Settings.ChaosGravity || b.Settings.Gravity != board.Left {
+		t.Fatalf("card didn't reach the board: %+v", b.Settings)
+	}
+
+	// the same step pays differently on the card
+	pay := func(c *RuleCard) Gain {
+		d := NewDuel(NewHeroCombatant(NewHero("Knight")), NewFoeCombatant(FoeByID("rat"), 1), 1)
+		d.Turn, d.Card = Player, c
+		return d.ApplyStep(step([]int{ Gold, Gold, Gold, Fire, Fire, Fire, Fire, Skull, Skull, Skull },
+			board.Match{ Color: Fire, Size: 4, Mult: 1 }, board.Match{ Color: Skull, Size: 3, Mult: 1 }))
+	}
+	plain, carded := pay(nil), pay(card)
+	if carded.Gold != plain.Gold*2 || carded.Mana[Fire] != plain.Mana[Fire]/2 || carded.Damage <= plain.Damage {
+		t.Fatalf("payout modifiers: plain %+v, carded %+v", plain, carded)
 	}
 }
 
@@ -401,12 +517,11 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 				for h.Level < f.level {
 					h.AddXP(XPToNext(h.Level))
 				}
-				for stat := 0; h.Points > 0 && stat < 200; stat++ {
-					h.RaiseStat(stat % NUM_STATS)
-				}
+				h.Residue[Colorless] = (h.Level - 1) * FAIR_RESIDUE_PER_LEVEL
+				buyNodes(h)
 				bestShopGear(h)
 				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
-				d.Board = board.NewBoard(BoardSettings(), int64(seed))
+				d.Board = board.NewBoard(BoardSettings(nil), int64(seed))
 				turns += playOut(d)
 				if d.Winner == Player {
 					wins++
@@ -450,7 +565,7 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 	var b *board.Board
 	var combos map[[2]board.Point]bool
 	for seed := int64(1); seed < 400; seed++ {
-		candidate := board.NewBoard(BoardSettings(), seed)
+		candidate := board.NewBoard(BoardSettings(nil), seed)
 		combo, other := moveKinds(candidate)
 		if len(combo) > 0 && len(other) > 0 {
 			b, combos = candidate, combo
@@ -487,5 +602,353 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 	}
 	if high < low {
 		t.Errorf("higher level noticed fewer combos: L1 %d, L16 %d", low, high)
+	}
+}
+
+// FAIR_RESIDUE_PER_LEVEL is roughly what TestProgression banks per level, to stand in for the
+// Orrery when a test makes a hero of some level from nothing.
+const FAIR_RESIDUE_PER_LEVEL = 20
+
+// nodeWorth ranks a buyable node for the simulator: rites the hero can cast now first, then stats,
+// then rites for later. Cheaper breaks ties.
+func nodeWorth(h *Hero, n *OrreryNode) int {
+	w := 0
+	if s := SpellByID(n.Rite); s != nil {
+		if s.Level <= h.Level {
+			w = 3000
+			if s.Class == h.Class {
+				w = 4000
+			}
+		}
+	} else {
+		w = 2000
+	}
+	return w - n.Cost
+}
+
+// buyNodes buys the best node it can until none is affordable, then converts the residue of
+// colors with nothing left to buy next to what the hero owns, and tries again.
+func buyNodes(h *Hero) {
+	for {
+		var best *OrreryNode
+		for i := range Orrery {
+			n := &Orrery[i]
+			if h.CanBuyNode(n) && (best == nil || nodeWorth(h, n) > nodeWorth(h, best)) {
+				best = n
+			}
+		}
+		if best != nil {
+			h.BuyNode(best.ID)
+			continue
+		}
+		converted := false
+		for c := range NUM_MANA {
+			wanted := false
+			for i := range Orrery {
+				n := &Orrery[i]
+				wanted = wanted || (n.Mana == c && !h.Owns(n.ID) && h.Reaches(n))
+			}
+			for !wanted && h.Convert(c) {
+				converted = true
+			}
+		}
+		if !converted {
+			return
+		}
+	}
+}
+
+// spendLikeAPlayer is the simulator's fixed policy: residue buys Orrery nodes (buyNodes), gold
+// buys the best gear the hero can afford in each slot and then buildings in list order, and quest
+// rewards are worn when they beat what's on.
+func spendLikeAPlayer(h *Hero) {
+	buyNodes(h)
+	// quest items cost nothing, so rank by level
+	worth := func(id string) int {
+		if it := ItemByID(id); it != nil {
+			return it.Level
+		}
+		return 0
+	}
+	for _, slot := range Slots {
+		var best *Item
+		for i := range Items {
+			it := &Items[i]
+			owned := slices.Contains(h.Owned, it.ID)
+			if it.Slot != slot || (!owned && (it.QuestOnly || it.Price > h.Gold || it.Level > h.Level)) {
+				continue
+			}
+			if it.Slot == SlotMount && !h.Has("stables") {
+				continue
+			}
+			if worth(it.ID) > worth(h.Gear[slot]) && (best == nil || worth(it.ID) > worth(best.ID)) {
+				best = it
+			}
+		}
+		if best != nil {
+			h.Buy(best)
+		}
+	}
+	for i := range Buildings {
+		h.Build(&Buildings[i])
+	}
+}
+
+// TestProgression plays the main quests in order with the AI as the hero, one hero per class,
+// and logs level, gold, residue earned so far in each color and Orrery nodes owned after each
+// quest (see the table with -v). A lost duel is fought again, keeping what the board paid, as a
+// player would. Economy numbers should come from here.
+func TestProgression(t *testing.T) {
+	const MAX_TRIES = 30	// duels per kill before the hero counts as stuck
+	for _, class := range Classes {
+		h := NewHero(class.Name)
+		seed := int64(0)
+		var earned [NUM_MANA]int
+		t.Logf("%-8s %-14s %3s %5s %4s %5s %4s %4s %4s %4s %5s", class.Name, "quest", "lvl", "duels", "lost", "gold", "fire", "watr", "air", "erth", "nodes")
+		for i := range Quests {
+			q := &Quests[i]
+			if !q.Main {
+				continue
+			}
+			h.Location = q.Giver
+			h.Accept(q)
+			h.Location = q.At
+			card := RuleCardByID(FoeByID(q.Foe).Card)
+			duels, lost := 0, 0
+			for !slices.Contains(h.Done, q.ID) && duels < MAX_TRIES*q.Count {
+				seed++
+				duels++
+				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(q.Foe), q.FoeLevel), seed)
+				d.Board = board.NewBoard(BoardSettings(card), seed)
+				d.Card = card
+				playOut(d)
+				if d.Winner < 0 {
+					t.Fatalf("%s vs %s never finished", class.Name, q.Foe)
+				}
+				r := d.Settle(h)
+				for c, n := range r.Residue {
+					earned[c] += n
+				}
+				if r.Won {
+					h.RecordKill(q.Foe, q.At)
+				} else {
+					lost++
+				}
+				spendLikeAPlayer(h)
+			}
+			t.Logf("%-8s %-14s %3d %5d %4d %5d %4d %4d %4d %4d %5d", class.Name, q.ID, h.Level, duels, lost, h.Gold,
+				earned[Fire], earned[Water], earned[Air], earned[Earth], len(h.Nodes))
+			if !slices.Contains(h.Done, q.ID) {
+				t.Errorf("%s is stuck on %s at level %d", class.Name, q.ID, h.Level)
+				break
+			}
+		}
+	}
+}
+
+func TestResiduePaysForQuality(t *testing.T) {
+	d := testDuel()
+	if g := d.ApplyStep(step([]int{ Fire, Fire, Fire }, board.Match{ Color: Fire, Size: 3, Mult: 1 })); g.Residue != [NUM_MANA]int{} {
+		t.Fatalf("a plain three paid residue: %v", g.Residue)
+	}
+	g := d.ApplyStep(step([]int{ Fire, Fire, Fire, Fire, Water, Water, Water, Water, Water },
+		board.Match{ Color: Fire, Size: 4, Mult: 1 }, board.Match{ Color: Water, Size: 5, Mult: 1 }))
+	if g.Residue != [NUM_MANA]int{ RESIDUE_FOUR, RESIDUE_FIVE, 0, 0 } {
+		t.Fatalf("four and five: %v", g.Residue)
+	}
+	chained := step([]int{ Earth, Earth, Earth }, board.Match{ Color: Earth, Size: 3, Mult: 1 })
+	chained.Chain = 3
+	if g := d.ApplyStep(chained); g.Residue[Earth] != 2*RESIDUE_CHAIN {
+		t.Fatalf("a third cascade step: %v", g.Residue)
+	}
+	// the foe's matches pay the hero nothing, and leave no residue anywhere
+	d.Turn = Enemy
+	d.ApplyStep(step([]int{ Air, Air, Air, Air, Air }, board.Match{ Color: Air, Size: 5, Mult: 1 }))
+	if d.Sides[Enemy].Residue != [NUM_MANA]int{} {
+		t.Fatalf("the foe collected residue: %v", d.Sides[Enemy].Residue)
+	}
+
+	// banked whether the duel is won or lost, like the rest of the board's pay
+	h := NewHero("Knight")
+	d.Winner = Enemy
+	r := d.Settle(h)
+	want := [NUM_RESIDUE]int{ RESIDUE_FOUR, RESIDUE_FIVE, 0, 2 * RESIDUE_CHAIN, 0 }
+	if r.Won || h.Residue != want {
+		t.Fatalf("banked %v after a loss, want %v", h.Residue, want)
+	}
+}
+
+func TestOrreryBuying(t *testing.T) {
+	h := NewHero("Knight")
+	seat := SeatOf("Knight")
+	if seat == nil || !slices.Equal(h.Nodes, []string{ seat.ID }) {
+		t.Fatalf("knight not on a seat: %v", h.Nodes)
+	}
+	var near, far *OrreryNode
+	for i := range Orrery {
+		n := &Orrery[i]
+		if n.Seat != "" {
+			continue
+		}
+		if slices.Contains(seat.Near, n.ID) && near == nil {
+			near = n
+		} else if !slices.Contains(seat.Near, n.ID) && far == nil {
+			far = n
+		}
+	}
+	h.Residue = [NUM_RESIDUE]int{ 999, 999, 999, 999, 0 }
+	if h.BuyNode(far.ID) {
+		t.Fatalf("bought %s, which isn't next to anything owned", far.ID)
+	}
+	h.Residue = [NUM_RESIDUE]int{}
+	h.Residue[near.Mana] = near.Cost - 1
+	if h.BuyNode(near.ID) {
+		t.Fatalf("bought %s without enough residue", near.ID)
+	}
+	// colorless makes up what the color is short
+	h.Residue[Colorless] = 3
+	if !h.BuyNode(near.ID) || h.Residue[near.Mana] != 0 || h.Residue[Colorless] != 2 {
+		t.Fatalf("buying %s: %v %v", near.ID, h.Nodes, h.Residue)
+	}
+	if h.BuyNode(near.ID) {
+		t.Fatalf("bought %s twice", near.ID)
+	}
+}
+
+// pathTo is the shortest run of nodes from a seat to a node, the seat left out.
+func pathTo(from, to string) []string {
+	prev := map[string]string{ from: "" }
+	todo := []string{ from }
+	for len(todo) > 0 && prev[to] == "" {
+		n := NodeByID(todo[0])
+		todo = todo[1:]
+		for _, id := range n.Near {
+			if _, ok := prev[id]; !ok {
+				prev[id] = n.ID
+				todo = append(todo, id)
+			}
+		}
+	}
+	var out []string
+	for id := to; id != from; id = prev[id] {
+		out = append([]string{ id }, out...)
+	}
+	return out
+}
+
+func TestTwoSeatsReachTheSameNode(t *testing.T) {
+	a, b := NewHero("Knight"), NewHero("Wizard")
+	if a.Nodes[0] == b.Nodes[0] {
+		t.Fatalf("both start on %s", a.Nodes[0])
+	}
+	target := SeatOf("Druid").Near[0]
+	for _, h := range []*Hero{ a, b } {
+		h.Residue[Colorless] = 999
+		for _, id := range pathTo(h.Nodes[0], target) {
+			if !h.BuyNode(id) {
+				t.Fatalf("%s couldn't buy %s on the way to %s", h.Class, id, target)
+			}
+		}
+		if !h.Owns(target) {
+			t.Fatalf("%s didn't reach %s", h.Class, target)
+		}
+	}
+}
+
+func TestRitesComeFromTheOrrery(t *testing.T) {
+	h := NewHero("Knight")
+	for h.Level < 13 {
+		h.AddXP(XPToNext(h.Level))
+	}
+	// a Warrior rite on the Orrery: the Knight can learn it there, but only there
+	n := &Orrery[slices.IndexFunc(Orrery, func(n OrreryNode) bool { return n.Rite == "hamstring" })]
+	if h.Knows(SpellByID("hamstring")) || h.Knows(SpellByID("judgement")) {
+		t.Fatalf("knew rites before buying them")
+	}
+	if !h.Knows(SpellByID("smite")) || !h.Knows(SpellByID("lay_hands")) {
+		t.Fatalf("the Knight's starting kit is missing")
+	}
+	h.Residue[Colorless] = 999
+	for _, id := range pathTo(h.Nodes[0], n.ID) {
+		h.BuyNode(id)
+	}
+	if !h.Knows(SpellByID("hamstring")) {
+		t.Fatalf("owning %s didn't teach hamstring", n.ID)
+	}
+	low := NewHero("Knight")
+	low.Nodes = h.Nodes
+	if low.Knows(SpellByID("hamstring")) {
+		t.Fatalf("a level 1 hero knows a level %d rite", SpellByID("hamstring").Level)
+	}
+}
+
+func TestRespecRefunds(t *testing.T) {
+	h := NewHero("Druid")
+	h.Gold = RESPEC_GOLD + 5
+	h.Residue = [NUM_RESIDUE]int{ 100, 100, 100, 100, 0 }
+	if h.Respec() {
+		t.Fatalf("respec with nothing bought")
+	}
+	before := h.Residue
+	for _, id := range pathTo(h.Nodes[0], SeatOf("Wizard").Near[0]) {
+		if !h.BuyNode(id) {
+			t.Fatalf("couldn't buy %s", id)
+		}
+	}
+	if !h.Respec() || h.Residue != before || len(h.Nodes) != 1 || h.Gold != 5 {
+		t.Fatalf("respec: residue %v (was %v), nodes %v, gold %d", h.Residue, before, h.Nodes, h.Gold)
+	}
+	// colorless that paid for a node goes back to colorless
+	h.Gold = RESPEC_GOLD
+	n := NodeByID(h.Nodes[0]).Near[0]
+	h.Residue = [NUM_RESIDUE]int{ 0, 0, 0, 0, 0 }
+	h.Residue[NodeByID(n).Mana] = 1
+	h.Residue[Colorless] = 50
+	before = h.Residue
+	if !h.BuyNode(n) || !h.Respec() || h.Residue != before {
+		t.Fatalf("respec after paying in colorless: %v, was %v", h.Residue, before)
+	}
+	for _, id := range h.Spells {
+		if !h.Knows(SpellByID(id)) {
+			t.Fatalf("%s is still equipped after the respec", id)
+		}
+	}
+	if h.Respec() {
+		t.Fatalf("respec without the gold")
+	}
+}
+
+func TestConvertLosesResidue(t *testing.T) {
+	h := NewHero("Wizard")
+	h.Residue[Fire] = CONVERT_STEP + 1
+	if !h.Convert(Fire) || h.Residue[Fire] != 1 || h.Residue[Colorless] != CONVERT_STEP*CONVERT_PCT/100 {
+		t.Fatalf("convert: %v", h.Residue)
+	}
+	if CONVERT_PCT >= 100 || h.Convert(Fire) || h.Convert(Colorless) {
+		t.Fatalf("conversion should cost, and need a full step of a color: %v", h.Residue)
+	}
+}
+
+func TestOrreryValidation(t *testing.T) {
+	defer LoadStory(diskFiles{}, "../assets/story")
+	files := memFiles{
+		"s/story.yaml":     "start: a",
+		"s/foes.yaml":      "- { id: rat, name: Rat }",
+		"s/locations.yaml": "- { id: a, name: A, open: true }",
+		"s/quests.yaml":    "[]",
+		"s/orrery.yaml": "- { id: k, color: water, ring: 1, seat: Knight, links: [x] }\n" +
+			"- { id: w, color: air, ring: 1, seat: Wizard, links: [k, nowhere] }\n" +
+			"- { id: x, color: mud, ring: 1, cost: 5, rite: smite, stats: { luck: 2 } }\n" +
+			"- { id: island, color: fire, ring: 2, cost: 0 }",
+	}
+	problems, err := LoadStory(files, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	all := strings.Join(problems, "\n")
+	for _, w := range []string{ "island: can't be reached", "nowhere", "mud", "luck", "Knight kit", "cost 0", "class Druid has no seat" } {
+		if !strings.Contains(all, w) {
+			t.Errorf("no problem mentioning %q in:\n%s", w, all)
+		}
 	}
 }

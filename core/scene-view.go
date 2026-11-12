@@ -41,6 +41,7 @@ type SceneRunner struct {
 	bg			string
 	skipping	bool
 	duel		*rpg.DuelStep	// waiting for this duel to end
+	puzzle		bool			// waiting for a puzzle board to be left
 	lineScroll	ui.Scroll
 }
 
@@ -60,7 +61,7 @@ func (s *SceneRunner) Play(id string) {
 func (s *SceneRunner) Active() bool { return len(s.stack) > 0 || len(s.queue) > 0 }
 
 // Showing is true when the scene owns the screen (not while it waits for a duel).
-func (s *SceneRunner) Showing() bool { return s.Active() && s.duel == nil }
+func (s *SceneRunner) Showing() bool { return s.Active() && s.duel == nil && !s.puzzle }
 
 func (s *SceneRunner) WaitingForDuel() bool { return s.duel != nil }
 
@@ -70,7 +71,7 @@ func (s *SceneRunner) Stop() {
 }
 
 func (s *SceneRunner) Update(dt float32) {
-	if s.duel != nil {
+	if s.duel != nil || s.puzzle {
 		return
 	}
 	if len(s.stack) == 0 {
@@ -135,7 +136,7 @@ func (s *SceneRunner) blocked(dt float32) bool {
 		}
 		s.line = nil
 	}
-	return s.duel != nil
+	return s.duel != nil || s.puzzle
 }
 
 func (s *SceneRunner) push(id string) {
@@ -202,7 +203,7 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	}
 	if st.XP > 0 {
 		if h.AddXP(st.XP) > 0 {
-			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.Tf("ui.level_up_short", "You have %d points to spend in Hero.", h.Points) })
+			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
 		}
 	}
 	h.GiveItem(st.Item)
@@ -264,6 +265,11 @@ func (s *SceneRunner) exec(st rpg.Step) {
 		s.duel = d
 		s.line, s.title = nil, nil
 		s.v.startDuel(d.Foe, level, h.Location)
+	}
+	if st.Puzzle != "" && rpg.PuzzleByID(st.Puzzle) != nil {
+		s.puzzle = true
+		s.line, s.title = nil, nil
+		s.v.startPuzzle(st.Puzzle)
 	}
 }
 
