@@ -379,6 +379,9 @@ func TestOldSaveMigrates(t *testing.T) {
 		if s, err := LoadSave(path); err == nil || s == nil || s.Run != nil {
 			t.Errorf("%s save should be an error and start fresh: %+v %v", name, s, err)
 		}
+		if kept, _ := os.ReadFile(path + ".bak"); string(kept) != data {
+			t.Errorf("%s save wasn't kept as a backup: %q", name, kept)
+		}
 	}
 }
 

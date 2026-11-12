@@ -140,9 +140,19 @@ func LoadSave(path string) (*SaveFile, error) {
 	if err != nil || data == nil {
 		return &SaveFile{ Version: SAVE_VERSION }, err
 	}
+	s, err := parseSave(data)
+	if err != nil {
+		// the next save overwrites this one, so keep a copy of what couldn't be read
+		writeSave(path + ".bak", data)
+		return &SaveFile{ Version: SAVE_VERSION }, err
+	}
+	return s, nil
+}
+
+func parseSave(data []byte) (*SaveFile, error) {
 	var head struct{ Version int }
 	if err := json.Unmarshal(data, &head); err != nil {
-		return &SaveFile{ Version: SAVE_VERSION }, err
+		return nil, err
 	}
 	s := &SaveFile{}
 	switch {
@@ -150,14 +160,14 @@ func LoadSave(path string) (*SaveFile, error) {
 		// version 0 was a bare hero, with no profile
 		h := &Hero{}
 		if err := json.Unmarshal(data, h); err != nil {
-			return &SaveFile{ Version: SAVE_VERSION }, err
+			return nil, err
 		}
 		s.Run = h
 	case head.Version > SAVE_VERSION:
-		return &SaveFile{ Version: SAVE_VERSION }, fmt.Errorf("save is from a newer version (%d)", head.Version)
+		return nil, fmt.Errorf("save is from a newer version (%d)", head.Version)
 	default:
 		if err := json.Unmarshal(data, s); err != nil {
-			return &SaveFile{ Version: SAVE_VERSION }, err
+			return nil, err
 		}
 	}
 	s.Version = SAVE_VERSION
