@@ -122,6 +122,7 @@ type Duel struct {
 	Extra	bool	// the side to move goes again when this turn ends
 	Log		[]LogLine	// newest first
 	Board	*board.Board
+	Card	*RuleCard	// nil for the standard duel
 	OnHit	func(side, amount int)	// lets the view show damage from any source
 	OnHeal	func(side, amount int)
 	rng		*rand.Rand
@@ -135,19 +136,6 @@ func NewDuel(a, b *Combatant, seed int64) *Duel {
 	}
 	d.logf("log.moves_first", "%s moves first.", d.Sides[d.Turn].Name)
 	return d
-}
-
-// BoardSettings is the board every duel is played on.
-func BoardSettings() board.Settings {
-	return board.Settings{
-		Width:		8,
-		Height:		8,
-		NumColors:	NUM_GEMS,
-		Duel:		true,
-		WildColors:	NUM_MANA,
-		BombColor:	Skull,
-		BombRate:	BIG_SKULL_RATE,
-	}
 }
 
 func (d *Duel) Side(c *Combatant) int {
@@ -227,20 +215,24 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 		}
 	}
 
+	card := RuleCard{}
+	if d.Card != nil {
+		card = *d.Card
+	}
 	for i := range me.Mana {
-		n := min(counts[i], me.MaxMana[i]-me.Mana[i])
+		n := min(pct(counts[i], card.ManaPct), me.MaxMana[i]-me.Mana[i])
 		me.Mana[i] += n
 		g.Mana[i] = n
 	}
-	g.Gold = counts[Gold] * (2 + me.Level/2) * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
-	g.XP = counts[Star] * (1 + me.Level/3) * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100
+	g.Gold = pct(counts[Gold] * (2 + me.Level/2) * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100, card.GoldPct)
+	g.XP = pct(counts[Star] * (1 + me.Level/3) * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100, card.XPPct)
 	me.Gold += g.Gold
 	me.XP += g.XP
 
 	if counts[Skull] > 0 {
 		perMatch := me.Level/2 + me.SkullDamage + me.Stats[Battle]/4 + me.power(Might) - foe.Armor - foe.Stats[Morale]/10
 		dmg := counts[Skull]*SKULL_DAMAGE + bigSkulls*BIG_SKULL_BONUS + perMatch*max(skullMatches, 1)
-		g.Damage = d.Damage(foe, max(1, dmg))
+		g.Damage = d.Damage(foe, max(1, pct(dmg, card.SkullPct)))
 	}
 	if g.Extra && !d.Over() {
 		d.Extra = true

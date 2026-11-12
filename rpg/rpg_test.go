@@ -20,7 +20,7 @@ func step(cleared []int, matches ...board.Match) *board.StepResult {
 
 func testDuel() *Duel {
 	d := NewDuel(NewHeroCombatant(NewHero("Knight")), NewFoeCombatant(FoeByID("rat"), 1), 1)
-	d.Board = board.NewBoard(BoardSettings(), 1)
+	d.Board = board.NewBoard(BoardSettings(nil), 1)
 	d.Turn = Player
 	return d
 }
@@ -381,6 +381,46 @@ func TestOldSaveMigrates(t *testing.T) {
 	}
 }
 
+func TestCardsSetTheBoardAndPayouts(t *testing.T) {
+	defer LoadStory(diskFiles{}, "../assets/story")
+	files := memFiles{
+		"s/story.yaml":     "start: a",
+		"s/foes.yaml":      "- { id: rat, name: Rat, card: chaos }\n- { id: bat, name: Bat, card: nope }",
+		"s/locations.yaml": "- { id: a, name: A, open: true }",
+		"s/quests.yaml":    "[]",
+		"s/cards.yaml": "- { id: chaos, name: Chaos, width: 10, height: 6, gravity: left, chaos_gravity: true, overcharge: true, gold_pct: 100, mana_pct: -50, skull_pct: 50 }\n" +
+			"- { id: chaos, name: Twice }\n- { id: huge, width: 12, gravity: sideways, xp_pct: -200 }",
+	}
+	problems, err := LoadStory(files, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	all := strings.Join(problems, "\n")
+	for _, w := range []string{ "nope", "defined twice", "size 12", "sideways", "-200" } {
+		if !strings.Contains(all, w) {
+			t.Errorf("no problem mentioning %q in:\n%s", w, all)
+		}
+	}
+
+	card := RuleCardByID(FoeByID("rat").Card)
+	b := board.NewBoard(BoardSettings(card), 1)
+	if b.W() != 10 || b.H() != 6 || !b.Settings.Overcharge || !b.Settings.ChaosGravity || b.Settings.Gravity != board.Left {
+		t.Fatalf("card didn't reach the board: %+v", b.Settings)
+	}
+
+	// the same step pays differently on the card
+	pay := func(c *RuleCard) Gain {
+		d := NewDuel(NewHeroCombatant(NewHero("Knight")), NewFoeCombatant(FoeByID("rat"), 1), 1)
+		d.Turn, d.Card = Player, c
+		return d.ApplyStep(step([]int{ Gold, Gold, Gold, Fire, Fire, Fire, Fire, Skull, Skull, Skull },
+			board.Match{ Color: Fire, Size: 4, Mult: 1 }, board.Match{ Color: Skull, Size: 3, Mult: 1 }))
+	}
+	plain, carded := pay(nil), pay(card)
+	if carded.Gold != plain.Gold*2 || carded.Mana[Fire] != plain.Mana[Fire]/2 || carded.Damage <= plain.Damage {
+		t.Fatalf("payout modifiers: plain %+v, carded %+v", plain, carded)
+	}
+}
+
 // playOut runs a duel the way the view does, with the AI on both sides.
 func playOut(d *Duel) int {
 	turns := 0
@@ -446,7 +486,7 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 				}
 				bestShopGear(h)
 				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
-				d.Board = board.NewBoard(BoardSettings(), int64(seed))
+				d.Board = board.NewBoard(BoardSettings(nil), int64(seed))
 				turns += playOut(d)
 				if d.Winner == Player {
 					wins++
@@ -490,7 +530,7 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 	var b *board.Board
 	var combos map[[2]board.Point]bool
 	for seed := int64(1); seed < 400; seed++ {
-		candidate := board.NewBoard(BoardSettings(), seed)
+		candidate := board.NewBoard(BoardSettings(nil), seed)
 		combo, other := moveKinds(candidate)
 		if len(combo) > 0 && len(other) > 0 {
 			b, combos = candidate, combo

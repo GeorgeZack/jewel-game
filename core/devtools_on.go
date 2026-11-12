@@ -50,5 +50,8 @@ func (c *GameController) devTitle() {
 // devAutoplay lets the AI play the hero's side of duels too (JEWEL_AUTOPLAY), for screenshots.
 func devAutoplay() bool { return os.Getenv("JEWEL_AUTOPLAY") != "" }
 
+// devCard plays every duel on the rule card named by JEWEL_CARD, to try a card out.
+func devCard() string { return os.Getenv("JEWEL_CARD") }
+
 // devHideEditor hides the map editor's button while taking screenshots.
 func devHideEditor() bool { return os.Getenv("JEWEL_SHOTS") != "" }
