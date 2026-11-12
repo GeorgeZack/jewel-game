@@ -79,6 +79,21 @@ ui:
   hero_orrery: "Stats grow on the Orrery, bought with residue from good matches."
   open_orrery: Open the Orrery
   orrery: The Orrery
+  puzzle_won: Solved!
+  puzzle_route: "%s\n\nRoute: %s, in %d moves."
+  puzzle_lost: Not this time
+  puzzle_lost_moves: You ran out of moves.
+  puzzle_lost_stuck: No moves are left on the board.
+  puzzle_lost_fail: That set off what it shouldn't have.
+  puzzle_lost_jammed: "It's done, but not in any way that works: the lock jammed."
+  puzzle_retry: Trying again costs nothing.
+  try_again: Try again
+  leave: Leave
+  puzzle_moves: "Moves left  %d / %d"
+  tools: Tools
+  tool_uses: "%s  (%d)"
+  no_tools: You know no rite that helps here.
+  pick_gem: Pick the gem to Force.
   colorless: Colorless
   node_cost: "%d"
   residue: Residue
@@ -224,6 +239,8 @@ log:
   scene_loop: "Story: a scene ran 1000 steps without stopping, check it for a loop"
   save_read: "Could not read save, starting fresh: %v"
   profile_read: "Could not read profile, starting fresh: %v"
+  no_puzzle: "Story: no puzzle %q"
+  puzzle_broken: "Puzzle %s is broken: %v"
   story_load: "Story did not load: %v"
   story_problem: "Story problem: %s"
   story_loaded: "Story loaded: %d locations, %d quests, %d scenes, %d problems"

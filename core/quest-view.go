@@ -47,6 +47,7 @@ const (
 	ScreenCitadel
 	ScreenOrrery
 	ScreenDuel
+	ScreenPuzzle
 )
 
 type ModalButton struct {
@@ -68,6 +69,7 @@ type QuestView struct {
 	Profile     rpg.Profile
 	Screen      Screen
 	Duel        *rpg.Duel
+	Puzzle      *rpg.PuzzleRun
 	modals      []Modal
 	scenes      SceneRunner
 	effects     Effects
@@ -105,6 +107,9 @@ type QuestView struct {
 	modalScroll ui.Scroll
 	modalKey    string
 	orrerySel   string // the Orrery node being looked at
+	puzzleTool  string // a Force waiting for its gem
+	puzzleShown int    // dev: moves of a stored solution replayed so far
+	devPuzzled  bool
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
@@ -134,6 +139,9 @@ func NewQuestView(dm *DataManager) *QuestView {
 }
 
 func (v *QuestView) InDuel() bool   { return v.Screen == ScreenDuel }
+
+// OnBoard is true when the screen is a board: a duel or a puzzle.
+func (v *QuestView) OnBoard() bool { return v.Screen == ScreenDuel || v.Screen == ScreenPuzzle }
 func (v *QuestView) HasModal() bool { return len(v.modals) > 0 || v.scenes.Showing() }
 
 // ReloadStory reads assets/story again. If the files on disk are broken, the old story stays, or
@@ -202,6 +210,13 @@ func (v *QuestView) Update() {
 	if v.scenes.WaitingForDuel() && v.Screen != ScreenDuel && len(v.modals) == 0 {
 		v.scenes.DuelDone(v.lastWon)
 	}
+	if v.scenes.puzzle && v.Screen != ScreenPuzzle && len(v.modals) == 0 {
+		v.scenes.puzzle = false
+	}
+	if id := devPuzzle(); id != "" && !v.devPuzzled && v.Hero != nil && len(v.modals) == 0 {
+		v.devPuzzled = true
+		v.startPuzzle(id)
+	}
 	v.thankOnce()
 	if len(v.modals) > 0 {
 		v.TM.Paused = true
@@ -218,6 +233,8 @@ func (v *QuestView) Update() {
 		v.updateTravel(dt)
 	case ScreenDuel:
 		v.updateDuel(dt)
+	case ScreenPuzzle:
+		v.updatePuzzle()
 	}
 }
 
@@ -267,6 +284,7 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 	if id := devCard(); id != "" {
 		card = rpg.RuleCardByID(id)
 	}
+	v.TM.Types = v.DM.DuelGemTypes
 	v.TM.Reset(rpg.BoardSettings(card))
 	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
 	d.Card = card
@@ -299,6 +317,10 @@ func (v *QuestView) onHit(side, n int) {
 }
 
 func (v *QuestView) onStep(res *board.StepResult) {
+	if v.Screen == ScreenPuzzle {
+		v.Puzzle.Observe(res)
+		return
+	}
 	if v.Duel == nil {
 		return
 	}
@@ -365,6 +387,10 @@ func (v *QuestView) floatGain(cleared []board.Cleared, color, total int, size fl
 }
 
 func (v *QuestView) onMoveDone() {
+	if v.Screen == ScreenPuzzle {
+		v.puzzleDone()
+		return
+	}
 	if v.Duel == nil {
 		return
 	}
@@ -605,6 +631,8 @@ func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
 		if ui.ButtonIf(col.Next(32), text.T("ui.flee", "Flee (counts as a loss)"), v.myTurn() && !v.TM.Busy()) {
 			v.flee()
 		}
+	case v.Screen == ScreenPuzzle:
+		v.drawPuzzleTools(col)
 	default:
 		v.drawHeroSummary(col, bottom)
 	}
@@ -834,6 +862,8 @@ func (v *QuestView) DrawRight(r rl.Rectangle) {
 	case v.Hero == nil:
 		col.Heading(text.T("ui.new_hero_heading", "A new hero"))
 		col.Paragraph(rpg.Story.Blurb, 18, ui.TextColor)
+	case v.Screen == ScreenPuzzle:
+		v.drawPuzzleInfo(&col)
 	case v.InDuel():
 		v.drawSide(&col, rpg.Enemy)
 		col.Heading(text.T("ui.battle_log", "Battle log"))

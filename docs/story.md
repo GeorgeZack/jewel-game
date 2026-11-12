@@ -41,6 +41,7 @@ assets/story/
   quests.yaml       quests
   cards.yaml        rule cards: a different board or payouts for a duel (optional)
   orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
+  puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
   backgrounds/      cutscene backdrops
@@ -213,6 +214,60 @@ not already in a starting kit, and every node can be reached from every seat. Th
 (residue per match, the conversion rate, the respec price) are placeholders, kept together at the
 top of `rpg/orrery.go`.
 
+## puzzles/*.yaml
+
+A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
+in `puzzles/` is one puzzle. Some gems are **marked**; the board follows them as they fall and
+reports how each was cleared. Puzzles are prototypes: no story scene uses one yet.
+
+```yaml
+id: vault
+name: The Society Vault
+objective: Clear the three tumbler pins.   # shown to the player
+moves: 5                     # swaps allowed; running out loses
+refill: none                 # none (cleared cells stay empty), queue, or seed
+queue: rbyg                  # refill: queue, colors dropped in order, then nothing
+seed: 0                      # drives anything random, so the board always plays the same
+gravity: down
+board:                       # rows, top first; one cell per word
+  - "y  b  g  p  g  b"       # r b y g p are the five colors, . is an empty cell
+  - "p  r  y* p  r  r"       # after the color: # locked, * bomb, - or | bolt
+  - "g  r  b# r  b# r"
+marks:                       # name: [x, y], counting from the top left
+  a: [1, 2]
+goal: { cleared: [a] }       # finishes the puzzle
+fail:                        # optional: any of these holding after a move loses
+  - { cleared: [bell] }
+tools:                       # rites used on the board, a few times a puzzle instead of for mana
+  - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave] }   # clear one gem
+  - { id: lockpick, name: Lockpick, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }
+routes:                      # the first route whose conditions hold when the goal does is taken
+  - id: force
+    name: Forced the lock
+    flag: vault_alarm        # set on the hero
+    when: { blasted: true }
+    solution: ["swap 1,2 2,2", "swap 4,3 5,3"]
+```
+
+A hero can use a tool when they know one of its rites. Conditions, for `goal`, `fail` and `when`
+alike, hold when all of their parts do:
+
+- `cleared: [a, b]` these marks are cleared.
+- `order: [a, b]` these marks are cleared, each in a later cascade step than the one before.
+- `blasted: true` a mark was cleared by a bomb, a bolt or a Force; `false`, none was.
+- `tool: true` or `false` a tool was used, or not.
+- `max_match`, `min_match` the largest match, and `max_moves` the swaps made.
+
+If the goal holds but no route does (the vault's pins matched out of order, say), the puzzle is
+lost as jammed. A lost puzzle can be tried again at no cost.
+
+Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` or `tool id x,y`.
+Loading the story replays each one and reports a problem if it no longer finishes the puzzle by
+its route, so `go test ./rpg` catches a board edit that breaks a route.
+
+In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is loaded, and
+`JEWEL_PUZZLE_ROUTE=quiet` as well plays that route's stored solution by itself.
+
 ## quests.yaml
 
 ```yaml
@@ -322,6 +377,7 @@ when a scene ends.
 | `if: [...]` with `then:` / `else:` | branch on conditions |
 | `if: [...]` alone | the rest of the step only happens when the conditions hold |
 | `duel: { foe: id, level: 3, win: scene, lose: scene }` | fight, then continue |
+| `puzzle: vault` | play a puzzle board (puzzles/), then continue whatever the result; check its route flags with `if` |
 
 ```yaml
 bessa_talk:

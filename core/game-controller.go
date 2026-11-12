@@ -134,7 +134,7 @@ func (c *GameController) Update() {
 	}
 	c.handleKeys()
 	c.Quest.Update()
-	if !c.Quest.InDuel() {
+	if !c.Quest.OnBoard() {
 		return
 	}
 	tm := c.Active()
@@ -221,8 +221,9 @@ func (c *GameController) Draw() {
 		return
 	}
 	tm := c.Active()
-	if c.Quest.InDuel() {
+	if c.Quest.OnBoard() {
 		tm.Draw()
+		c.Quest.drawPuzzleMarks()
 	}
 	c.Quest.DrawScreenFlash()
 
