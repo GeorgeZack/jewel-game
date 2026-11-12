@@ -15,7 +15,7 @@ ui:
   how_to_play: How to play
   title_foot: Vertical slice. Some art is placeholder.
   controls: Controls
-  help_controls: Drag a gem, or click two gems, to swap them. Keys 1-6 cast spells, H shows a hint.
+  help_controls: Drag a gem, or tap two gems, to swap them. Tap a spell to cast it. On a keyboard, keys 1-6 cast spells and H shows a hint.
   back: Back
   thanks_title: Thanks for playing!
   thanks_body: That's the end of this slice of the game. Your hero can keep exploring, and more is on the way.
@@ -97,6 +97,12 @@ ui:
   quest_task: "Defeat %s (L%d) at %s: %d / %d"
   completed: Completed
   shop: Shop
+  map_short: Map
+  quests_short: Quests
+  citadel_short: Citadel
+  hero_points_short: "Hero %d"
+  hint: Hint
+  flee_short: Flee
   need_stables: Build Stables in your citadel to buy mounts.
   equipped_tag: Equipped
   equip: Equip

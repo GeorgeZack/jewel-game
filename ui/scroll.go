@@ -14,6 +14,8 @@ func inClip() bool {
 type Scroll struct {
 	Pos, Max float32
 	grab     bool
+	pan      bool
+	panY     float32
 	view     rl.Rectangle
 	top      float32
 }
@@ -71,22 +73,39 @@ func (s *Scroll) thumb(track rl.Rectangle) rl.Rectangle {
 	return rl.Rectangle{X: track.X, Y: y, Width: track.Width, Height: h}
 }
 
-// drag moves the content when the thumb or its track is dragged.
+// drag moves the content when the thumb is dragged, or when a finger drags the list itself.
 func (s *Scroll) drag() {
+	m := rl.GetMousePosition()
+	track := s.track()
+	if s.Max > 0 && rl.IsMouseButtonPressed(rl.MouseLeftButton) && Hover(s.view) && !Hover(track) {
+		s.pan = true
+		s.panY = m.Y
+	}
+	if s.pan && rl.IsMouseButtonDown(rl.MouseLeftButton) {
+		if sloppy {
+			s.Pos -= m.Y - s.panY
+			s.Pos = max(0, min(s.Pos, s.Max))
+		}
+		s.panY = m.Y
+	}
+	if !rl.IsMouseButtonDown(rl.MouseLeftButton) {
+		s.pan = false
+	}
+
 	if s.Max <= 0 || !rl.IsMouseButtonDown(rl.MouseLeftButton) {
 		s.grab = false
 		return
 	}
-	track := s.track()
 	if rl.IsMouseButtonPressed(rl.MouseLeftButton) && Hover(track) {
 		s.grab = true
+		s.pan = false
 		clickTaken = true
 	}
 	if !s.grab {
 		return
 	}
 	thumb := s.thumb(track)
-	frac := (rl.GetMousePosition().Y - track.Y - thumb.Height/2) / (track.Height - thumb.Height)
+	frac := (m.Y - track.Y - thumb.Height/2) / (track.Height - thumb.Height)
 	s.Pos = max(0, min(1, frac)) * s.Max
 }
 
