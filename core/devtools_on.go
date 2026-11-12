@@ -3,6 +3,7 @@
 package core
 
 import (
+	"jewel-game/rpg"
 	"os"
 	"time"
 )
@@ -31,6 +32,16 @@ func (v *QuestView) devTour() {
 	screens := []Screen{ScreenWorld, ScreenHero, ScreenSpells, ScreenQuests, ScreenShop, ScreenCitadel, ScreenOrrery}
 	if n < len(screens) {
 		v.Screen = screens[n]
+		if v.Screen == ScreenOrrery {
+			// buy the first node the hero can, to show buying works in the running game
+			for i := range rpg.Orrery {
+				if v.Hero.BuyNode(rpg.Orrery[i].ID) {
+					v.orrerySel = rpg.Orrery[i].ID
+					v.save()
+					break
+				}
+			}
+		}
 	} else if n == len(screens) {
 		foe := os.Getenv("JEWEL_TOUR_FOE")
 		if foe == "" {
