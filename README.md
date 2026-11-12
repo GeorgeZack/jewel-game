@@ -26,7 +26,8 @@ Diffusion), and some of it is still placeholder. See [attributions.md](attributi
 
 
 Losing a duel costs nothing, but you only keep what you picked up on the board. Progress saves
-automatically (in the browser's local storage, or `~/.config/jewel-game/hero.json` on the desktop).
+automatically (in the browser's local storage, or `~/.config/jewel-game/hero.json` on the desktop; what outlasts a
+run goes in `profile.json` beside it).
 
 **Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
 and 5 in a row makes a **Prism** (swap it with a gem to clear that color). Swapping two specials

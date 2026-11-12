@@ -1,0 +1,9 @@
+# Rule cards: a different board, or different payouts, for a duel. See docs/story.md.
+# No foe uses a card yet. Try one in a dev build with JEWEL_CARD=<id> ./start.sh.
+
+- id: standard
+  name: Standard duel
+
+- id: sideways
+  name: Sideways
+  gravity: left

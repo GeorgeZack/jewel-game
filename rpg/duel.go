@@ -33,6 +33,7 @@ type Combatant struct {
 	Armor			int
 	GoldPct, XPPct	int
 	Gold, XP		int		// collected this duel
+	Residue			[NUM_MANA]int	// collected this duel, on the hero's turns only
 	Foe				*Foe	// nil for the hero
 }
 
@@ -122,6 +123,7 @@ type Duel struct {
 	Extra	bool	// the side to move goes again when this turn ends
 	Log		[]LogLine	// newest first
 	Board	*board.Board
+	Card	*RuleCard	// nil for the standard duel
 	OnHit	func(side, amount int)	// lets the view show damage from any source
 	OnHeal	func(side, amount int)
 	rng		*rand.Rand
@@ -135,19 +137,6 @@ func NewDuel(a, b *Combatant, seed int64) *Duel {
 	}
 	d.logf("log.moves_first", "%s moves first.", d.Sides[d.Turn].Name)
 	return d
-}
-
-// BoardSettings is the board every duel is played on.
-func BoardSettings() board.Settings {
-	return board.Settings{
-		Width:		8,
-		Height:		8,
-		NumColors:	NUM_GEMS,
-		Duel:		true,
-		WildColors:	NUM_MANA,
-		BombColor:	Skull,
-		BombRate:	BIG_SKULL_RATE,
-	}
 }
 
 func (d *Duel) Side(c *Combatant) int {
@@ -192,7 +181,21 @@ type Gain struct {
 	Damage	int
 	Gold	int
 	XP		int
+	Residue	[NUM_MANA]int
 	Extra	bool
+}
+
+// MatchResidue is what one mana match pays in its color: a plain three on the first step pays
+// nothing, longer runs and later cascade steps pay more.
+func MatchResidue(size, chain int) int {
+	n := max(chain-1, 0) * RESIDUE_CHAIN
+	switch {
+	case size >= 5:
+		n += RESIDUE_FIVE
+	case size == 4:
+		n += RESIDUE_FOUR
+	}
+	return n
 }
 
 // ApplyStep credits a cascade step to whoever's turn it is, whether a swap or a spell started it.
@@ -219,6 +222,11 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 		}
 		switch {
 		case m.Color < NUM_MANA:
+			if me.Foe == nil {
+				n := MatchResidue(m.Size, res.Chain)
+				me.Residue[m.Color] += n
+				g.Residue[m.Color] += n
+			}
 			// the Wild itself isn't in Cleared by color; count it, then multiply the run
 			counts[m.Color] += m.Size*m.Mult - (m.Size - m.Wilds)
 			counts[m.Color] += me.Stats[m.Color] / 6
@@ -227,20 +235,24 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 		}
 	}
 
+	card := RuleCard{}
+	if d.Card != nil {
+		card = *d.Card
+	}
 	for i := range me.Mana {
-		n := min(counts[i], me.MaxMana[i]-me.Mana[i])
+		n := min(pct(counts[i], card.ManaPct), me.MaxMana[i]-me.Mana[i])
 		me.Mana[i] += n
 		g.Mana[i] = n
 	}
-	g.Gold = counts[Gold] * (2 + me.Level/2) * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
-	g.XP = counts[Star] * (1 + me.Level/3) * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100
+	g.Gold = pct(counts[Gold] * (2 + me.Level/2) * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100, card.GoldPct)
+	g.XP = pct(counts[Star] * (1 + me.Level/3) * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100, card.XPPct)
 	me.Gold += g.Gold
 	me.XP += g.XP
 
 	if counts[Skull] > 0 {
 		perMatch := me.Level/2 + me.SkullDamage + me.Stats[Battle]/4 + me.power(Might) - foe.Armor - foe.Stats[Morale]/10
 		dmg := counts[Skull]*SKULL_DAMAGE + bigSkulls*BIG_SKULL_BONUS + perMatch*max(skullMatches, 1)
-		g.Damage = d.Damage(foe, max(1, dmg))
+		g.Damage = d.Damage(foe, max(1, pct(dmg, card.SkullPct)))
 	}
 	if g.Extra && !d.Over() {
 		d.Extra = true
@@ -354,14 +366,15 @@ func (d *Duel) logf(key, fallback string, a ...any) {
 type Reward struct {
 	Won			bool
 	Gold, XP	int
+	Residue		[NUM_MANA]int
 	Levels		int
 }
 
-// Settle banks a finished duel. Whatever was collected from the board is kept either way, as a
-// loss costs nothing but the time; only a win pays the bounty.
+// Settle banks a finished duel. Whatever was collected from the board, residue included, is kept
+// either way, as a loss costs nothing but the time; only a win pays the bounty.
 func (d *Duel) Settle(h *Hero) Reward {
 	me, foe := d.Sides[Player], d.Sides[Enemy]
-	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP }
+	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP, Residue: me.Residue }
 	if r.Won {
 		h.Wins++
 		r.Gold += foe.Level * 8 * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
@@ -370,6 +383,9 @@ func (d *Duel) Settle(h *Hero) Reward {
 		h.Losses++
 	}
 	h.Gold += r.Gold
+	for i, n := range r.Residue {
+		h.Residue[i] += n
+	}
 	r.Levels = h.AddXP(r.XP)
 	return r
 }

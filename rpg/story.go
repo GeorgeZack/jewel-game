@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// The story (world, foes, quests, characters and scenes) is data, loaded from YAML files in
+// The story (world, foes, quests, characters, scenes and rule cards) is data, loaded from YAML files in
 // assets/story. See docs/story.md for the format.
 
 // StoryInfo is story.yaml: the pieces of the story that aren't a list of things.
@@ -33,6 +33,7 @@ type Foe struct {
 	Image		string			`yaml:"image"`	// optional picture in assets/story/foes
 	HPPct		int				`yaml:"hp_pct"`
 	Spells		[]string		`yaml:"spells,flow"`
+	Card		string			`yaml:"card"`	// rule card the foe fights on, default the standard duel
 	RawStats	map[string]int	`yaml:"stats,flow"`
 	RawGrowth	map[string]int	`yaml:"growth,flow"`
 	Stats		[NUM_STATS]int	`yaml:"-"`
@@ -117,6 +118,7 @@ type Step struct {
 	Then		[]Step		`yaml:"then"`
 	Else		[]Step		`yaml:"else"`
 	Duel		*DuelStep	`yaml:"duel"`
+	Puzzle		string		`yaml:"puzzle"`	// play a puzzle board, then carry on whatever the result
 	End			bool		`yaml:"end"`	// the story is beaten
 
 	// changes to the hero
@@ -202,6 +204,9 @@ type storyData struct {
 	quests		[]Quest
 	characters	[]Character
 	scenes		map[string][]Step
+	cards		[]RuleCard
+	orrery		[]OrreryNode
+	puzzles		[]Puzzle
 }
 
 // LoadStory reads the story from dir and makes it current. A file that can't be read or parsed is
@@ -232,6 +237,8 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		{ "locations.yaml", &s.locations, true },
 		{ "quests.yaml", &s.quests, true },
 		{ "characters.yaml", &s.characters, false },
+		{ "cards.yaml", &s.cards, false },
+		{ "orrery.yaml", &s.orrery, false },
 	} {
 		if err := parse(f.name, f.out, f.required); err != nil {
 			return nil, err
@@ -258,6 +265,20 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		}
 	}
 
+	// every file in puzzles/ is one puzzle board
+	files, _ = fs.ReadDir(path.Join(dir, "puzzles"))
+	sort.Strings(files)
+	for _, name := range files {
+		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
+			continue
+		}
+		var pz Puzzle
+		if err := parse(path.Join("puzzles", name), &pz, true); err != nil {
+			return nil, err
+		}
+		s.puzzles = append(s.puzzles, pz)
+	}
+
 	for i := range s.foes {
 		f := &s.foes[i]
 		var bad []string
@@ -269,6 +290,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 			f.HPPct = 100
 		}
 	}
+	problems = append(problems, linkOrrery(s.orrery)...)
 	for i := range s.quests {
 		if s.quests[i].Count == 0 {
 			s.quests[i].Count = 1
@@ -278,7 +300,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 	if len(s.foes) == 0 || len(s.locations) == 0 {
 		return nil, fmt.Errorf("the story needs at least one foe and one location")
 	}
-	Story, Foes, Locations, Quests, Characters, Scenes = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes
+	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery, Puzzles = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery, s.puzzles
 	if LocationByID(Story.Start) == nil {
 		problems = append(problems, fmt.Sprintf("story.yaml: start location %q doesn't exist, using %q", Story.Start, Locations[0].ID))
 		Story.Start = Locations[0].ID
@@ -329,11 +351,17 @@ func Validate() []string {
 		bad("story.yaml: unknown final_quest %q", Story.FinalQuest)
 	}
 
+	p = append(p, checkCards()...)
+	p = append(p, checkOrrery()...)
+	p = append(p, checkPuzzles()...)
 	for _, f := range Foes {
 		for _, s := range f.Spells {
 			if SpellByID(s) == nil {
 				bad("foe %s: unknown spell %q", f.ID, s)
 			}
+		}
+		if f.Card != "" && RuleCardByID(f.Card) == nil {
+			bad("foe %s: unknown card %q", f.ID, f.Card)
 		}
 	}
 	for _, l := range Locations {
@@ -429,6 +457,9 @@ func checkSteps(where string, steps []Step) []string {
 			}
 			ref(d.Win)
 			ref(d.Lose)
+		}
+		if s.Puzzle != "" && PuzzleByID(s.Puzzle) == nil {
+			bad("step %d: unknown puzzle %q", i+1, s.Puzzle)
 		}
 		if s.Item != "" && ItemByID(s.Item) == nil {
 			bad("step %d: unknown item %q", i+1, s.Item)

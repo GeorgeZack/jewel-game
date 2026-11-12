@@ -1,0 +1,42 @@
+# The society vault: open the lock. Its three red tumbler pins (marked a, b and c) sit in the
+# bottom row between locked wards. A prototype board; see docs/story.md for the format.
+id: vault
+name: The Society Vault
+objective: Clear the three tumbler pins. Clean, in order from the left, leaves no trace.
+moves: 5
+refill: none
+board:
+  - "y  b  g  p  g  b"
+  - "b  g  p  b  y  g"
+  - "g  y  b  g  p  y"
+  - "r  p  y  r  r  p"
+  - "p  r  y* p  r  r"
+  - "g  r  b# r  b# r"
+marks:
+  a: [1, 5]
+  b: [3, 5]
+  c: [5, 5]
+goal: { cleared: [a, b, c] }
+tools:
+  - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave, thorns, firebolt] }
+  - { id: lockpick, name: Lockpick, kind: convert, from: p, to: r, uses: 1, rites: [overgrowth, transmute] }
+routes:
+  # the first route whose conditions hold when the pins are all cleared is the one taken
+  - id: force
+    name: Forced the lock
+    flag: vault_alarm
+    when: { blasted: true }
+    # the yellow bomb above the left ward blasts pins a and b; then match c
+    solution: ["swap 1,2 2,2", "swap 4,3 5,3"]
+  - id: lockpick
+    name: Picked the lock
+    flag: vault_picked
+    when: { tool: true }
+    # purple to red completes all three columns at once
+    solution: ["tool lockpick"]
+  - id: quiet
+    name: Slipped the lock
+    flag: vault_quiet
+    when: { order: [a, b, c] }
+    # one red column at a time, left to right
+    solution: ["swap 0,3 1,3", "swap 3,4 4,4", "swap 4,3 5,3"]

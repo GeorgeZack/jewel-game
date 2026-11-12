@@ -75,9 +75,45 @@ ui:
   accept: Accept
   not_yet: Not yet
   level_class: "Level %d %s"
-  points: "Points to spend: %d"
   stats: Stats
-  raise_stat: "+1  (cost %d)"
+  hero_orrery: "Stats grow on the Orrery, bought with residue from good matches."
+  open_orrery: Open the Orrery
+  orrery: The Orrery
+  puzzle_won: Solved!
+  puzzle_route: "%s\n\nRoute: %s, in %d moves."
+  puzzle_lost: Not this time
+  puzzle_lost_moves: You ran out of moves.
+  puzzle_lost_stuck: No moves are left on the board.
+  puzzle_lost_fail: That set off what it shouldn't have.
+  puzzle_lost_jammed: "It's done, but not in any way that works: the lock jammed."
+  puzzle_retry: Trying again costs nothing.
+  try_again: Try again
+  leave: Leave
+  puzzle_moves: "Moves left  %d / %d"
+  tools: Tools
+  tool_uses: "%s  (%d)"
+  no_tools: You know no rite that helps here.
+  pick_gem: Pick the gem to Force.
+  colorless: Colorless
+  node_cost: "%d"
+  residue: Residue
+  residue_pool: "%d"
+  orrery_help: "Matches of four, five, and cascades leave residue of their color. Nodes cost their region's color; colorless pays for any. Buy nodes next to ones you own."
+  node_region: "%s region"
+  node_stat: "%+d %s"
+  node_rite: "Rite: %s. %s"
+  node_rite_level: "Castable from level %d"
+  node_seat: "The %s's seat"
+  node_owned: Owned
+  node_buy: "Buy  (%d %s)"
+  node_far: Not next to a node you own
+  convert: Convert
+  convert_help: "%d of a color becomes %d colorless."
+  respec: Respec
+  respec_help: "Refund the residue your nodes took and go back to your seat."
+  respec_button: "Respec  (%d gold)"
+  residue_gain: " +%d %s"
+  residue_line: "\n\nResidue:%s."
   in_a_duel: In a duel
   duel_totals: "HP %d    Skull damage bonus %+d    Blocks %d    Gold +%d%%    XP +%d%%"
   equipped: Equipped
@@ -89,8 +125,9 @@ ui:
   delete_hero: Delete hero
   keep_playing: Keep playing
   spellbook: Spellbook
-  spellbook_help: "Equipped %d / %d. Click to swap. New spells come with levels."
+  spellbook_help: "Equipped %d / %d. Click to swap. Your class's first rites come with levels; the rest are on the Orrery."
   spell_locked: "%s  (level %d)"
+  spell_locked_orrery: "%s  (level %d, on the Orrery)"
   quests: Quests
   active: Active
   no_quests: "None. Towns marked ! have work for you."
@@ -100,7 +137,6 @@ ui:
   map_short: Map
   quests_short: Quests
   citadel_short: Citadel
-  hero_points_short: "Hero %d"
   hint: Hint
   flee_short: Flee
   need_stables: Build Stables in your citadel to buy mounts.
@@ -124,8 +160,8 @@ ui:
   defeated: Defeated
   defeated_body: "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost."
   level_up: "Level %d!"
-  level_up_body: "You have %d points to spend. Open Hero to raise your stats, and Spells to check for new ones."
-  level_up_short: "You have %d points to spend in Hero."
+  level_up_body: "Your HP rises. Open Spells to check for new rites, and the Orrery to spend residue."
+  level_up_short: "Your HP rises. Spend residue in the Orrery."
   quest_heading: Quest
   quest_start: Choose your class to begin. Your hero is saved automatically.
   hint_duel: "Hint  [H]"
@@ -147,7 +183,7 @@ ui:
   hex_sea: Sea
   hex_parchment: Parchment
   hero: Hero
-  hero_points: "Hero  (%d points)"
+  orrery_nav: Orrery
   spells: Spells
   quests_count: "Quests  (%d)"
   shop_towns: "Shop (in towns)"
@@ -202,6 +238,9 @@ log:
   no_scene: "Story: no scene %q"
   scene_loop: "Story: a scene ran 1000 steps without stopping, check it for a loop"
   save_read: "Could not read save, starting fresh: %v"
+  profile_read: "Could not read profile, starting fresh: %v"
+  no_puzzle: "Story: no puzzle %q"
+  puzzle_broken: "Puzzle %s is broken: %v"
   story_load: "Story did not load: %v"
   story_problem: "Story problem: %s"
   story_loaded: "Story loaded: %d locations, %d quests, %d scenes, %d problems"

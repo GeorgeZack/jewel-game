@@ -16,8 +16,9 @@ type group struct {
 }
 
 type Cleared struct {
-	Pos	Point
-	Gem	Gem
+	Pos		Point
+	Gem		Gem
+	Matched	bool	// part of a matched run, rather than blasted or forced
 }
 
 type Blast struct {
@@ -412,9 +413,11 @@ func (b *Board) Step() *StepResult {
 	}
 	var creations []creation
 	var matches []Match
+	matched := map[Point]bool{}
 	for _, g := range b.findGroups() {
 		for _, c := range g.cells {
 			add(c)
+			matched[c] = true
 		}
 		longest := 0
 		for _, r := range g.runs {
@@ -458,7 +461,7 @@ func (b *Board) Step() *StepResult {
 	b.Cleared += len(order)
 
 	for _, p := range order {
-		res.Cleared = append(res.Cleared, Cleared{ Pos: p, Gem: *b.At(p) })
+		res.Cleared = append(res.Cleared, Cleared{ Pos: p, Gem: *b.At(p), Matched: matched[p] })
 		b.set(p, nil)
 	}
 	for _, c := range creations {
@@ -523,7 +526,11 @@ func (b *Board) Collapse() map[int]Point {
 				b.set(p, gems[i])
 				continue
 			}
-			g := b.randomGem()
+			g := b.refillGem()
+			if g == nil {
+				b.set(p, nil)
+				continue
+			}
 			k := i - len(gems) + 1
 			spawns[g.ID] = Point{ top.X + up.X*k, top.Y + up.Y*k }
 			b.set(p, g)

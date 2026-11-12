@@ -1,0 +1,34 @@
+# The Orrery: the upgrade grid, bought with residue. See docs/story.md.
+# Costs are placeholders for the prototype. A node without a name shows its rite name.
+
+# Fire: the Warrior's seat
+- { id: fire_seat, name: Forge Seat, color: fire, ring: 3, angle: 0, seat: Warrior, links: [ember, anvil, hamstring_node, muster_node] }
+- { id: ember, name: Ember, color: fire, ring: 3, angle: 330, cost: 10, stats: { fire: 4, battle: 2 } }
+- { id: anvil, name: Anvil, color: fire, ring: 3, angle: 30, cost: 10, stats: { battle: 4 }, links: [brine] }
+- { id: hamstring_node, color: fire, ring: 2, angle: 342, cost: 16, rite: hamstring, links: [meteor_node] }
+- { id: muster_node, color: fire, ring: 2, angle: 18, cost: 22, rite: muster, links: [meteor_node, shield_bash_node] }
+- { id: meteor_node, color: fire, ring: 1, angle: 0, cost: 32, rite: meteor, links: [judgement_node] }
+
+# Water: the Knight's seat
+- { id: water_seat, name: Tide Seat, color: water, ring: 3, angle: 90, seat: Knight, links: [brine, well, shield_bash_node, hush_node] }
+- { id: brine, name: Brine, color: water, ring: 3, angle: 60, cost: 10, stats: { water: 4, morale: 2 } }
+- { id: well, name: Wellspring, color: water, ring: 3, angle: 120, cost: 10, stats: { morale: 4 }, links: [loam] }
+- { id: shield_bash_node, color: water, ring: 2, angle: 72, cost: 16, rite: shield_bash, links: [judgement_node] }
+- { id: hush_node, color: water, ring: 2, angle: 108, cost: 22, rite: hush, links: [judgement_node, entangle_node] }
+- { id: judgement_node, color: water, ring: 1, angle: 90, cost: 32, rite: judgement, links: [earthquake_node] }
+
+# Earth: the Druid's seat
+- { id: earth_seat, name: Grove Seat, color: earth, ring: 3, angle: 180, seat: Druid, links: [loam, root, entangle_node, whirlwind_node] }
+- { id: loam, name: Loam, color: earth, ring: 3, angle: 150, cost: 10, stats: { earth: 4, morale: 2 } }
+- { id: root, name: Deep Root, color: earth, ring: 3, angle: 210, cost: 10, stats: { earth: 2, battle: 2 }, links: [gust] }
+- { id: entangle_node, color: earth, ring: 2, angle: 162, cost: 16, rite: entangle, links: [earthquake_node] }
+- { id: whirlwind_node, color: earth, ring: 2, angle: 198, cost: 22, rite: whirlwind, links: [earthquake_node, chain_lightning_node] }
+- { id: earthquake_node, color: earth, ring: 1, angle: 180, cost: 32, rite: earthquake, links: [execute_node] }
+
+# Air: the Wizard's seat
+- { id: air_seat, name: Gale Seat, color: air, ring: 3, angle: 270, seat: Wizard, links: [gust, zephyr, chain_lightning_node, wild_seed_node] }
+- { id: gust, name: Gust, color: air, ring: 3, angle: 240, cost: 10, stats: { air: 4, cunning: 2 } }
+- { id: zephyr, name: Zephyr, color: air, ring: 3, angle: 300, cost: 10, stats: { cunning: 4 }, links: [ember] }
+- { id: chain_lightning_node, color: air, ring: 2, angle: 252, cost: 16, rite: chain_lightning, links: [execute_node] }
+- { id: wild_seed_node, color: air, ring: 2, angle: 288, cost: 22, rite: wild_seed, links: [execute_node, hamstring_node] }
+- { id: execute_node, color: air, ring: 1, angle: 270, cost: 32, rite: execute, links: [meteor_node] }
