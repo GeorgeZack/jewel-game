@@ -100,16 +100,25 @@ func (h *Hero) RecordKill(foe, loc string) (finished []*Quest) {
 	return finished
 }
 
-// SavePath names where the save is stored: a file on desktop, a localStorage key in a browser.
+// SavePath names where the run is stored: a file on desktop, a localStorage key in a browser.
 func SavePath() string {
 	return savePath()
 }
 
-// SAVE_VERSION is written into every save. Saves from before versioning have none and hold a
-// bare Hero; LoadSave migrates them.
+// ProfilePath names where the profile is stored, beside the run.
+func ProfilePath() string {
+	return profilePath()
+}
+
+// SAVE_VERSION is written into every run save. Saves from before versioning have none and hold a
+// bare Hero; LoadRun migrates them.
 const SAVE_VERSION = 1
 
-// Profile is what outlasts a run. Nothing fills it in yet.
+// PROFILE_VERSION is written into every profile save.
+const PROFILE_VERSION = 1
+
+// Profile is what outlasts a run. It is saved apart from the run, so deleting a hero keeps it.
+// Nothing fills it in yet.
 type Profile struct {
 	Grimoire	[]string		`json:",omitempty"`	// entry IDs bought
 	Endings		[]string		`json:",omitempty"`	// endings seen
@@ -117,74 +126,105 @@ type Profile struct {
 	TutorialDone	bool
 }
 
-// SaveFile is the whole save: the profile, and the run in progress (nil when there is none).
-type SaveFile struct {
+type runFile struct {
 	Version	int
-	Profile	Profile
-	Run		*Hero	`json:",omitempty"`
+	Run		*Hero
 }
 
-func (s *SaveFile) Write(path string) error {
-	s.Version = SAVE_VERSION
-	data, err := json.MarshalIndent(s, "", "\t")
+type profileFile struct {
+	Version	int
+	Profile	Profile
+}
+
+func writeJSON(path string, v any) error {
+	data, err := json.MarshalIndent(v, "", "\t")
 	if err != nil {
 		return err
 	}
 	return writeSave(path, data)
 }
 
-// LoadSave returns an empty save and no error when there is none yet. A save it can't read, or
-// one from a newer version of the game, is an error; the empty save it returns starts fresh.
-func LoadSave(path string) (*SaveFile, error) {
+// SaveRun writes the run in progress.
+func SaveRun(path string, h *Hero) error {
+	return writeJSON(path, runFile{ SAVE_VERSION, h })
+}
+
+// SaveProfile writes the profile.
+func SaveProfile(path string, p Profile) error {
+	return writeJSON(path, profileFile{ PROFILE_VERSION, p })
+}
+
+// readOrBackUp reads a save and parses it. A save that can't be parsed is copied to "<path>.bak",
+// since the next save overwrites it.
+func readOrBackUp(path string, parse func([]byte) error) error {
 	data, err := readSave(path)
 	if err != nil || data == nil {
-		return &SaveFile{ Version: SAVE_VERSION }, err
+		return err
 	}
-	s, err := parseSave(data)
-	if err != nil {
-		// the next save overwrites this one, so keep a copy of what couldn't be read
+	if err := parse(data); err != nil {
 		writeSave(path + ".bak", data)
-		return &SaveFile{ Version: SAVE_VERSION }, err
+		return err
 	}
-	return s, nil
+	return nil
 }
 
-func parseSave(data []byte) (*SaveFile, error) {
+func saveVersion(data []byte, newest int) (int, error) {
 	var head struct{ Version int }
 	if err := json.Unmarshal(data, &head); err != nil {
-		return nil, err
+		return 0, err
 	}
-	s := &SaveFile{}
-	switch {
-	case head.Version == 0:
-		// version 0 was a bare hero, with no profile
-		h := &Hero{}
-		if err := json.Unmarshal(data, h); err != nil {
-			return nil, err
-		}
-		s.Run = h
-	case head.Version > SAVE_VERSION:
-		return nil, fmt.Errorf("save is from a newer version (%d)", head.Version)
-	default:
-		if err := json.Unmarshal(data, s); err != nil {
-			return nil, err
-		}
+	if head.Version > newest {
+		return 0, fmt.Errorf("save is from a newer version (%d)", head.Version)
 	}
-	s.Version = SAVE_VERSION
-	if s.Run != nil {
-		s.Run.fixUp()
-	}
-	return s, nil
+	return head.Version, nil
 }
 
-// DeleteRun forgets the run in progress and keeps the profile.
-func DeleteRun(path string) error {
-	s, err := LoadSave(path)
+// LoadRun returns nil and no error when there is no run saved. A save it can't read, or one from
+// a newer version of the game, is an error, and the nil it returns starts fresh.
+func LoadRun(path string) (*Hero, error) {
+	var h *Hero
+	err := readOrBackUp(path, func(data []byte) error {
+		version, err := saveVersion(data, SAVE_VERSION)
+		if err != nil {
+			return err
+		}
+		if version == 0 {
+			// version 0 was a bare hero
+			h = &Hero{}
+			return json.Unmarshal(data, h)
+		}
+		var f runFile
+		err = json.Unmarshal(data, &f)
+		h = f.Run
+		return err
+	})
 	if err != nil {
-		return removeSave(path)
+		return nil, err
 	}
-	s.Run = nil
-	return s.Write(path)
+	if h != nil {
+		h.fixUp()
+	}
+	return h, nil
+}
+
+// LoadProfile returns an empty profile and no error when there is none yet.
+func LoadProfile(path string) (Profile, error) {
+	var f profileFile
+	err := readOrBackUp(path, func(data []byte) error {
+		if _, err := saveVersion(data, PROFILE_VERSION); err != nil {
+			return err
+		}
+		return json.Unmarshal(data, &f)
+	})
+	if err != nil {
+		return Profile{}, err
+	}
+	return f.Profile, nil
+}
+
+// DeleteRun forgets the run in progress. The profile is in its own save and is not touched.
+func DeleteRun(path string) error {
+	return removeSave(path)
 }
 
 // fixUp fills in what an older or hand-edited save left out.

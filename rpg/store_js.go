@@ -11,6 +11,10 @@ func savePath() string {
 	return "jewel-game/hero.json"
 }
 
+func profilePath() string {
+	return "jewel-game/profile.json"
+}
+
 func storage() (js.Value, error) {
 	s := js.Global().Get("localStorage")
 	if s.IsUndefined() || s.IsNull() {

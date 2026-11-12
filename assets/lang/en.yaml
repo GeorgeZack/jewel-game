@@ -202,6 +202,7 @@ log:
   no_scene: "Story: no scene %q"
   scene_loop: "Story: a scene ran 1000 steps without stopping, check it for a loop"
   save_read: "Could not read save, starting fresh: %v"
+  profile_read: "Could not read profile, starting fresh: %v"
   story_load: "Story did not load: %v"
   story_problem: "Story problem: %s"
   story_loaded: "Story loaded: %d locations, %d quests, %d scenes, %d problems"
