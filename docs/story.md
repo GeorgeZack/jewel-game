@@ -265,6 +265,12 @@ Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` o
 Loading the story replays each one and reports a problem if it no longer finishes the puzzle by
 its route, so `go test ./rpg` catches a board edit that breaks a route.
 
+To see every way a board can end, run the brute-force solver:
+`SOLVE=vault SOLVE_DEPTH=4 go test ./rpg -run TestSolvePuzzle -v`. It tries every swap and tool
+use up to that many moves and prints, for each route and each kind of loss (jammed, stuck), how
+many sequences end there and the shortest one. Use it to check that every route is reachable and
+none leaks into another; depth 4 on the vault takes about 15 seconds.
+
 In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is loaded, and
 `JEWEL_PUZZLE_ROUTE=quiet` as well plays that route's stored solution by itself.
 
