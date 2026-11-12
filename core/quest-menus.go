@@ -26,6 +26,8 @@ func (v *QuestView) DrawCenter(r rl.Rectangle) {
 		v.drawShop(r)
 	case ScreenCitadel:
 		v.drawCitadel(r)
+	case ScreenOrrery:
+		v.drawOrrery(r)
 	}
 }
 
@@ -316,27 +318,15 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	} else {
 		ui.Text(class, title.X, title.Y, 38, ui.Accent)
 	}
-	col.Line(text.Tf("ui.points", "Points to spend: %d", h.Points), 22, ui.TextColor)
+	col.Paragraph(text.T("ui.hero_orrery", "Stats grow on the Orrery, bought with residue from good matches."), 17, ui.DimText)
+	if ui.Button(col.Next(38), text.T("ui.open_orrery", "Open the Orrery"), false) {
+		v.Screen = ScreenOrrery
+	}
 	col.Heading(text.T("ui.stats", "Stats"))
-	cls := rpg.ClassByName(h.Class)
 	for stat := range rpg.NUM_STATS {
-		rowH := float32(54)
-		if narrow() {
-			// Keep the bonus out from under the +1 button.
-			rowH = 66
-		}
-		row := col.Next(rowH)
+		row := col.Next(50)
 		ui.Text(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), c.Stats[stat]), row.X, row.Y+2, 22, ui.TextColor)
-		if narrow() {
-			ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+42, 16, row.Width, ui.DimText)
-		} else {
-			ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, row.Width-140, ui.DimText)
-		}
-		btn := rl.Rectangle{X: row.X + row.Width - 130, Y: row.Y + 4, Width: 130, Height: 38}
-		if ui.ButtonIf(btn, text.Tf("ui.raise_stat", "+1  (cost %d)", cls.Cost[stat]), h.Points >= cls.Cost[stat]) {
-			h.RaiseStat(stat)
-			v.save()
-		}
+		ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, row.Width, ui.DimText)
 	}
 	col.Heading(text.T("ui.in_a_duel", "In a duel"))
 	col.Paragraph(text.Tf("ui.duel_totals", "HP %d    Skull damage bonus %+d    Blocks %d    Gold +%d%%    XP +%d%%",
@@ -379,11 +369,12 @@ func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 	defer end()
 	title := col.Next(44)
 	ui.Text(text.T("ui.spellbook", "Spellbook"), title.X, title.Y, 38, ui.Accent)
-	col.Paragraph(text.Tf("ui.spellbook_help", "Equipped %d / %d. Click to swap. New spells come with levels.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
+	col.Paragraph(text.Tf("ui.spellbook_help", "Equipped %d / %d. Click to swap. Your class's first rites come with levels; the rest are on the Orrery.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
 	col.Y += 8
 	for i := range rpg.Spells {
 		s := &rpg.Spells[i]
-		if s.Class != h.Class {
+		// rites you know, and your own class's still to come
+		if !h.Knows(s) && s.Class != h.Class {
 			continue
 		}
 		rowH := float32(64)
@@ -391,10 +382,13 @@ func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 			rowH = 84
 		}
 		row := col.Next(rowH)
-		known := s.Level <= h.Level
 		equipped := slices.Contains(h.Spells, s.ID)
-		if !known {
-			ui.Text(text.Tf("ui.spell_locked", "%s  (level %d)", s.Label(), s.Level), row.X+14, row.Y+18, 20, ui.DimText)
+		if !h.Knows(s) {
+			label := text.Tf("ui.spell_locked", "%s  (level %d)", s.Label(), s.Level)
+			if s.Level > rpg.KIT_LEVEL {
+				label = text.Tf("ui.spell_locked_orrery", "%s  (level %d, on the Orrery)", s.Label(), s.Level)
+			}
+			ui.TextFit(label, row.X+14, row.Y+18, 20, row.Width-28, ui.DimText)
 			continue
 		}
 		if card(row, equipped) {

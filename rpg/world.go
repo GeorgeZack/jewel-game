@@ -244,4 +244,16 @@ func (h *Hero) fixUp() {
 	if LocationByID(h.Location) == nil {
 		h.Location = Story.Start
 	}
+	if h.Nodes == nil {
+		// a run from before the Orrery: stats raised with level-up points go back to the
+		// class's, unspent points are dropped, and each level pays colorless residue instead
+		h.Stats = ClassByName(h.Class).Stats
+		h.Residue[Colorless] += (h.Level - 1) * OLD_RUN_RESIDUE
+		h.takeSeat()
+		h.Spells = slices.DeleteFunc(h.Spells, func(id string) bool {
+			s := SpellByID(id)
+			return s == nil || !h.Knows(s)
+		})
+		h.learnSpells()
+	}
 }

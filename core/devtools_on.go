@@ -28,7 +28,7 @@ func (v *QuestView) devTour() {
 		return
 	}
 	tourStep = n
-	screens := []Screen{ScreenWorld, ScreenHero, ScreenSpells, ScreenQuests, ScreenShop, ScreenCitadel}
+	screens := []Screen{ScreenWorld, ScreenHero, ScreenSpells, ScreenQuests, ScreenShop, ScreenCitadel, ScreenOrrery}
 	if n < len(screens) {
 		v.Screen = screens[n]
 	} else if n == len(screens) {
