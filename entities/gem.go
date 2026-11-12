@@ -49,6 +49,10 @@ type GemLook struct {
 	// PlayIdle shows this gem's strip once, starting at IdleAt seconds. Otherwise the still.
 	PlayIdle bool
 	IdleAt   float64
+	// Light is a pointer position in the same space as Center. When LightOn, the gem catches a
+	// moving specular highlight from it and shades on the far side, for a little 3D relief.
+	Light   rl.Vector2
+	LightOn bool
 }
 
 func (l GemLook) tint() rl.Color {
@@ -59,10 +63,24 @@ func (l GemLook) tint() rl.Color {
 	return l.Type.Color
 }
 
+// lightNear is how strongly the pointer light reaches this gem, 1 at its center and 0 far away.
+func (l GemLook) lightNear() float32 {
+	if !l.LightOn {
+		return 0
+	}
+	dx, dy := l.Light.X-l.Center.X, l.Light.Y-l.Center.Y
+	d := float32(math.Hypot(float64(dx), float64(dy)))
+	return max(0, min(1, 1-d/(l.Size*3.0)))
+}
+
 func DrawGem(l GemLook) {
 	col := l.tint()
 	pulse := float32(0.5 + 0.5*math.Sin(l.Time*5))
 	s := l.Size * l.Scale
+	near := l.lightNear()
+	if near > 0 {
+		col = lerpColor(col, rl.White, 0.45*near)
+	}
 	c := l.Center
 
 	rl.DrawCircleV(c, s*0.36, rl.Fade(col, 0.16*l.Alpha))
@@ -127,6 +145,22 @@ func DrawGem(l GemLook) {
 		}
 	case board.Wild:
 		drawBadge(text.Tf("ui.badge_wild", "x%d", max(l.Gem.Mult, 1)), c, s, rl.Fade(rl.White, l.Alpha))
+	}
+
+	if near > 0 {
+		lx, ly := l.Light.X-c.X, l.Light.Y-c.Y
+		d := float32(math.Hypot(float64(lx), float64(ly)))
+		nx, ny := float32(0), float32(0)
+		if d > 1 {
+			nx, ny = lx/d, ly/d
+		}
+		ha := l.Alpha * near
+		hx, hy := c.X+nx*s*0.15, c.Y+ny*s*0.15
+		// a soft highlight on the lit side, a shadow on the far side: a raised, lit gem
+		rl.DrawCircleV(rl.Vector2{X: hx, Y: hy}, s*0.22, rl.Fade(rl.White, 0.14*ha))
+		rl.DrawCircleV(rl.Vector2{X: hx, Y: hy}, s*0.12, rl.Fade(rl.White, 0.30*ha))
+		rl.DrawCircleV(rl.Vector2{X: hx, Y: hy}, s*0.055, rl.Fade(rl.White, 0.55*ha))
+		rl.DrawCircleV(rl.Vector2{X: c.X - nx*s*0.20, Y: c.Y - ny*s*0.20}, s*0.24, rl.Fade(rl.Black, 0.18*ha))
 	}
 
 	if l.Gem.Locked {

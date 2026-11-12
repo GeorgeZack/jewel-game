@@ -324,12 +324,14 @@ func (d *Duel) startTurn(c *Combatant) (stunned bool) {
 	return stunned
 }
 
-// ManaDrain empties both sides' mana when the board runs out of moves, as it reshuffles.
+// ManaDrain cuts both sides' mana in half when the board runs out of moves, as it reshuffles.
 func (d *Duel) ManaDrain() {
 	for _, c := range d.Sides {
-		c.Mana = [NUM_MANA]int{}
+		for i := range c.Mana {
+			c.Mana[i] /= 2
+		}
 	}
-	d.logf("log.mana_drain", "No moves left: all mana drains away!")
+	d.logf("log.mana_drain", "No moves left: half your mana drains away!")
 }
 
 // LogLine is one battle-log entry. It is formatted when drawn, so editing

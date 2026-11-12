@@ -95,6 +95,7 @@ type QuestView struct {
 
 	hex hexEditor
 
+	menuScroll  ui.Scroll
 	shopScroll ui.Scroll
 	leftScroll ui.Scroll
 	rightScroll ui.Scroll
@@ -803,11 +804,9 @@ func (v *QuestView) DrawRight(r rl.Rectangle) {
 	ui.Panel(r)
 	col := ui.Column{X: r.X + 18, Y: r.Y + 16, W: r.Width - 36, Gap: 6}
 	if narrow() {
-		view := rl.Rectangle{X: r.X + 4, Y: r.Y + 8, Width: r.Width - 8, Height: r.Height - 16}
+		col.X, col.W = r.X+38, r.Width-84
+		view := rl.Rectangle{X: r.X + 18, Y: r.Y + 30, Width: r.Width - 36, Height: r.Height - 46}
 		col.Y = v.rightScroll.Begin(view, uiScale())
-		if v.rightScroll.Overflows() {
-			col.W -= 14
-		}
 		defer func() { v.rightScroll.End(col.Y) }()
 	}
 	switch {

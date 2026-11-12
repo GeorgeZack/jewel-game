@@ -76,3 +76,24 @@ func TestIdleSkipsGemsWithoutAStrip(t *testing.T) {
 		t.Fatalf("prism played id=%d quiet=%v", tm.idleID, tm.quiet)
 	}
 }
+
+func TestIdlePrefersAPossibleMove(t *testing.T) {
+	tm := idleFixture()
+	tm.Board = board.NewBoard(board.Settings{}, 1)
+	tm.Tiles = map[int]*Tile{}
+	for y := 0; y < tm.Board.H(); y++ {
+		for x := 0; x < tm.Board.W(); x++ {
+			g := tm.Board.At(board.Point{X: x, Y: y})
+			tm.Tiles[g.ID] = &Tile{ID: g.ID, Gem: *g}
+		}
+	}
+	a, c, ok := tm.Board.FindMove()
+	if !ok {
+		t.Fatal("fresh board has no move")
+	}
+	wantA, wantC := tm.Board.At(a).ID, tm.Board.At(c).ID
+	tm.updateIdle(IDLE_QUIET)
+	if tm.idleID != wantA && tm.idleID != wantC {
+		t.Fatalf("idle animated gem %d, want one of the move's gems %d or %d", tm.idleID, wantA, wantC)
+	}
+}

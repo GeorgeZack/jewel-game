@@ -71,16 +71,19 @@ func (t *Tile) Draw(tm *TileManager, offset rl.Vector2) {
 		gt = types[t.Gem.Color%len(types)]
 	}
 	c := tm.CellCenter(t.Pos)
+	m := rl.GetMousePosition()
 	look := entities.GemLook{
-		Type:   gt,
-		Prism:  tm.DataManager.PrismTexture(),
-		Gem:    t.Gem,
-		Center: rl.Vector2{X: c.X + offset.X, Y: c.Y + offset.Y},
-		Size:   tm.CellSize,
-		Scale:  t.Scale,
-		Alpha:  t.Alpha,
-		Flash:  t.Flash,
-		Time:   tm.time,
+		Type:    gt,
+		Prism:   tm.DataManager.PrismTexture(),
+		Gem:     t.Gem,
+		Center:  rl.Vector2{X: c.X + offset.X, Y: c.Y + offset.Y},
+		Size:    tm.CellSize,
+		Scale:   t.Scale,
+		Alpha:   t.Alpha,
+		Flash:   t.Flash,
+		Time:    tm.time,
+		Light:   rl.Vector2{X: m.X - offset.X, Y: m.Y - offset.Y},
+		LightOn: true,
 	}
 	if tm.idleID == t.Gem.ID {
 		look.PlayIdle = true

@@ -19,7 +19,13 @@ func (c *GameController) drawTitle(w, h float32) {
 	t := &c.title
 	q := c.Quest
 	boxW := min(float32(720), w-24)
-	box := rl.Rectangle{X: (w - boxW) / 2, Y: max(12, h/2-270), Width: boxW, Height: min(540, h-24)}
+	boxH := min(float32(540), h-24)
+	boxY := max(float32(12), h/2-boxH/2)
+	if narrow() {
+		// A phone needs the whole height for the blurb and the buttons.
+		boxY, boxH = 12, h-24
+	}
+	box := rl.Rectangle{X: (w - boxW) / 2, Y: boxY, Width: boxW, Height: boxH}
 	ui.Panel(box)
 	col := ui.Column{X: box.X + 50, Y: box.Y + 36, W: box.Width - 100, Gap: 10}
 	if t.help {

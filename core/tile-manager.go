@@ -505,8 +505,8 @@ func (tm *TileManager) updateIdle(dt float64) {
 	}
 }
 
-// beginIdle starts one random gem that has a strip. It reports whether one started.
-func (tm *TileManager) beginIdle() bool {
+// idleIDs are the tiles whose type has an idle strip to play.
+func (tm *TileManager) idleIDs() []int {
 	var ids []int
 	for id, t := range tm.Tiles {
 		if t.Gem.Special == board.Prism || t.Gem.Special == board.Wild {
@@ -514,6 +514,33 @@ func (tm *TileManager) beginIdle() bool {
 		}
 		if _, _, ok := idleClip(tm.gemType(t.Gem), t.Gem.Special == board.Bomb); ok {
 			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// beginIdle starts one gem that has a strip, preferring a gem in a move the player can make so
+// the idle doubles as a hint once the board has been quiet. It reports whether one started.
+func (tm *TileManager) beginIdle() bool {
+	ids := tm.idleIDs()
+	if tm.Board != nil {
+		if a, c, ok := tm.Board.FindMove(); ok {
+			var moves []int
+			for _, p := range []board.Point{a, c} {
+				g := tm.Board.At(p)
+				if g == nil {
+					continue
+				}
+				for _, id := range ids {
+					if id == g.ID {
+						moves = append(moves, id)
+						break
+					}
+				}
+			}
+			if len(moves) > 0 {
+				ids = moves
+			}
 		}
 	}
 	if len(ids) == 0 {

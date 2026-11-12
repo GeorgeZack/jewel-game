@@ -182,7 +182,7 @@ log:
   extra_turn: "%s earns an extra turn!"
   casts: "%s casts %s."
   stunned: "%s is stunned!"
-  mana_drain: "No moves left: all mana drains away!"
+  mana_drain: "No moves left: half your mana drains away!"
   gem_read: "Error reading gem types file %s: %v"
   gem_parse: "Error unmarshaling gem types: %v"
   gem_few: "Need at least 3 gem types in %s, found %d; keeping the old ones"
