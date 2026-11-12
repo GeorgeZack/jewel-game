@@ -10,4 +10,5 @@ func (v *QuestView) devTour() {}
 func (c *GameController) devTitle() {}
 
 func devAutoplay() bool   { return false }
+func devCard() string     { return "" }
 func devHideEditor() bool { return false }

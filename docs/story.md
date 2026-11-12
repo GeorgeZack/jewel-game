@@ -39,6 +39,7 @@ assets/story/
   locations.yaml    the world map
   foes.yaml         monsters
   quests.yaml       quests
+  cards.yaml        rule cards: a different board or payouts for a duel (optional)
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
   backgrounds/      cutscene backdrops
@@ -140,6 +141,7 @@ blurb: >-                    # shown next to the class picker
   stats: { fire: 2, air: 2, battle: 2, cunning: 3 }   # at level 1; missing stats are 0
   growth: { fire: 2, water: 1, battle: 2 }            # added per 2 levels
   spells: [frenzy]
+  card: sideways             # optional: the rule card (cards.yaml) this foe fights on
 ```
 
 Stats are fire, water, air, earth, battle, cunning and morale, as on the Hero screen. The spell ids
@@ -148,6 +150,31 @@ bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath and dark
 
 `go test ./rpg` also runs a balance check that duels a geared hero against some of the bosses by
 their ids. If you rename or remove those foes, update the list in `TestDuelsFinishAndAreFair`.
+
+## cards.yaml
+
+A rule card changes the board a duel is played on, or what each cascade pays. A foe names the
+card it fights on with `card:`; a foe without one gets the standard duel, an 8x8 board falling
+down. Anything a card leaves out stays as in the standard duel, so an empty card changes nothing.
+
+```yaml
+- id: sideways
+  name: Sideways
+  width: 10                  # board size, 4 to 10 (default 8)
+  height: 8
+  gravity: left              # the way gems fall: down (default), left, up or right
+  chaos_gravity: true        # gravity turns at random after every move
+  overcharge: true           # bigger bombs, wider bolts
+  gold_pct: 50               # payout modifiers, in percent: 50 pays half again, -50 half
+  xp_pct: 0
+  mana_pct: -25              # mana from matches, before the pool caps it
+  skull_pct: 20              # skull damage
+```
+
+The modifiers apply to what the board pays during the duel, for both sides, not to the bounty for
+winning. A card that changes balance should get a simulated duel in `rpg/rpg_test.go`.
+
+In a dev build, `JEWEL_CARD=sideways ./start.sh` plays every duel on that card, to try one out.
 
 ## quests.yaml
 

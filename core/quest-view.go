@@ -106,7 +106,7 @@ type QuestView struct {
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
-	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(), dm)}
+	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(nil), dm)}
 	v.scenes.v = v
 	v.ReloadStory()
 	v.TM.Types = dm.DuelGemTypes
@@ -255,8 +255,14 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 	v.sideHit = [2]float32{}
 	v.blood = [2]float32{}
 	v.sideFlash = 0
-	v.TM.Reset(rpg.BoardSettings())
-	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(rpg.FoeByID(foeID), level), time.Now().UnixNano())
+	foe := rpg.FoeByID(foeID)
+	card := rpg.RuleCardByID(foe.Card)
+	if id := devCard(); id != "" {
+		card = rpg.RuleCardByID(id)
+	}
+	v.TM.Reset(rpg.BoardSettings(card))
+	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
+	d.Card = card
 	d.Board = v.TM.Board
 	d.OnHit = v.onHit
 	d.OnHeal = func(side, n int) {
