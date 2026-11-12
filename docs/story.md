@@ -176,6 +176,10 @@ winning. A card that changes balance should get a simulated duel in `rpg/rpg_tes
 
 In a dev build, `JEWEL_CARD=sideways ./start.sh` plays every duel on that card, to try one out.
 
+`go test ./rpg -run TestProgression -v` plays the main quests in order with the AI as the hero
+and prints each class's level and gold after every quest. It plays the quests in the order they
+are listed in quests.yaml.
+
 ## quests.yaml
 
 ```yaml
