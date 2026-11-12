@@ -154,15 +154,20 @@ func SaveProfile(path string, p Profile) error {
 	return writeJSON(path, profileFile{ PROFILE_VERSION, p })
 }
 
-// readOrBackUp reads a save and parses it. A save that can't be parsed is copied to "<path>.bak",
-// since the next save overwrites it.
+// backUp copies save data to "<path>.bak", for a save the next write would lose: one that
+// can't be parsed, or one about to be converted.
+func backUp(path string, data []byte) {
+	writeSave(path + ".bak", data)
+}
+
+// readOrBackUp reads a save and parses it. A save that can't be parsed is backed up.
 func readOrBackUp(path string, parse func([]byte) error) error {
 	data, err := readSave(path)
 	if err != nil || data == nil {
 		return err
 	}
 	if err := parse(data); err != nil {
-		writeSave(path + ".bak", data)
+		backUp(path, data)
 		return err
 	}
 	return nil
@@ -189,13 +194,21 @@ func LoadRun(path string) (*Hero, error) {
 			return err
 		}
 		if version == 0 {
-			// version 0 was a bare hero
+			// version 0 was a bare hero, from before the Orrery too: keep the original
 			h = &Hero{}
-			return json.Unmarshal(data, h)
+			if err := json.Unmarshal(data, h); err != nil {
+				return err
+			}
+			backUp(path, data)
+			return nil
 		}
 		var f runFile
 		err = json.Unmarshal(data, &f)
 		h = f.Run
+		if err == nil && h != nil && h.Nodes == nil {
+			// a run from before the Orrery: fixUp converts it, so keep the original
+			backUp(path, data)
+		}
 		return err
 	})
 	if err != nil {

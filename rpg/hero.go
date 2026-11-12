@@ -100,6 +100,7 @@ type Hero struct {
 	Stats		[NUM_STATS]int	// the class's; the Orrery adds to them
 	Nodes		[]string		// Orrery nodes owned, the seat first. Nil in a run from before the Orrery
 	Residue		[NUM_RESIDUE]int
+	Spent		[NUM_RESIDUE]int	// residue paid for the nodes owned, from each pool, for a respec
 	Gear		map[string]string	// slot → item ID
 	Owned		[]string
 	Spells		[]string		// equipped, at most MAX_SPELLS
