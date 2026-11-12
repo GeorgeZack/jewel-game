@@ -326,58 +326,67 @@ func TestShopAndMountsNeedStables(t *testing.T) {
 }
 
 func TestSaveRoundTrip(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "sub", "hero.json")
-	if s, err := LoadSave(path); s.Run != nil || err != nil {
-		t.Fatalf("no save yet: %v %v", s.Run, err)
+	dir := filepath.Join(t.TempDir(), "sub")
+	path, ppath := filepath.Join(dir, "hero.json"), filepath.Join(dir, "profile.json")
+	if h, err := LoadRun(path); h != nil || err != nil {
+		t.Fatalf("no save yet: %v %v", h, err)
+	}
+	if p, err := LoadProfile(ppath); p.Returns != 0 || err != nil {
+		t.Fatalf("no profile yet: %v %v", p, err)
 	}
 	h := NewHero("Druid")
 	h.Gold = 123
 	h.Active["goblins"] = 1
-	s := SaveFile{ Profile: Profile{ Returns: 2, Endings: []string{ "a" } }, Run: h }
-	if err := s.Write(path); err != nil {
+	if err := SaveRun(path, h); err != nil {
 		t.Fatal(err)
 	}
-	got, err := LoadSave(path)
-	if err != nil || got.Version != SAVE_VERSION || got.Run.Gold != 123 || got.Run.Active["goblins"] != 1 || got.Run.Class != "Druid" || got.Profile.Returns != 2 {
+	if err := SaveProfile(ppath, Profile{ Returns: 2, Endings: []string{ "a" } }); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadRun(path)
+	if err != nil || got.Gold != 123 || got.Active["goblins"] != 1 || got.Class != "Druid" {
 		t.Fatalf("got %+v %v", got, err)
 	}
 	if err := DeleteRun(path); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := LoadSave(path); err != nil || got.Run != nil || got.Profile.Returns != 2 {
-		t.Fatalf("deleting the run should keep the profile: %+v %v", got, err)
+	if got, err := LoadRun(path); err != nil || got != nil {
+		t.Fatalf("run not deleted: %+v %v", got, err)
+	}
+	if p, err := LoadProfile(ppath); err != nil || p.Returns != 2 {
+		t.Fatalf("deleting the run should keep the profile: %+v %v", p, err)
 	}
 }
 
-// A save from before versioning is a bare hero; it loads as the run, with an empty profile.
+// A save from before versioning is a bare hero; it loads as the run.
 func TestOldSaveMigrates(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "hero.json")
-	old := `{"Class":"Wizard","Level":4,"XP":10,"Gold":321,"Points":0,"Stats":[5,5,4,1,1,3,2],` +
+	old := `{"Class":"Wizard","Level":4,"XP":10,"Gold":321,"Points":5,"Stats":[9,5,4,1,1,3,2],` +
 		`"Gear":null,"Owned":null,"Spells":["fireball"],"Buildings":null,"Location":"nowhere",` +
 		`"Active":null,"Done":["goblins"],"Wins":3,"Losses":1,"Finished":false}`
 	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, err := LoadSave(path)
-	if err != nil || s.Run == nil || s.Run.Gold != 321 || s.Run.Level != 4 || s.Run.Done[0] != "goblins" {
-		t.Fatalf("old save: %+v %v", s, err)
+	h, err := LoadRun(path)
+	if err != nil || h == nil || h.Gold != 321 || h.Level != 4 || h.Done[0] != "goblins" {
+		t.Fatalf("old save: %+v %v", h, err)
 	}
-	if s.Run.Location != Story.Start || s.Run.Gear == nil || s.Run.Active == nil || s.Profile.Returns != 0 {
-		t.Fatalf("old save not fixed up: %+v", s.Run)
+	if h.Location != Story.Start || h.Gear == nil || h.Active == nil {
+		t.Fatalf("old save not fixed up: %+v", h)
 	}
-	if err := s.Write(path); err != nil {
+	if err := SaveRun(path, h); err != nil {
 		t.Fatal(err)
 	}
-	if s, err := LoadSave(path); err != nil || s.Version != SAVE_VERSION || s.Run.Gold != 321 {
-		t.Fatalf("migrated save didn't round trip: %+v %v", s, err)
+	if h, err := LoadRun(path); err != nil || h.Gold != 321 {
+		t.Fatalf("migrated save didn't round trip: %+v %v", h, err)
 	}
 
 	for name, data := range map[string]string{ "broken": "{not json", "newer": `{"Version":99}` } {
 		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if s, err := LoadSave(path); err == nil || s == nil || s.Run != nil {
-			t.Errorf("%s save should be an error and start fresh: %+v %v", name, s, err)
+		if h, err := LoadRun(path); err == nil || h != nil {
+			t.Errorf("%s save should be an error and start fresh: %+v %v", name, h, err)
 		}
 		if kept, _ := os.ReadFile(path + ".bak"); string(kept) != data {
 			t.Errorf("%s save wasn't kept as a backup: %q", name, kept)

@@ -17,6 +17,10 @@ func savePath() string {
 	return filepath.Join(dir, "jewel-game", "hero.json")
 }
 
+func profilePath() string {
+	return filepath.Join(filepath.Dir(savePath()), "profile.json")
+}
+
 func writeSave(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

@@ -118,11 +118,13 @@ func NewQuestView(dm *DataManager) *QuestView {
 			v.Duel.ManaDrain()
 		}
 	}
-	save, err := rpg.LoadSave(rpg.SavePath())
-	if err != nil {
+	var err error
+	if v.Hero, err = rpg.LoadRun(rpg.SavePath()); err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_read", "Could not read save, starting fresh: %v", err))
 	}
-	v.Hero, v.Profile = save.Run, save.Profile
+	if v.Profile, err = rpg.LoadProfile(rpg.ProfilePath()); err != nil {
+		ui.AddMessage("%s", text.Tf("log.profile_read", "Could not read profile, starting fresh: %v", err))
+	}
 	if v.Hero != nil {
 		v.Screen = ScreenWorld
 	}
@@ -172,8 +174,11 @@ func (v *QuestView) save() {
 	if v.Hero == nil {
 		return
 	}
-	save := rpg.SaveFile{Profile: v.Profile, Run: v.Hero}
-	if err := save.Write(rpg.SavePath()); err != nil {
+	err := rpg.SaveRun(rpg.SavePath(), v.Hero)
+	if err == nil {
+		err = rpg.SaveProfile(rpg.ProfilePath(), v.Profile)
+	}
+	if err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_write", "Could not save: %v", err))
 		v.saveErr = true
 		return
