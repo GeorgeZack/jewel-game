@@ -360,7 +360,7 @@ func (v *QuestView) confirmNewHero() {
 		Body:  text.T("ui.start_over_body", "This deletes your current hero for good."),
 		Buttons: []ModalButton{
 			{text.T("ui.delete_hero", "Delete hero"), func() {
-				if err := rpg.DeleteSave(rpg.SavePath()); err != nil {
+				if err := rpg.DeleteRun(rpg.SavePath()); err != nil {
 					ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
 				}
 				v.Hero = nil

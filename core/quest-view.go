@@ -64,6 +64,7 @@ type QuestView struct {
 	DM          *DataManager
 	TM          *TileManager
 	Hero        *rpg.Hero
+	Profile     rpg.Profile
 	Screen      Screen
 	Duel        *rpg.Duel
 	modals      []Modal
@@ -117,12 +118,12 @@ func NewQuestView(dm *DataManager) *QuestView {
 			v.Duel.ManaDrain()
 		}
 	}
-	hero, err := rpg.LoadHero(rpg.SavePath())
+	save, err := rpg.LoadSave(rpg.SavePath())
 	if err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_read", "Could not read save, starting fresh: %v", err))
 	}
-	v.Hero = hero
-	if hero != nil {
+	v.Hero, v.Profile = save.Run, save.Profile
+	if v.Hero != nil {
 		v.Screen = ScreenWorld
 	}
 	return v
@@ -171,7 +172,8 @@ func (v *QuestView) save() {
 	if v.Hero == nil {
 		return
 	}
-	if err := v.Hero.Save(rpg.SavePath()); err != nil {
+	save := rpg.SaveFile{Profile: v.Profile, Run: v.Hero}
+	if err := save.Write(rpg.SavePath()); err != nil {
 		ui.AddMessage("%s", text.Tf("log.save_write", "Could not save: %v", err))
 		v.saveErr = true
 		return

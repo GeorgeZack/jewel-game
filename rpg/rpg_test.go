@@ -326,18 +326,58 @@ func TestShopAndMountsNeedStables(t *testing.T) {
 
 func TestSaveRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "sub", "hero.json")
-	if h, err := LoadHero(path); h != nil || err != nil {
-		t.Fatalf("no save yet: %v %v", h, err)
+	if s, err := LoadSave(path); s.Run != nil || err != nil {
+		t.Fatalf("no save yet: %v %v", s.Run, err)
 	}
 	h := NewHero("Druid")
 	h.Gold = 123
 	h.Active["goblins"] = 1
-	if err := h.Save(path); err != nil {
+	s := SaveFile{ Profile: Profile{ Returns: 2, Endings: []string{ "a" } }, Run: h }
+	if err := s.Write(path); err != nil {
 		t.Fatal(err)
 	}
-	got, err := LoadHero(path)
-	if err != nil || got.Gold != 123 || got.Active["goblins"] != 1 || got.Class != "Druid" {
+	got, err := LoadSave(path)
+	if err != nil || got.Version != SAVE_VERSION || got.Run.Gold != 123 || got.Run.Active["goblins"] != 1 || got.Run.Class != "Druid" || got.Profile.Returns != 2 {
 		t.Fatalf("got %+v %v", got, err)
+	}
+	if err := DeleteRun(path); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := LoadSave(path); err != nil || got.Run != nil || got.Profile.Returns != 2 {
+		t.Fatalf("deleting the run should keep the profile: %+v %v", got, err)
+	}
+}
+
+// A save from before versioning is a bare hero; it loads as the run, with an empty profile.
+func TestOldSaveMigrates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "hero.json")
+	old := `{"Class":"Wizard","Level":4,"XP":10,"Gold":321,"Points":0,"Stats":[5,5,4,1,1,3,2],` +
+		`"Gear":null,"Owned":null,"Spells":["fireball"],"Buildings":null,"Location":"nowhere",` +
+		`"Active":null,"Done":["goblins"],"Wins":3,"Losses":1,"Finished":false}`
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := LoadSave(path)
+	if err != nil || s.Run == nil || s.Run.Gold != 321 || s.Run.Level != 4 || s.Run.Done[0] != "goblins" {
+		t.Fatalf("old save: %+v %v", s, err)
+	}
+	if s.Run.Location != Story.Start || s.Run.Gear == nil || s.Run.Active == nil || s.Profile.Returns != 0 {
+		t.Fatalf("old save not fixed up: %+v", s.Run)
+	}
+	if err := s.Write(path); err != nil {
+		t.Fatal(err)
+	}
+	if s, err := LoadSave(path); err != nil || s.Version != SAVE_VERSION || s.Run.Gold != 321 {
+		t.Fatalf("migrated save didn't round trip: %+v %v", s, err)
+	}
+
+	for name, data := range map[string]string{ "broken": "{not json", "newer": `{"Version":99}` } {
+		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if s, err := LoadSave(path); err == nil || s == nil || s.Run != nil {
+			t.Errorf("%s save should be an error and start fresh: %+v %v", name, s, err)
+		}
 	}
 }
 
