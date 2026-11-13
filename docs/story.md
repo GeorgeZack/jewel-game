@@ -10,7 +10,8 @@ The Quest mode's world, monsters, quests, dialogue and cutscenes are plain text 
   page when you save. `./start.sh --web` builds once and serves that.
 - **Checking:** `go test ./rpg` loads the story and fails on any broken reference, such as a quest
   naming a foe that doesn't exist or a scene that `goto`s a misspelled scene. It also checks that
-  the main quests can be finished in order.
+  the main quests can be finished in order, playing their done scenes, once for each allegiance
+  (see [Branches](#branches-and-the-completion-check)).
 
 ## Language
 
@@ -42,6 +43,8 @@ assets/story/
   cards.yaml        rule cards: a different board or payouts for a duel (optional)
   orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
   facilities.yaml   the academy's facilities, built and upgraded with gold (optional)
+  societies.yaml    the societies: who holds sites, standing, the lock (optional)
+  companions.yaml   named companions who come into fights (optional)
   puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
@@ -98,7 +101,16 @@ opening: opening             # scene played when a hero is created
 final_quest: king            # finishing this marks the story beaten
 blurb: >-                    # shown next to the class picker
   Something in the north has every creature in the land running south.
+acts:                        # optional: title cards for act 1, 2, 3, shown by an act step
+  - { title: Act I, subtitle: The road north }
+  - { title: Act II, subtitle: The academy }
+endings:                     # optional: the endings an ending step can record
+  - { id: crown, name: The Crown's Engine }
 ```
+
+Every run starts in act 1. An `act:` step moves the story into another act and shows that act's
+title card (or "Act N" when `acts` has none for it). Ending ids are stored on the profile, which
+outlasts runs, so don't rename them.
 
 ## characters.yaml
 
@@ -126,12 +138,32 @@ blurb: >-                    # shown next to the class picker
   desc: A toll town grown fat on the river trade.
   roads: [mossgate, barrow]  # roads go both ways: list this one in theirs too
   foes: [bandit, rat]        # roaming foes; also who ambushes travellers on the way in
+  shop: [rusty_blade, leather]   # optional: what the shop sells; without it, every item
   enter_scene: stonebridge_arrival   # optional: plays the first time the hero arrives
   people:                    # optional: "Talk to ..." buttons
     - name: Tollkeeper Brann
       scene: brann_talk
       requires: [quest:toll] # optional: only there once these hold
+  variants:                  # optional: the site changed by who holds it, or by anything else
+    - holder: crown          # while the Crown holds it (a society id, or academy)...
+      if: [hostile:crown]    # ...and these hold: a hostile Crown posts guards
+      foes: [crown_guard]
+      desc: Crown guards bar the gate.
+    - holder: crown          # the Crown's ordinary rule
+      desc: The Crown's flag flies over the market.
+      shop: [steel_sword]
 ```
+
+### Holders and variants
+
+A site's **holder** is the society that holds it: an id from `societies.yaml`, or `academy` for
+the player's own (completed chapters make the academy the holder). Scenes change it with
+`set_holder`. A location's `variants` are checked in order, and the first that holds replaces the
+`desc`, `foes` and `shop` it names; what it leaves out stays as the location has it. A variant
+holds when its `holder` holds the site (if it names one) and its `if` conditions hold (if any).
+This one mechanism covers both "shared maps, reskinned" (a variant per holder) and hostile
+societies after the lock (a variant with `if: [hostile:crown]`, or any flag). Items the hero
+already owns always show in the shop, so they can still be equipped.
 
 ## foes.yaml
 
@@ -180,6 +212,10 @@ the duel opens with both in a box, and shows them beside the foe while it lasts.
   mana_pct: -25              # mana from matches, before the pool caps it
   skull_pct: 20              # skull damage
 ```
+
+A quest (`card:` in quests.yaml) and a scene's duel step (`duel: { foe: x, card: y }`) can name a
+card too. The first that names one wins: the duel step's, then the quest's (for the quest's own
+fights), then the foe's, then the standard duel. Loading reports an unknown card id in any of them.
 
 The modifiers apply to what the board pays during the duel, for both sides, not to the bounty for
 winning. `TestCardsStayFair` in `rpg/perks_test.go` plays every card, with and without Aether,
@@ -319,6 +355,53 @@ at that site (recalling one loses its progress), which sets that site's holder t
 the site's `residue` color (locations.yaml);
 each later win at a held site adds dues to the ledger. Nothing moves while the game is closed.
 
+## societies.yaml
+
+Societies are the factions that hold sites and that the hero has standing with; the hero joins
+one of them at the lock. `academy` is the player's own and is not listed here. A run saved before
+societies and acts loads with no standing, no companions, in act 1.
+
+```yaml
+- id: crown
+  name: The Royal Society for the Study of Alchemy and Natural Sciences
+  desc: The Crown's society.
+  allegiance: true           # can be joined at the lock (join_society); each is a branch
+  hostile: [allegiance:free] # optional: hostile to the hero while these hold
+```
+
+**Standing** is a number per society on the run, starting at 0. A `standing:` step adds to it
+(negative takes away), a puzzle route can too, and conditions compare it
+(`standing:crown>=3`, `standing:crown<free`). It is never spent, and it resets with the run.
+The hero screen lists it, with the allegiance and any hostile society.
+
+**The lock** is a `join_society:` step. It is permanent: a later one is ignored. Companions who
+lean to another society leave at once, and won't join afterwards. `hostile` conditions can't
+themselves test `hostile:`.
+
+## companions.yaml
+
+Companions are named characters who travel with the hero. At most one comes into a fight, picked
+on the hero screen, and brings one thing: a rite or a passive. They are not a second combatant.
+
+```yaml
+- id: wren
+  name: Wren
+  desc: A Crown surveyor.
+  society: crown             # the society they lean to; optional
+  rite: shield_bash          # a hero spell, castable in fights they come to...
+  cooldown: 9                # ...on this cooldown, in turns (default the spell's own)
+- id: moss
+  name: Moss
+  society: free
+  passive: { kind: mend, color: earth, size: 4, amount: 2 }   # ...or a perk, as on the Orrery
+```
+
+A companion has exactly one of `rite` and `passive`. A passive is any [perk](#orreryyaml) with
+its `color` named. If the hero already has the rite equipped, the companion's copy replaces it
+for the fight. **Favour** is a number per companion on the run: `favour:` steps change it, and
+`favour:wren>=3` tests it. `companion_joins` and `companion_leaves` steps change the company;
+scenes decide when someone joins (gate them on favour or standing with `if`).
+
 ## puzzles/*.yaml
 
 A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
@@ -351,6 +434,7 @@ routes:                      # the first route whose conditions hold when the go
   - id: force
     name: Forced the lock
     flag: vault_alarm        # set on the hero
+    standing: { crown: -1 }  # optional: standing gained or lost by taking this route
     when: { blasted: true }
     solution: ["swap 1,2 2,2", "swap 4,3 5,3"]
 ```
@@ -398,6 +482,7 @@ In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is 
   opens: [stonebridge]       # locations this opens
   intro: Goblins burned the Harlan farm last night...   # the offer text
   outro: The goblins weren't raiding. They were running.  # shown when it's done
+  card: war_drums            # optional: the rule card its fights are on
   offer_scene: goblins_offer # optional: play this instead of the plain offer box
   done_scene: goblins_done   # optional: play this after the "Quest complete" box
 ```
@@ -478,8 +563,14 @@ when a scene ends.
 | `accept_quest: id` | start a quest |
 | `unlock: id` | open a location on the map |
 | `travel: id` | move the hero there |
-| `set_holder: { at: id, holder: crown }` | say who holds a location; `holder: academy` is the player's own, and an empty holder means no one. Sites the academy holds pay dues |
+| `set_holder: { at: id, holder: crown }` | say who holds a location: a society id, `academy` for the player's own, or empty for no one. Sites the academy holds pay dues |
+| `standing: { crown: 2, free: -1 }` | change standing with societies |
+| `join_society: crown` | the lock: take an allegiance for the rest of the run; companions of other societies leave |
+| `act: 2` | move into act 2 and show its title card (see story.yaml) |
+| `favour: { wren: 1 }` | change a companion's favour |
+| `companion_joins: wren` / `companion_leaves: wren` | change the hero's company |
 | `end: true` | mark the story beaten |
+| `ending: crown` | mark the story beaten this way, and record the ending on the profile |
 
 ### Flow
 
@@ -490,7 +581,13 @@ when a scene ends.
 | `if: [...]` with `then:` / `else:` | branch on conditions |
 | `if: [...]` alone | the rest of the step only happens when the conditions hold |
 | `duel: { foe: id, level: 3, win: scene, lose: scene }` | fight, then continue |
+| `duel: { foe: id, card: war_drums }` | fight on that rule card, whatever the foe's or the quest's |
 | `puzzle: vault` | play a puzzle board (puzzles/), then continue whatever the result; check its route flags with `if` |
+| `puzzle: { id: vault, routes: { force: alarm, quiet: slipped }, lose: left }` | the same, but a route listed goes to its scene, and leaving the board unsolved goes to `lose` |
+
+A puzzle step's routes must be routes of that puzzle, and their scenes must exist. A route it
+doesn't list, and a loss without `lose`, carry on with the next step, so the short form is the
+default for every route.
 
 ```yaml
 bessa_talk:
@@ -526,6 +623,27 @@ Used by `requires`, `if` and choices. A list means all of them must hold, and a 
 | `level:5` | the hero is level 5 or higher |
 | `class:knight` | the hero's class |
 | `at:location` | the hero is there |
+| `act:2` | the story is in act 2 or later; `act:<3`, `act:=2` compare other ways |
+| `standing:crown>=3` | standing with a society compared with a number: `>=`, `<=`, `>`, `<` or `=`; or with another society's, `standing:crown>free` |
+| `holder:site=crown` | the society holds the site (`holder:site=academy` the player's own, `holder:site=` no one) |
+| `hostile:crown` | the society is hostile to the hero now (its `hostile` conditions hold) |
+| `allegiance:crown` | the hero joined that society at the lock; `allegiance:none` before the lock |
+| `companion:wren` | the companion is in the hero's company |
+| `favour:wren>=2` | a companion's favour compared with a number |
+| `returns:1` | the profile has started over through the return at least once; `returns:=0` on the first run |
+| `ending:crown` | the profile has seen that ending, in this run or an earlier one |
+
+`level:`, `act:` and `returns:` take a comparison in front of the number; without one they mean
+"at least". Ids in conditions are checked when the story loads.
+
+### Branches and the completion check
+
+`go test ./rpg` plays the main quests in the order quests.yaml lists them, as a player would:
+each done scene runs (choices take the first one offered, duels are won, a puzzle takes its first
+route), and the story must end finished. With allegiances in societies.yaml it plays once per
+allegiance, picking the choice that joins it at the lock, and passes over main quests that
+require `allegiance:` of another society: those are the other branch's. `rpg/testdata/branching/`
+is a small campaign with a branch that uses every part of this page; it is the example to copy.
 
 ## Art
 
@@ -554,11 +672,13 @@ These parts aren't story files yet, and changing them means editing Go:
 - items and the shop: `rpg/hero.go`
 - henchmen, chapters and dues: `rpg/academy.go`
 - duel rules and balance numbers: `rpg/duel.go`
-- the scene player: `core/scene-view.go`; the loader and the checks: `rpg/story.go`
+- the scene player: `core/scene-view.go`; the loader and the checks: `rpg/story.go`; what each
+  step changes on the hero: `Hero.Apply` in `rpg/society.go`
 
 ### Adding a new kind of step
 
 1. Add a field to `Step` in `rpg/story.go`, with its YAML name in the tag.
 2. If it refers to something by id, check it in `checkSteps` so mistakes are caught.
-3. Make it do its thing in `SceneRunner.exec` in `core/scene-view.go`.
+3. Make it do its thing: a change to the hero in `Hero.Apply` (`rpg/society.go`), presentation or
+   flow in `SceneRunner.exec` (`core/scene-view.go`).
 4. Document it here.
