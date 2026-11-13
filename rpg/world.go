@@ -112,8 +112,9 @@ func ProfilePath() string {
 
 // SAVE_VERSION is written into every run save. Saves from before versioning have none and hold a
 // bare Hero; LoadRun migrates them. Version 1 is from before the academy, with buildings and mounts.
-// Version 2 is from the 24-node prototype Orrery.
-const SAVE_VERSION = 3
+// Version 2 is from the 24-node prototype Orrery. Version 3 is from before Aether, with four mana
+// colors in every stat and residue array.
+const SAVE_VERSION = 4
 
 // PROFILE_VERSION is written into every profile save.
 const PROFILE_VERSION = 1
@@ -190,7 +191,7 @@ func saveVersion(data []byte, newest int) (int, error) {
 func LoadRun(path string) (*Hero, error) {
 	var h *Hero
 	var buildings []string
-	old, smallOrrery := false, false
+	old, smallOrrery, fourMana := false, false, false
 	err := readOrBackUp(path, func(data []byte) error {
 		version, err := saveVersion(data, SAVE_VERSION)
 		if err != nil {
@@ -215,7 +216,7 @@ func LoadRun(path string) (*Hero, error) {
 		if version < SAVE_VERSION {
 			// an older run: it is converted below, so keep the original
 			backUp(path, data)
-			smallOrrery = true
+			smallOrrery, fourMana = version < 3, true
 		}
 		if version < 2 {
 			var b struct{ Buildings []string }
@@ -228,6 +229,9 @@ func LoadRun(path string) (*Hero, error) {
 		return nil, err
 	}
 	if h != nil {
+		if fourMana {
+			h.fromFourMana()
+		}
 		h.fixUp()
 		if old {
 			h.fromBeforeAcademy(buildings)
@@ -257,6 +261,18 @@ func LoadProfile(path string) (Profile, error) {
 // DeleteRun forgets the run in progress. The profile is in its own save and is not touched.
 func DeleteRun(path string) error {
 	return removeSave(path)
+}
+
+// fromFourMana converts a run saved before Aether: its arrays were read into the front of the
+// longer ones, so everything from Aether's index on moves up one, and Aether starts at zero.
+func (h *Hero) fromFourMana() {
+	widen := func(a []int) {
+		copy(a[Aether+1:], a[Aether:len(a)-1])
+		a[Aether] = 0
+	}
+	widen(h.Stats[:])
+	widen(h.Residue[:])
+	widen(h.Spent[:])
 }
 
 // fixUp fills in what an older or hand-edited save left out.

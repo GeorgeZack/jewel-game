@@ -57,6 +57,7 @@
   intro: The Redtusk clans mass on the road, driven from their mountains. Captain Ise will hold the wall if you break their Warchief.
   outro: The Warchief laughs through his blood. 'We were not attacking. We were leaving. You should too.'
 - id: archive
+  done_scene: archive_done
   title: The Lake Archive
   main: true
   giver: silverlake

@@ -40,6 +40,13 @@ goblins_done:
   - set_flag: academy_founded
   - text: The academy is yours. Open it from the menu.
 
+# Brings Aether into the run (a placeholder until its story is written). Plays after "The Lake
+# Archive" (quests.yaml: done_scene), so the last third of the slice is fought with it.
+archive_done:
+  - text: The last page of the monks' copy is not written in ink. It is a colour, and it was not there a moment ago.
+  - set_flag: aether_unlocked
+  - text: "Aether, the forbidden colour, now falls on every board, and boards grow to hold it. The Orrery's core has opened."
+
 stonebridge_arrival:
   - who: tollkeeper
     text: Toll's two silver. Unless you're the one who cleared the woods? Then it's free, and welcome.

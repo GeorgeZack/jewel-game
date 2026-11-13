@@ -4,21 +4,47 @@ package rpg
 
 import "slices"
 
-// Gem colors on a duel board. The first four are mana, and index Combatant.Mana and Stats.
+// Gem colors on a duel board. The first NUM_MANA are mana, and index Combatant.Mana and Stats.
 const (
 	Fire = iota
 	Water
 	Air
 	Earth
+	Aether	// the fifth element: only in a run where the story has set AETHER_FLAG
 	Skull
 	Gold
 	Star
 	NUM_GEMS
 )
 
-const NUM_MANA = 4
+const NUM_MANA = 5
 
-var ManaNames = [NUM_MANA]string{ "Fire", "Water", "Air", "Earth" }
+var ManaNames = [NUM_MANA]string{ "Fire", "Water", "Air", "Earth", "Aether" }
+
+// AETHER_FLAG is the story flag that brings Aether into a run: from then on it is on every duel
+// board, and its pool, mastery, residue and Orrery region show.
+const AETHER_FLAG = "aether_unlocked"
+
+// IsMana reports whether a gem color is a mana color.
+func IsMana(color int) bool { return color >= 0 && color < NUM_MANA }
+
+// ManaInPlay is the mana colors a duel or a run uses: the first four, and Aether when it is on.
+// Everything that shows or loops over the active pools goes through it.
+func ManaInPlay(aether bool) []int {
+	if aether {
+		return []int{ Fire, Water, Air, Earth, Aether }
+	}
+	return []int{ Fire, Water, Air, Earth }
+}
+
+// AetherOn reports whether the story has brought Aether into this run.
+func (h *Hero) AetherOn() bool { return h.Flags[AETHER_FLAG] }
+
+// Mana is the mana colors this run plays with.
+func (h *Hero) Mana() []int { return ManaInPlay(h.AetherOn()) }
+
+// StatShown reports whether a stat means anything in this run: Aether's mastery only once it is on.
+func (h *Hero) StatShown(i int) bool { return i != Aether || h.AetherOn() }
 
 // Stats index: the masteries line up with the mana colors.
 const (
@@ -28,12 +54,13 @@ const (
 	NUM_STATS
 )
 
-var StatNames = [NUM_STATS]string{ "Fire", "Water", "Air", "Earth", "Battle", "Cunning", "Morale" }
+var StatNames = [NUM_STATS]string{ "Fire", "Water", "Air", "Earth", "Aether", "Battle", "Cunning", "Morale" }
 var StatHelp = [NUM_STATS]string{
 	"+1 max Fire mana. Every 6 adds +1 Fire per match.",
 	"+1 max Water mana. Every 6 adds +1 Water per match.",
 	"+1 max Air mana. Every 6 adds +1 Air per match.",
 	"+1 max Earth mana. Every 6 adds +1 Earth per match.",
+	"+1 max Aether mana. Every 6 adds +1 Aether per match.",
 	"Every 4 adds +1 damage per skull match.",
 	"+2% gold and XP. Decides who moves first.",
 	"+3 max HP. Every 10 blocks 1 skull damage.",
@@ -50,13 +77,13 @@ type Class struct {
 
 var Classes = []Class{
 	{ "Knight", "Holy armor and steady damage. Forgiving, and hard to kill.",
-		[NUM_STATS]int{ 2, 2, 1, 3, 5, 2, 6 }, [3]uint8{ 210, 215, 235 } },
+		[NUM_STATS]int{ 2, 2, 1, 3, 0, 5, 2, 6 }, [3]uint8{ 210, 215, 235 } },
 	{ "Warrior", "Rage and big skull hits. Wins by ending fights early.",
-		[NUM_STATS]int{ 4, 1, 2, 2, 7, 2, 3 }, [3]uint8{ 225, 90, 70 } },
+		[NUM_STATS]int{ 4, 1, 2, 2, 0, 7, 2, 3 }, [3]uint8{ 225, 90, 70 } },
 	{ "Druid", "Poison, healing and control of the Earth and the board.",
-		[NUM_STATS]int{ 1, 3, 2, 6, 2, 4, 3 }, [3]uint8{ 95, 190, 100 } },
+		[NUM_STATS]int{ 1, 3, 2, 6, 0, 2, 4, 3 }, [3]uint8{ 95, 190, 100 } },
 	{ "Wizard", "Fragile, with the deepest mana and the strongest spells.",
-		[NUM_STATS]int{ 5, 5, 4, 1, 1, 3, 2 }, [3]uint8{ 110, 130, 240 } },
+		[NUM_STATS]int{ 5, 5, 4, 1, 0, 1, 3, 2 }, [3]uint8{ 110, 130, 240 } },
 }
 
 func ClassByName(name string) *Class {
@@ -242,8 +269,11 @@ func stat(i, n int) (s [NUM_STATS]int) {
 	return s
 }
 
-func allMastery(n int) [NUM_STATS]int {
-	return [NUM_STATS]int{ n, n, n, n }
+func allMastery(n int) (s [NUM_STATS]int) {
+	for i := range NUM_MANA {
+		s[i] = n
+	}
+	return s
 }
 
 var Items = []Item{

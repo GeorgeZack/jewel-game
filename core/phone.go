@@ -37,16 +37,25 @@ func uiScale() float32 {
 // scrolling list of its moves and the battle log, so the phone sees what the desktop panel does.
 const phoneFoeH = 160
 
-// phoneBoardRect is the board in screen pixels. Portrait puts a dock under it.
-// Landscape puts the dock beside it, so the gems stay large enough to tap.
-func phoneBoardRect(sw, sh float32) rl.Rectangle {
+// phoneBoardRect is the board in screen pixels, for a board of cols by rows: the square a board
+// may fill, cut to the board's shape so a wide board leaves its spare height to the dock.
+// Portrait puts a dock under it. Landscape puts the dock beside it, so the gems stay large
+// enough to tap.
+func phoneBoardRect(sw, sh float32, cols, rows int) rl.Rectangle {
+	fit := func(r rl.Rectangle) rl.Rectangle {
+		cell := min(r.Width/float32(cols), r.Height/float32(rows))
+		w, h := cell*float32(cols), cell*float32(rows)
+		return rl.Rectangle{X: r.X + (r.Width-w)/2, Y: r.Y + (r.Height-h)/2, Width: w, Height: h}
+	}
 	if sw > sh {
 		dock := max(float32(220), min(320, sw*0.42))
 		size := min(sh-12, sw-dock-16)
 		if size < 48 {
 			size = 48
 		}
-		return rl.Rectangle{X: 6, Y: (sh - size) / 2, Width: size, Height: size}
+		r := fit(rl.Rectangle{X: 6, Y: (sh - size) / 2, Width: size, Height: size})
+		r.X = 6
+		return r
 	}
 	top := float32(6 + phoneFoeH + 22)
 	dock := sh * 0.36
@@ -60,7 +69,11 @@ func phoneBoardRect(sw, sh float32) rl.Rectangle {
 	if size < 48 {
 		size = 48
 	}
-	return rl.Rectangle{X: (sw - size) / 2, Y: top + (sh-top-dock-size)/2, Width: size, Height: size}
+	r := fit(rl.Rectangle{X: (sw - size) / 2, Y: top + (sh-top-dock-size)/2, Width: size, Height: size})
+	if rows < cols {
+		r.Y = top	// the dock, under the board, takes the height a wide board leaves
+	}
+	return r
 }
 
 func (c *GameController) drawNarrow(w, h float32) {
@@ -168,6 +181,11 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 	v.portraits[rpg.Enemy] = rl.Vector2{X: r.X + 30, Y: col.Y + 14}
 	name := col.Next(28)
 	ui.TextFit(text.Tf("ui.level_short", "%s  L%d", e.Name, e.Level), name.X, name.Y, 22, name.Width, ui.TextColor)
+	if c := v.Duel.Card; c != nil && c.ID != "standard" {
+		// the card's name sits under the foe's; its rule heads the scrolling list below
+		line := col.Next(18)
+		ui.TextFit(text.Tf("ui.card_name", "Card: %s", c.Name), line.X, line.Y, 15, line.Width, ui.Accent)
+	}
 	bar := col.Next(24)
 	v.hpBars[rpg.Enemy] = bar
 	ui.Bar(bar, text.T("ui.hp", "HP"), e.HP, e.MaxHP, hpColor)
@@ -186,6 +204,9 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 		return
 	}
 	col.Y = v.rightScroll.Begin(view, uiScale())
+	if c := v.Duel.Card; c != nil && c.ID != "standard" {
+		col.Paragraph(c.Desc, 13, ui.DimText)
+	}
 	for i, s := range e.Spells {
 		v.drawFoeMove(&col, e, s, i)
 	}
@@ -293,12 +314,13 @@ func (v *QuestView) drawPerkLine(col *ui.Column, c *rpg.Combatant) {
 	col.Y = y + rowH + col.Gap
 }
 
-// drawPhoneMana draws the four mana pools as short bars across one row.
+// drawPhoneMana draws the duel's mana pools as short bars across one row.
 func (v *QuestView) drawPhoneMana(r rl.Rectangle, c *rpg.Combatant) {
 	const gap = 4
-	bw := (r.Width - 3*gap) / rpg.NUM_MANA
-	for i := range c.Mana {
-		box := rl.Rectangle{X: r.X + float32(i)*(bw+gap), Y: r.Y, Width: bw, Height: r.Height}
+	mana := v.Duel.Mana()
+	bw := (r.Width - float32(len(mana)-1)*gap) / float32(len(mana))
+	for n, i := range mana {
+		box := rl.Rectangle{X: r.X + float32(n)*(bw+gap), Y: r.Y, Width: bw, Height: r.Height}
 		rl.DrawRectangleRounded(box, 0.4, 4, rl.Color{R: 0, G: 0, B: 0, A: 140})
 		if c.MaxMana[i] > 0 && c.Mana[i] > 0 {
 			fill := box

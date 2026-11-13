@@ -56,10 +56,22 @@ func PerkLabel(p *Perk) string {
 	return p.Kind
 }
 
-// PerkAbout is the one sentence that says what a perk does.
+// PerkAbout is the one sentence that says what a perk does, and what it costs you.
 func PerkAbout(p *Perk) string {
+	about := perkRule(p)
+	if p.Backlash > 0 {
+		about += " " + text.Tf("rule.backlash", "Each time, you lose %d HP.", p.Backlash)
+	}
+	return about
+}
+
+func perkRule(p *Perk) string {
 	color := ManaLabel(max(p.Color, 0))
 	switch p.Kind {
+	case PerkHunger:
+		return text.Tf("rule.hunger", "A match of %d or more %s also drains %d of your %s mana into %s.", p.Size, color, p.Amount, ManaLabel(max(p.ToMana, 0)), color)
+	case PerkBloodPrice:
+		return text.Tf("rule.blood_price", "A rite short of %s may take the rest from your HP, %d HP for each.", color, p.Amount)
 	case PerkStrike:
 		if p.Trade {
 			return text.Tf("rule.strike_trade", "A match of %d or more %s deals %d damage instead of giving an extra turn.", p.Size, color, p.Amount)
@@ -94,7 +106,7 @@ func StatAbout(i int) string { return text.T("stat."+slug(StatNames[i])+".help",
 func StatBonus(i, n int) string {
 	key := "stat." + slug(StatNames[i]) + ".now"
 	switch i {
-	case Fire, Water, Air, Earth:
+	case Fire, Water, Air, Earth, Aether:
 		return text.Tf(key, "+%d max "+StatNames[i]+" mana, +%d per match", n, n/6)
 	case Battle:
 		return text.Tf(key, "+%d damage per skull match", n/4)
