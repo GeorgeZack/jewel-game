@@ -256,7 +256,7 @@ reports how each was cleared. Puzzles are prototypes: no story scene uses one ye
 id: vault
 name: The Society Vault
 objective: Clear the three tumbler pins.   # shown to the player
-moves: 5                     # swaps allowed; running out loses
+moves: 5                     # moves allowed, swaps and tool uses alike; running out loses
 refill: none                 # none (cleared cells stay empty), queue, or seed
 queue: rbyg                  # refill: queue, colors dropped in order, then nothing
 seed: 0                      # drives anything random, so the board always plays the same
@@ -272,7 +272,8 @@ fail:                        # optional: any of these holding after a move loses
   - { cleared: [bell] }
 tools:                       # rites used on the board, a few times a puzzle instead of for mana
   - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave] }   # clear one gem
-  - { id: lockpick, name: Lockpick, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }
+  - { id: lockpick, name: Lockpick, kind: paint, from: p, to: r, uses: 1, rites: [transmute] }   # repaint one gem
+  - { id: dye, name: Dye, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }          # repaint every gem of a color
 routes:                      # the first route whose conditions hold when the goal does is taken
   - id: force
     name: Forced the lock
@@ -288,12 +289,12 @@ alike, hold when all of their parts do:
 - `order: [a, b]` these marks are cleared, each in a later cascade step than the one before.
 - `blasted: true` a mark was cleared by a bomb, a bolt or a Force; `false`, none was.
 - `tool: true` or `false` a tool was used, or not.
-- `max_match`, `min_match` the largest match, and `max_moves` the swaps made.
+- `max_match`, `min_match` the largest match, and `max_moves` the moves made (a tool use counts as one).
 
 If the goal holds but no route does (the vault's pins matched out of order, say), the puzzle is
 lost as jammed. A lost puzzle can be tried again at no cost.
 
-Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` or `tool id x,y`.
+Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` (a convert) or `tool id x,y` (a Force or a paint, at that gem).
 Loading the story replays each one and reports a problem if it no longer finishes the puzzle by
 its route, so `go test ./rpg` catches a board edit that breaks a route.
 
@@ -301,7 +302,7 @@ To see every way a board can end, run the brute-force solver:
 `SOLVE=vault SOLVE_DEPTH=4 go test ./rpg -run TestSolvePuzzle -v`. It tries every swap and tool
 use up to that many moves and prints, for each route and each kind of loss (jammed, stuck), how
 many sequences end there and the shortest one. Use it to check that every route is reachable and
-none leaks into another; depth 4 on the vault takes about 15 seconds.
+none leaks into another; depth 4 on the vault takes about 15 seconds, depth 5 a few minutes.
 
 In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is loaded, and
 `JEWEL_PUZZLE_ROUTE=quiet` as well plays that route's stored solution by itself.
