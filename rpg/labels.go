@@ -61,15 +61,21 @@ func PerkAbout(p *Perk) string {
 	color := ManaLabel(max(p.Color, 0))
 	switch p.Kind {
 	case PerkStrike:
+		if p.Trade {
+			return text.Tf("rule.strike_trade", "A match of %d or more %s deals %d damage instead of giving an extra turn.", p.Size, color, p.Amount)
+		}
 		return text.Tf("rule.strike", "A match of %d or more %s also deals %d damage.", p.Size, color, p.Amount)
 	case PerkMend:
+		if p.Trade {
+			return text.Tf("rule.mend_trade", "A match of %d or more %s heals you %d instead of giving an extra turn.", p.Size, color, p.Amount)
+		}
 		return text.Tf("rule.mend", "A match of %d or more %s also heals you %d.", p.Size, color, p.Amount)
 	case PerkWildFour:
 		return text.Tf("rule.wild_four", "A match of four %s plants a x%d Wild instead of giving an extra turn.", color, p.Amount)
 	case PerkSkullPaint:
 		return text.Tf("rule.skull_paint", "Each skull match turns %d gems beside it into %s.", p.Amount, color)
 	case PerkOverflow:
-		return text.Tf("rule.overflow", "%s mana past your max spills into %s instead of being lost.", color, ManaLabel(max(p.ToMana, 0)))
+		return text.Tf("rule.overflow", "Your %s mana holds %d less, and what goes past it spills into %s.", color, p.Amount, ManaLabel(max(p.ToMana, 0)))
 	case PerkForsake:
 		return text.Tf("rule.forsake", "Skull matches deal %d more, but %s matches give you no mana.", p.Amount, color)
 	case PerkSeed:

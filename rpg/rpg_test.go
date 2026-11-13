@@ -507,9 +507,16 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 	}{{"goblin", 1}, {"barrow_lord", 5}, {"orc", 8}, {"high_priest", 12}, {"hollow_king", 16}}
 	for _, class := range Classes {
 		for _, f := range foes {
-			wins, turns := 0, 0
+			wins, turns, perks := 0, 0, 0
 			for seed := range N {
-				h := fairHero(class.Name, f.level)	// perks are TestPerksStayFair's
+				h := NewHero(class.Name)
+				for h.Level < f.level {
+					h.AddXP(XPToNext(h.Level))
+				}
+				h.Residue[Colorless] = (h.Level - 1) * FAIR_RESIDUE_PER_LEVEL
+				buyNodes(h, greedy(h.Class))	// perks included: a perked hero mustn't drag either
+				bestShopGear(h)
+				perks = len(heroPerks(h))
 				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
 				d.SetBoard(board.NewBoard(BoardSettings(nil), int64(seed)))
 				turns += playOut(d)
@@ -519,7 +526,7 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 					t.Fatalf("%s vs %s never finished", class.Name, f.id)
 				}
 			}
-			t.Logf("%-8s vs %-12s L%-2d: %2d/%d wins, %d turns avg", class.Name, f.id, f.level, wins, N, turns/N)
+			t.Logf("%-8s vs %-12s L%-2d: %2d/%d wins, %d turns avg, %d perks", class.Name, f.id, f.level, wins, N, turns/N, perks)
 			if turns/N > 160 {
 				t.Errorf("%s vs %s drags: %d turns", class.Name, f.id, turns/N)
 			}
@@ -599,9 +606,9 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 // Orrery when a test makes a hero of some level from nothing.
 const FAIR_RESIDUE_PER_LEVEL = 20
 
-// nodeWorth ranks a buyable node for the simulator: anything in the build's first region ranks
-// above the rest; then own-class rites the hero can cast now, perks, other castable rites, stats,
-// and last rites for later. Cheaper breaks ties.
+// nodeWorth ranks a buyable node for the simulator: perks first, then own-class rites the hero
+// can cast now, other castable rites, stats, and last rites for later, with the build's first
+// region and nodes next to a wanted perk raised a step. Cheaper breaks ties.
 func nodeWorth(h *Hero, n *OrreryNode, b build) int {
 	w := 0
 	if s := SpellByID(n.Rite); s != nil {
@@ -612,12 +619,19 @@ func nodeWorth(h *Hero, n *OrreryNode, b build) int {
 			}
 		}
 	} else if n.Perk != nil {
-		w = 3500
+		w = 5000
 	} else {
 		w = 2000
 	}
 	if n.Mana == b.regions[0] {
 		w += 1500
+	}
+	// a step toward a perk the build wants is worth more than a stat on its own
+	if n.Perk == nil && slices.ContainsFunc(n.Near, func(id string) bool {
+		o := NodeByID(id)
+		return o.Perk != nil && b.allows(h, o) && !h.Owns(id)
+	}) {
+		w += 1000
 	}
 	return w - n.Cost
 }
@@ -630,7 +644,7 @@ type build struct {
 	noPerks	bool
 }
 
-func (b build) allows(n *OrreryNode) bool {
+func (b build) allows(h *Hero, n *OrreryNode) bool {
 	return slices.Contains(b.regions, n.Mana) && !(b.noPerks && n.Perk != nil)
 }
 
@@ -664,7 +678,7 @@ func buyNodes(h *Hero, b build) {
 		var best *OrreryNode
 		for i := range Orrery {
 			n := &Orrery[i]
-			if b.allows(n) && !h.Owns(n.ID) && h.Reaches(n) && ok(n) && (best == nil || nodeWorth(h, n, b) > nodeWorth(h, best, b)) {
+			if b.allows(h, n) && !h.Owns(n.ID) && h.Reaches(n) && ok(n) && (best == nil || nodeWorth(h, n, b) > nodeWorth(h, best, b)) {
 				best = n
 			}
 		}
@@ -686,7 +700,7 @@ func buyNodes(h *Hero, b build) {
 			wanted := false
 			for i := range Orrery {
 				n := &Orrery[i]
-				wanted = wanted || (n.Mana == c && b.allows(n) && !h.Owns(n.ID) && h.Reaches(n))
+				wanted = wanted || (n.Mana == c && b.allows(h, n) && !h.Owns(n.ID) && h.Reaches(n))
 			}
 			for !wanted && h.Convert(c) {
 				converted = true
@@ -780,6 +794,9 @@ func TestBuilds(t *testing.T) {
 			var perks []string
 			for _, p := range heroPerks(h) {
 				perks = append(perks, p.Node)
+			}
+			if len(perks) < 2 {
+				t.Errorf("%s (%s) ends the main quests with %d perks", class.Name, b.name, len(perks))
 			}
 			t.Logf("%-8s %-12s %3d %5d %4d %5d %5d  %s", class.Name, b.name, h.Level, h.Wins+h.Losses, h.Losses,
 				simTurns[h]/max(1, h.Wins+h.Losses), len(h.Nodes), strings.Join(perks, " "))

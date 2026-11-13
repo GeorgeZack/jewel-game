@@ -10,11 +10,11 @@ import (
 // Perks are the rules large Orrery nodes carry: orrery.yaml. A perk only ever works on the hero's
 // side of a duel, and always in its node's region color. Its numbers are in the YAML.
 const (
-	PerkStrike		= "strike"		// a match of Size or more also deals Amount damage
-	PerkMend		= "mend"		// a match of Size or more also heals Amount
+	PerkStrike		= "strike"		// a match of Size or more also deals Amount damage (Trade: instead of the extra turn)
+	PerkMend		= "mend"		// a match of Size or more also heals Amount (Trade: instead of the extra turn)
 	PerkWildFour	= "wild_four"	// a match of exactly four leaves an xAmount Wild instead of the extra turn
 	PerkSkullPaint	= "skull_paint"	// a skull match turns Amount gems beside it into the color
-	PerkOverflow	= "overflow"	// mana past the color's max spills into To
+	PerkOverflow	= "overflow"	// the color's max is Amount lower, and mana past it spills into To
 	PerkForsake		= "forsake"		// skull matches deal Amount more, and the color's matches pay no mana
 	PerkSeed		= "seed"		// the duel starts with Amount Wilds or skull Bombs (Special) on the board
 )
@@ -31,6 +31,7 @@ type Perk struct {
 	Amount	int		`yaml:"amount"`
 	To		string	`yaml:"to"`		// overflow: the color that takes the spill
 	Special	string	`yaml:"special"`	// seed: wild or bomb
+	Trade	bool	`yaml:"trade"`	// strike, mend: works only on a run of four or more, which then gives no extra turn
 
 	Node	string	`yaml:"-"`	// the node's ID, for its name
 	Color	int		`yaml:"-"`
@@ -48,6 +49,9 @@ func checkPerk(p *Perk) (bad []string) {
 		if p.Amount <= 0 {
 			wrong("%s needs an amount", p.Kind)
 		}
+		if p.Trade && p.Size < 4 {
+			wrong("%s trade needs size 4 or more, as only those give an extra turn", p.Kind)
+		}
 	case PerkWildFour:
 		if p.Amount < 2 || p.Amount > 3 {
 			wrong("wild_four amount %d should be 2 or 3", p.Amount)
@@ -59,6 +63,9 @@ func checkPerk(p *Perk) (bad []string) {
 	case PerkOverflow:
 		if p.ToMana < 0 || p.ToMana == p.Color {
 			wrong("overflow to %q should be another color", p.To)
+		}
+		if p.Amount < 0 || p.Amount > BASE_MANA/2 {
+			wrong("overflow amount %d should be 0 to %d", p.Amount, BASE_MANA/2)
 		}
 	case PerkForsake:
 		if p.Amount <= 0 {

@@ -23,6 +23,7 @@ const (
 	RESPEC_GOLD		= 100	// gold to refund every node and go back to the seat, unless a facility makes it free
 	KIT_LEVEL		= 4		// a class knows its own rites up to this level without the Orrery
 	OLD_RUN_RESIDUE	= 6		// colorless residue per level for a run saved before the Orrery
+	WIN_RESIDUE		= 10		// a won duel's bounty, in the color of the hero's seat
 )
 
 // OrreryNode is one body on the Orrery: orrery.yaml. Buying it gives its stats, its rite, or both.
