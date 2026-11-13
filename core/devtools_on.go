@@ -18,7 +18,27 @@ var (
 	tourStart = time.Now()
 )
 
+// devReturned is set once JEWEL_RETURN has made its return.
+var devReturned bool
+
+// devReturn makes one return as the game starts when JEWEL_RETURN is set, then starts the next run
+// as the class it names (Knight if it isn't a class), so the entities' scene plays. JEWEL_META=n
+// first banks n meta currency, to try buying in the Grimoire.
+func (v *QuestView) devReturn() {
+	if devReturned || os.Getenv("JEWEL_RETURN") == "" || v.Hero == nil || time.Since(tourStart) < 2*time.Second {
+		return
+	}
+	devReturned = true
+	var meta int
+	fmt.Sscan(os.Getenv("JEWEL_META"), &meta)
+	v.Profile.Meta += meta
+	v.doReturn()
+	v.modals = nil
+	v.startRun(rpg.ClassByName(os.Getenv("JEWEL_RETURN")).Name)
+}
+
 func (v *QuestView) devTour() {
+	v.devReturn()
 	if os.Getenv("JEWEL_TOUR") == "" || v.Hero == nil {
 		return
 	}
@@ -30,7 +50,7 @@ func (v *QuestView) devTour() {
 		return
 	}
 	tourStep = n
-	screens := []Screen{ScreenWorld, ScreenHero, ScreenSpells, ScreenQuests, ScreenShop, ScreenAcademy, ScreenOrrery}
+	screens := []Screen{ScreenWorld, ScreenHero, ScreenSpells, ScreenQuests, ScreenShop, ScreenAcademy, ScreenOrrery, ScreenGrimoire}
 	if n < len(screens) {
 		v.Screen = screens[n]
 		if v.Screen == ScreenOrrery {
