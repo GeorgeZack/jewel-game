@@ -1,6 +1,9 @@
 package text
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestLoadNestedAndFallback(t *testing.T) {
 	t.Cleanup(func() { Reset("en") })
@@ -39,5 +42,17 @@ func TestBadYAMLKeepsTheOldCatalog(t *testing.T) {
 	}
 	if got := T("ui.title", "nope"); got != "Hello" {
 		t.Fatalf("catalog changed to %q", got)
+	}
+}
+
+// A slip in the shipped language file makes every string fall back to the code, silently.
+func TestShippedEnglishLoads(t *testing.T) {
+	t.Cleanup(func() { Reset("en") })
+	data, err := os.ReadFile("../assets/lang/en.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Load("en", data); err != nil {
+		t.Fatal(err)
 	}
 }

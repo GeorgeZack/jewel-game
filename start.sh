@@ -9,6 +9,10 @@ set -e
 # assets are loaded relative to the project root
 cd "$(dirname "$0")"
 
+# A GOROOT left in the environment by a version manager can point at a different Go than the `go`
+# on the PATH, and then nothing compiles. Go finds its own root when this is unset.
+unset GOROOT
+
 if ! command -v go >/dev/null; then
 	echo "go is not installed: https://go.dev/doc/install" >&2
 	exit 1

@@ -486,6 +486,7 @@ item:
   leather:
     name: Leather Jerkin
     desc: "+10 HP"
+  chain:
     name: Chain Shirt
     desc: "+20 HP, blocks 1"
   mage_robe:
