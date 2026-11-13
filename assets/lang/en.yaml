@@ -93,7 +93,7 @@ ui:
   tools: Tools
   tool_uses: "%s  (%d)"
   no_tools: You know no rite that helps here.
-  pick_gem: Pick the gem to Force.
+  pick_gem: Pick the gem to use it on.
   colorless: Colorless
   node_cost: "%d"
   residue: Residue

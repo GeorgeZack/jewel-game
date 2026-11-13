@@ -1,6 +1,7 @@
 package rpg
 
 import (
+	"jewel-game/board"
 	"fmt"
 	"os"
 	"sort"
@@ -47,20 +48,32 @@ func TestSolvePuzzle(t *testing.T) {
 			counts["unfinished"]++
 			return
 		}
+		// only moves the board allows are tried, so whole subtrees aren't replayed for nothing
 		b := r.Board
 		for y := range b.H() {
 			for x := range b.W() {
-				walk(append(moves, fmt.Sprintf("swap %d,%d %d,%d", x, y, x+1, y)))
-				walk(append(moves, fmt.Sprintf("swap %d,%d %d,%d", x, y, x, y+1)))
+				a := board.Point{ X: x, Y: y }
+				for _, c := range []board.Point{ { X: x + 1, Y: y }, { X: x, Y: y + 1 } } {
+					if b.In(c) && b.IsValidSwap(a, c) {
+						walk(append(moves, fmt.Sprintf("swap %d,%d %d,%d", x, y, c.X, c.Y)))
+					}
+				}
 			}
 		}
 		for _, tl := range pz.Tools {
-			if tl.Kind != "force" {
+			if r.Uses[tl.ID] <= 0 {
+				continue
+			}
+			if !tl.Targeted() {
 				walk(append(moves, "tool "+tl.ID))
 				continue
 			}
 			for y := range b.H() {
 				for x := range b.W() {
+					g := b.At(board.Point{ X: x, Y: y })
+					if g == nil || g.Locked || (tl.Kind == "paint" && g.Color != puzzleColor(tl.From)) {
+						continue
+					}
 					walk(append(moves, fmt.Sprintf("tool %s %d,%d", tl.ID, x, y)))
 				}
 			}
