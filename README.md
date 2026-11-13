@@ -12,12 +12,14 @@ Diffusion), and some of it is still placeholder. See [attributions.md](attributi
 ## How to play
 
 - *Duels:* you and a monster take turns on one 8x8 board. Red, blue, yellow and green gems fill your
-  Fire, Water, Air and Earth mana. Skulls damage the foe, and +5 skulls hit harder and blast the gems
+  Fire, Water, Air and Earth mana. Partway through the story a fifth, forbidden element, Aether
+  (purple), joins every board, and boards grow to 9x9 to hold it. Bosses fight on rule cards that
+  change one rule: the gravity, the board's size, overcharged blasts, or what matches pay. Skulls damage the foe, and +5 skulls hit harder and blast the gems
   around them. Gold and stars pay out after the duel. Whatever the other side's move sets up, they get to use.
 - *Extra turns and Wilds:* match 4 and you go again. Match 5 and you also get a Wild, which completes
   any mana match and multiplies it. Running out of moves drains all mana and reshuffles.
 - *Heroes:* Knight, Warrior, Druid or Wizard, each starting with a kit of rites (six can be
-  equipped). Levels give HP; stats (Fire, Water, Air, Earth, Battle, Cunning and Morale) and more
+  equipped). Levels give HP; stats (Fire, Water, Air, Earth, Battle, Cunning and Morale, and Aether once it arrives) and more
   rites come from the Orrery, bought with the residue good matches leave behind.
 - *World:* walk the map between towns and wilds, take main and side quests, fight roaming foes and
   road ambushes. Quests open up the map through to the final boss.

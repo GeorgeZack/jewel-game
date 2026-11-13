@@ -122,7 +122,7 @@ blurb: >-                    # shown next to the class picker
   x: 0.38                    # position on the map, 0 = left/top, 1 = right/bottom
   y: 0.74
   level: 2                   # level of the roaming foes here
-  residue: water             # color of the residue chapters here pay: fire, water, air or earth
+  residue: water             # color of the residue chapters here pay: fire, water, air, earth or aether
   desc: A toll town grown fat on the river trade.
   roads: [mossgate, barrow]  # roads go both ways: list this one in theirs too
   foes: [bandit, rat]        # roaming foes; also who ambushes travellers on the way in
@@ -148,9 +148,12 @@ blurb: >-                    # shown next to the class picker
   card: sideways             # optional: the rule card (cards.yaml) this foe fights on
 ```
 
-Stats are fire, water, air, earth, battle, cunning and morale, as on the Hero screen. The spell ids
-are in `rpg/spells.go`. Monsters can use any spell, but they're balanced around the monster ones:
-bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath and dark_pact.
+Stats are fire, water, air, earth, aether, battle, cunning and morale, as on the Hero screen. The
+spell ids are in `rpg/spells.go`. Monsters can use any spell, but they're balanced around the monster
+ones: bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath, dark_pact, and the two
+that cost Aether, hollow_hymn and void_lash. A foe's Aether stat and spells only matter in a run that
+has Aether (see [Aether](#aether)); without it the foe never gets Aether mana. In the slice the
+Drowned Priest and the Hollow King have both.
 
 `go test ./rpg` also runs a balance check that duels a geared hero against some of the bosses by
 their ids. If you rename or remove those foes, update the list in `TestDuelsFinishAndAreFair`.
@@ -159,12 +162,15 @@ their ids. If you rename or remove those foes, update the list in `TestDuelsFini
 
 A rule card changes the board a duel is played on, or what each cascade pays. A foe names the
 card it fights on with `card:`; a foe without one gets the standard duel, an 8x8 board falling
-down. Anything a card leaves out stays as in the standard duel, so an empty card changes nothing.
+down (9x9 once the run has Aether). Anything a card leaves out stays as in the standard duel, so
+an empty card changes nothing. Every card needs a `name` and a `desc`, its rule in one sentence:
+the duel opens with both in a box, and shows them beside the foe while it lasts.
 
 ```yaml
 - id: sideways
   name: Sideways
-  width: 10                  # board size, 4 to 10 (default 8)
+  desc: Gems fall to the left, and new ones arrive from the right.
+  width: 10                  # board size, 4 to 10 (default 8, or 9 with Aether); it wins over Aether's size
   height: 8
   gravity: left              # the way gems fall: down (default), left, up or right
   chaos_gravity: true        # gravity turns at random after every move
@@ -176,7 +182,20 @@ down. Anything a card leaves out stays as in the standard duel, so an empty card
 ```
 
 The modifiers apply to what the board pays during the duel, for both sides, not to the bounty for
-winning. A card that changes balance should get a simulated duel in `rpg/rpg_test.go`.
+winning. `TestCardsStayFair` in `rpg/perks_test.go` plays every card, with and without Aether,
+against the same matchups as the standard duel and fails a card that moves the win rate too far
+or drags (`JEWEL_FULL_SIM=1` for the full run).
+
+The slice's bosses fight on these cards, gentler first:
+
+| foe | card | rule |
+|---|---|---|
+| barrow_lord | `barrow_hush` | skulls deal 25% less, mana matches pay 50% more |
+| warchief | `war_drums` | overcharge: a +5 skull blasts a 5x5 square |
+| ember_wyrm | `updraft` | gravity up |
+| hollow_king | `hollow_halls` | a 10x8 board |
+
+`standard`, `sideways` and `great_hall` (10x10, the largest board) are spare cards for trying out.
 
 In a dev build, `JEWEL_CARD=sideways ./start.sh` plays every duel on that card, to try one out.
 
@@ -203,14 +222,17 @@ spell's level. Respec refunds the residue each bought node took, to the pools th
 The shipped grid has four regions of fifteen nodes on four rings (ring 4 outermost): a seat and
 four cheap stat nodes outside, three rites and stat nodes on ring 3, three large perk nodes
 on ring 2, and a strong stat node and a level 13 rite on ring 1. Neighbouring regions join on the
-outer and the inner ring.
+outer and the inner ring. Inside them, on ring 0, is Aether's core: twelve nodes in a loop (four
+gates, each linked from a region's ring 1 stat node, Aether stats, four Aether rites and three
+"forbidden" perks that cost you HP or another pool). It has no seat, and it stays locked, shown
+grey, until the run has Aether.
 
 ```yaml
 - { id: water_seat, name: Tide Seat, color: water, ring: 3, angle: 90, seat: Knight, links: [brine] }
 - id: brine
   name: Brine                # optional for a rite node: the rite's name is shown
-  color: water               # region: fire, water, air or earth
-  ring: 3                    # 1 is the innermost ring
+  color: water               # region: fire, water, air, earth or aether
+  ring: 3                    # 1 is the innermost seated ring; 0 is Aether's core
   angle: 60                  # degrees clockwise from the top
   cost: 10                   # residue of the region's color
   stats: { water: 4, morale: 2 }
@@ -237,14 +259,34 @@ in its node's region color (below, "the color"). The kinds and their parameters:
 | `overflow` | `to` (another color), `amount` (0-10) | the color's max mana is `amount` lower, and mana past it goes into `to` instead of being lost |
 | `forsake` | `amount` | skull matches deal `amount` more per match, and matches of the color give no mana |
 | `seed` | `special` (wild or bomb), `amount` (1-4) | the duel starts with `amount` x2 Wilds or +5 skulls on the board; the foe can take them too |
+| `hunger` | `size` (3-5), `amount`, `to` (another color) | a match of `size` or more of the color also moves up to `amount` of your `to` mana into the color |
+| `blood_price` | `amount` (Aether nodes only) | a rite short of Aether may take the rest from your HP, `amount` HP for each Aether missing; never your last HP |
+
+`strike`, `mend` and `hunger` also take `backlash`: the HP the perk costs you each time it works
+(never your last). The Aether perks use it: Void Lance is a strike with a backlash.
 
 A perk that works writes a line in the battle log and lights up in the duel's perk list. Loading
 checks the kind and its parameters.
 
 Loading checks that ids and links exist, every class has a seat, rites are hero spells
-not already in a starting kit, and every node can be reached from every seat. The other numbers
+not already in a starting kit, every node can be reached from every seat, and the four seated
+regions can all be reached without passing through Aether's locked core. The other numbers
 (residue per match, the conversion rate, the respec price) are placeholders, kept together at the
 top of `rpg/orrery.go`.
+
+## Aether
+
+Aether is the fifth element, off at the start of every run. The story flag `aether_unlocked`
+turns it on for good (a `set_flag` step; in the slice the done scene of "The Lake Archive",
+`archive_done`, sets it, so the Drowned Priest, the Ember Wyrm and the Hollow King are fought with
+it). Once it is on, its purple gem falls on every duel board, the standard board grows from 8x8 to
+9x9 so that matches stay about as common with one more color, and its mana pool, Aether stat,
+residue pool and Orrery core show. Before that, none of them appear. Spells cost Aether like any
+other color; the cost list in `rpg/spells.go` is Fire, Water, Air, Earth, Aether. Board sizes
+(`DUEL_SIZE`, `AETHER_DUEL_SIZE`) are in `rpg/cards.go`.
+
+A run saved before Aether existed loads with it off and at zero (the old save is kept as
+`.bak` first).
 
 ## facilities.yaml
 
