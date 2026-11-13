@@ -1,0 +1,6 @@
+- { id: founding, title: Founding, main: true, giver: town, at: mill, foe: rat, card: wide, done_scene: founding_done }
+- { id: lock, title: The Lock, main: true, giver: town, requires: ["act:2"], at: mill, foe: rat, done_scene: the_lock }
+- { id: crown_task, title: For the Crown, main: true, giver: town, requires: [allegiance:crown, "standing:crown>=3"], at: mill, foe: cutpurse, done_scene: to_act_3 }
+- { id: free_task, title: For Ourselves, main: true, giver: town, requires: [allegiance:free, "standing:free>crown"], at: town, foe: crown_guard, done_scene: to_act_3 }
+- { id: claim, title: The Engine, main: true, giver: town, requires: ["act:3"], at: mill, foe: engine, done_scene: claim_done }
+- { id: errand, title: An Errand, giver: town, requires: ["act:<2", "returns:=0"], at: mill, foe: rat }

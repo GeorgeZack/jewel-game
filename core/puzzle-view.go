@@ -22,7 +22,7 @@ func (v *QuestView) startPuzzle(id string) {
 		ui.AddMessage("%s", text.Tf("log.puzzle_broken", "Puzzle %s is broken: %v", id, err))
 		return
 	}
-	v.Puzzle, v.puzzleTool, v.puzzleShown = run, "", 0
+	v.Puzzle, v.puzzleTool, v.puzzleShown, v.puzzleRoute = run, "", 0, ""
 	v.TM.Types = v.DM.PuzzleGemTypes
 	v.TM.NoShuffle = true
 	v.TM.Load(run.Board)
@@ -84,6 +84,7 @@ func (v *QuestView) puzzleDone() {
 	switch r.State {
 	case rpg.PuzzleWon:
 		r.Finish(v.Hero)
+		v.puzzleRoute = r.Route.ID
 		v.save()
 		v.show(Modal{
 			Title:   text.T("ui.puzzle_won", "Solved!"),

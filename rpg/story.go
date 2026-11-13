@@ -22,6 +22,20 @@ type StoryInfo struct {
 	Blurb		string	`yaml:"blurb"`		// shown beside the class picker
 	Opening		string	`yaml:"opening"`	// scene played when a hero is created
 	FinalQuest	string	`yaml:"final_quest"`	// finishing it marks the story beaten
+	Acts		[]Act	`yaml:"acts"`		// title cards for act 1, 2, ...; optional
+	Endings		[]Ending	`yaml:"endings"`	// the endings an ending step can record on the profile
+}
+
+// Act is the title card shown when an act step moves the story into that act.
+type Act struct {
+	Title		string	`yaml:"title"`
+	Subtitle	string	`yaml:"subtitle"`
+}
+
+// Ending is one way the story can end. Its id is stored on the profile, so it outlasts the run.
+type Ending struct {
+	ID		string	`yaml:"id"`
+	Name	string	`yaml:"name"`
 }
 
 // Foe is a monster template. Stats grow by Growth/2 per level past the first.
@@ -55,8 +69,21 @@ type Location struct {
 	Desc		string		`yaml:"desc"`
 	Roads		[]string	`yaml:"roads,flow"`
 	Foes		[]string	`yaml:"foes,flow"`
+	Shop		[]string	`yaml:"shop,flow"`	// items the shop sells; none means every item
+	Variants	[]Variant	`yaml:"variants"`	// the site as a holder, or a hostile society, changes it
 	EnterScene	string		`yaml:"enter_scene"`	// played the first time the hero arrives
 	People		[]Person	`yaml:"people"`
+}
+
+// Variant replaces some of a location's fields while it holds: when Holder holds the site (if
+// set) and the If conditions hold (if any). The first variant that holds wins, and the fields it
+// leaves out keep the location's own.
+type Variant struct {
+	Holder	string		`yaml:"holder"`	// a society id, or academy
+	If		[]string	`yaml:"if,flow"`
+	Desc	string		`yaml:"desc"`
+	Foes	[]string	`yaml:"foes,flow"`
+	Shop	[]string	`yaml:"shop,flow"`
 }
 
 // Person is someone to talk to at a location: a button that plays a scene.
@@ -81,6 +108,7 @@ type Quest struct {
 	Gold		int			`yaml:"gold"`
 	XP			int			`yaml:"xp"`
 	Item		string		`yaml:"item"`
+	Card		string		`yaml:"card"`	// rule card its fights are on; wins over the foe's
 	Opens		[]string	`yaml:"opens,flow"`
 	Intro		string		`yaml:"intro"`
 	Outro		string		`yaml:"outro"`
@@ -119,7 +147,7 @@ type Step struct {
 	Then		[]Step		`yaml:"then"`
 	Else		[]Step		`yaml:"else"`
 	Duel		*DuelStep	`yaml:"duel"`
-	Puzzle		string		`yaml:"puzzle"`	// play a puzzle board, then carry on whatever the result
+	Puzzle		*PuzzleStep	`yaml:"puzzle"`	// play a puzzle board, then a scene for the route taken
 	End			bool		`yaml:"end"`	// the story is beaten
 
 	// changes to the hero
@@ -132,6 +160,29 @@ type Step struct {
 	Unlock		string		`yaml:"unlock"`	// open a location
 	Travel		string		`yaml:"travel"`	// move the hero there
 	SetHolder	*HolderStep	`yaml:"set_holder"`	// change who holds a site
+	Standing	map[string]int	`yaml:"standing,flow"`	// society → change in standing
+	JoinSociety	string		`yaml:"join_society"`	// the lock: take an allegiance for the rest of the run
+	Act			int			`yaml:"act"`		// move the story into this act, with its title card
+	Ending		string		`yaml:"ending"`		// the story is beaten this way; recorded on the profile
+	Favour		map[string]int	`yaml:"favour,flow"`	// companion → change in favour
+	CompanionJoins	string	`yaml:"companion_joins"`
+	CompanionLeaves	string	`yaml:"companion_leaves"`
+}
+
+// PuzzleStep plays a puzzle board. Written as just the puzzle id, every route carries on with
+// the next step. Written out, a route may go to its own scene; routes it doesn't list carry on.
+type PuzzleStep struct {
+	ID		string				`yaml:"id"`
+	Routes	map[string]string	`yaml:"routes,flow"`	// route id → scene
+	Lose	string				`yaml:"lose"`	// scene when the board is left unsolved; default carries on
+}
+
+func (p *PuzzleStep) UnmarshalYAML(n *yaml.Node) error {
+	if n.Kind == yaml.ScalarNode {
+		return n.Decode(&p.ID)
+	}
+	type plain PuzzleStep
+	return n.Decode((*plain)(p))
 }
 
 // HolderStep says who holds a location from now on. An empty holder means no one does; the
@@ -153,6 +204,7 @@ type DuelStep struct {
 	Level	int		`yaml:"level"`
 	Win		string	`yaml:"win"`		// scene to go to on a win; default carries on
 	Lose	string	`yaml:"lose"`	// scene to go to on a loss; default ends the scene
+	Card	string	`yaml:"card"`	// rule card; wins over the quest's and the foe's
 }
 
 var (
@@ -217,6 +269,8 @@ type storyData struct {
 	orrery		[]OrreryNode
 	facilities	[]Facility
 	puzzles		[]Puzzle
+	societies	[]Society
+	companions	[]Companion
 }
 
 // LoadStory reads the story from dir and makes it current. A file that can't be read or parsed is
@@ -250,6 +304,8 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		{ "cards.yaml", &s.cards, false },
 		{ "orrery.yaml", &s.orrery, false },
 		{ "facilities.yaml", &s.facilities, false },
+		{ "societies.yaml", &s.societies, false },
+		{ "companions.yaml", &s.companions, false },
 	} {
 		if err := parse(f.name, f.out, f.required); err != nil {
 			return nil, err
@@ -302,6 +358,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		}
 	}
 	problems = append(problems, linkOrrery(s.orrery)...)
+	problems = append(problems, linkCompanions(s.companions)...)
 	for i := range s.quests {
 		if s.quests[i].Count == 0 {
 			s.quests[i].Count = 1
@@ -312,6 +369,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		return nil, fmt.Errorf("the story needs at least one foe and one location")
 	}
 	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery, Puzzles, Facilities = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery, s.puzzles, s.facilities
+	Societies, Companions = s.societies, s.companions
 	if LocationByID(Story.Start) == nil {
 		problems = append(problems, fmt.Sprintf("story.yaml: start location %q doesn't exist, using %q", Story.Start, Locations[0].ID))
 		Story.Start = Locations[0].ID
@@ -366,6 +424,13 @@ func Validate() []string {
 	p = append(p, checkOrrery()...)
 	p = append(p, checkPuzzles()...)
 	p = append(p, checkFacilities()...)
+	p = append(p, checkSocieties()...)
+	p = append(p, checkCompanions()...)
+	for i, e := range Story.Endings {
+		if e.ID == "" || slices.ContainsFunc(Story.Endings[:i], func(o Ending) bool { return o.ID == e.ID }) {
+			bad("story.yaml: ending %d needs an id of its own", i+1)
+		}
+	}
 	for _, f := range Foes {
 		for _, s := range f.Spells {
 			if SpellByID(s) == nil {
@@ -395,6 +460,27 @@ func Validate() []string {
 			bad("%s: residue %q should be fire, water, air or earth", where, l.Residue)
 		}
 		conds(where, l.Requires)
+		items := func(where string, list []string) {
+			for _, id := range list {
+				if ItemByID(id) == nil {
+					bad("%s: shop sells unknown item %q", where, id)
+				}
+			}
+		}
+		items(where, l.Shop)
+		for i, v := range l.Variants {
+			w := fmt.Sprintf("%s variant %d", where, i+1)
+			if v.Holder != "" && !SocietyKnown(v.Holder) {
+				bad("%s: unknown holder %q (add it to societies.yaml)", w, v.Holder)
+			}
+			for _, f := range v.Foes {
+				if FoeByID(f) == nil {
+					bad("%s: unknown foe %q", w, f)
+				}
+			}
+			items(w, v.Shop)
+			conds(w, v.If)
+		}
 		scene(where+" enter_scene", l.EnterScene)
 		for _, person := range l.People {
 			scene(where+" person "+person.Name, person.Scene)
@@ -414,6 +500,9 @@ func Validate() []string {
 		}
 		if q.Item != "" && ItemByID(q.Item) == nil {
 			bad("%s: unknown item %q", where, q.Item)
+		}
+		if q.Card != "" && RuleCardByID(q.Card) == nil {
+			bad("%s: unknown card %q", where, q.Card)
 		}
 		for _, o := range q.Opens {
 			if LocationByID(o) == nil {
@@ -472,9 +561,48 @@ func checkSteps(where string, steps []Step) []string {
 			}
 			ref(d.Win)
 			ref(d.Lose)
+			if d.Card != "" && RuleCardByID(d.Card) == nil {
+				bad("step %d: duel on unknown card %q", i+1, d.Card)
+			}
 		}
-		if s.Puzzle != "" && PuzzleByID(s.Puzzle) == nil {
-			bad("step %d: unknown puzzle %q", i+1, s.Puzzle)
+		if pz := s.Puzzle; pz != nil {
+			if p := PuzzleByID(pz.ID); p == nil {
+				bad("step %d: unknown puzzle %q", i+1, pz.ID)
+			} else {
+				for route, sc := range pz.Routes {
+					if !slices.ContainsFunc(p.Routes, func(r PuzzleRoute) bool { return r.ID == route }) {
+						bad("step %d: puzzle %s has no route %q", i+1, pz.ID, route)
+					}
+					ref(sc)
+				}
+			}
+			ref(pz.Lose)
+		}
+		for soc := range s.Standing {
+			if SocietyByID(soc) == nil {
+				bad("step %d: standing with unknown society %q", i+1, soc)
+			}
+		}
+		if s.JoinSociety != "" {
+			if soc := SocietyByID(s.JoinSociety); soc == nil || !soc.Allegiance {
+				bad("step %d: join_society %q should be a society with allegiance: true", i+1, s.JoinSociety)
+			}
+		}
+		if s.Act < 0 {
+			bad("step %d: act %d should be 1 or more", i+1, s.Act)
+		}
+		if s.Ending != "" && EndingByID(s.Ending) == nil {
+			bad("step %d: unknown ending %q (add it to endings in story.yaml)", i+1, s.Ending)
+		}
+		for c := range s.Favour {
+			if CompanionByID(c) == nil {
+				bad("step %d: favour with unknown companion %q", i+1, c)
+			}
+		}
+		for _, c := range []string{ s.CompanionJoins, s.CompanionLeaves } {
+			if c != "" && CompanionByID(c) == nil {
+				bad("step %d: unknown companion %q", i+1, c)
+			}
 		}
 		if s.Item != "" && ItemByID(s.Item) == nil {
 			bad("step %d: unknown item %q", i+1, s.Item)
@@ -482,8 +610,13 @@ func checkSteps(where string, steps []Step) []string {
 		if s.AcceptQuest != "" && QuestByID(s.AcceptQuest) == nil {
 			bad("step %d: unknown quest %q", i+1, s.AcceptQuest)
 		}
-		if h := s.SetHolder; h != nil && LocationByID(h.At) == nil {
-			bad("step %d: set_holder at unknown location %q", i+1, h.At)
+		if h := s.SetHolder; h != nil {
+			if LocationByID(h.At) == nil {
+				bad("step %d: set_holder at unknown location %q", i+1, h.At)
+			}
+			if h.Holder != "" && !SocietyKnown(h.Holder) {
+				bad("step %d: holder %q is not a society (add it to societies.yaml)", i+1, h.Holder)
+			}
 		}
 		for _, l := range []string{ s.Unlock, s.Travel } {
 			if l != "" && LocationByID(l) == nil {
@@ -499,6 +632,14 @@ func checkSteps(where string, steps []Step) []string {
 //   flag:NAME  flag set          seen:ID    scene played before
 //   item:ID    item owned        level:N    hero level at least N
 //   class:NAME hero's class      at:ID      hero is at a location
+//   act:N      act at least N    standing:SOCIETY>=N  standing compared with a number or a society's
+//   holder:LOC=SOCIETY  who holds a site ("holder:LOC=" for no one)
+//   hostile:SOCIETY     the society is hostile to the hero
+//   allegiance:SOCIETY  the society joined at the lock ("allegiance:none" before it)
+//   companion:ID        in the hero's company     favour:ID>=N  a companion's favour
+//   returns:N  runs started over through the return, at least N (the profile)
+//   ending:ID  the profile has seen that ending
+// Numbers take a comparison in front, as in "act:<3" or "returns:=0"; without one, at least.
 func checkCond(c string) string {
 	kind, arg, ok := strings.Cut(strings.TrimPrefix(c, "!"), ":")
 	if !ok || arg == "" {
@@ -521,19 +662,102 @@ func checkCond(c string) string {
 		if Scenes[arg] == nil {
 			return fmt.Sprintf("condition %q: unknown scene", c)
 		}
-	case "level":
-		if _, err := strconv.Atoi(arg); err != nil {
-			return fmt.Sprintf("condition %q: level needs a number", c)
+	case "level", "act", "returns":
+		if _, _, ok := numberCond(arg); !ok {
+			return fmt.Sprintf("condition %q: %s needs a number, optionally after >=, <=, >, < or =", c, kind)
 		}
 	case "class":
 		if ClassByName(arg) == nil {
 			return fmt.Sprintf("condition %q: unknown class", c)
+		}
+	case "standing", "favour":
+		who, op, rhs, ok := splitCompare(arg)
+		if !ok {
+			return fmt.Sprintf("condition %q: should compare, as in %s:id>=3", c, kind)
+		}
+		known := func(id string) bool { return SocietyByID(id) != nil }
+		if kind == "favour" {
+			known = func(id string) bool { return CompanionByID(id) != nil }
+		}
+		if !known(who) {
+			return fmt.Sprintf("condition %q: unknown %s %q", c, map[string]string{ "standing": "society", "favour": "companion" }[kind], who)
+		}
+		if _, err := strconv.Atoi(rhs); err != nil && (kind == "favour" || !known(rhs)) {
+			return fmt.Sprintf("condition %q: %s%s should be followed by a number%s", c, who, op, map[bool]string{ true: " or a society" }[kind == "standing"])
+		}
+	case "holder":
+		loc, holder, ok := strings.Cut(arg, "=")
+		if !ok || LocationByID(loc) == nil {
+			return fmt.Sprintf("condition %q: should be holder:location=society", c)
+		}
+		if holder != "" && !SocietyKnown(holder) {
+			return fmt.Sprintf("condition %q: unknown society %q", c, holder)
+		}
+	case "hostile":
+		if SocietyByID(arg) == nil {
+			return fmt.Sprintf("condition %q: unknown society", c)
+		}
+	case "allegiance":
+		if arg != "none" && SocietyByID(arg) == nil {
+			return fmt.Sprintf("condition %q: unknown society", c)
+		}
+	case "companion":
+		if CompanionByID(arg) == nil {
+			return fmt.Sprintf("condition %q: unknown companion", c)
+		}
+	case "ending":
+		if EndingByID(arg) == nil {
+			return fmt.Sprintf("condition %q: unknown ending (add it to endings in story.yaml)", c)
 		}
 	case "flag":
 	default:
 		return fmt.Sprintf("condition %q: unknown kind %q", c, kind)
 	}
 	return ""
+}
+
+var compareOps = []string{ ">=", "<=", ">", "<", "=" }
+
+// splitCompare splits "crown>=3" into its sides and the comparison.
+func splitCompare(s string) (lhs, op, rhs string, ok bool) {
+	i := strings.IndexAny(s, "<>=")
+	if i <= 0 {
+		return "", "", "", false
+	}
+	for _, o := range compareOps {
+		if strings.HasPrefix(s[i:], o) {
+			lhs, op, rhs = s[:i], o, s[i+len(o):]
+			return lhs, op, rhs, rhs != ""
+		}
+	}
+	return "", "", "", false
+}
+
+// numberCond reads "3" (at least 3) or "<3", "=0" and the like.
+func numberCond(s string) (op string, n int, ok bool) {
+	op = ">="
+	for _, o := range compareOps {
+		if strings.HasPrefix(s, o) {
+			op, s = o, s[len(o):]
+			break
+		}
+	}
+	n, err := strconv.Atoi(s)
+	return op, n, err == nil
+}
+
+func compare(a int, op string, b int) bool {
+	switch op {
+	case ">=":
+		return a >= b
+	case "<=":
+		return a <= b
+	case ">":
+		return a > b
+	case "<":
+		return a < b
+	}
+	return a == b
 }
 
 // Meets reports whether every condition holds for the hero.
@@ -549,6 +773,10 @@ func (h *Hero) Meets(conds []string) bool {
 func (h *Hero) meets(c string) bool {
 	neg := strings.HasPrefix(c, "!")
 	kind, arg, _ := strings.Cut(strings.TrimPrefix(c, "!"), ":")
+	num := func(have int) bool {
+		op, n, _ := numberCond(arg)
+		return compare(have, op, n)
+	}
 	var ok bool
 	switch kind {
 	case "quest":
@@ -562,12 +790,37 @@ func (h *Hero) meets(c string) bool {
 	case "item":
 		ok = slices.Contains(h.Owned, arg)
 	case "level":
-		n, _ := strconv.Atoi(arg)
-		ok = h.Level >= n
+		ok = num(h.Level)
 	case "class":
 		ok = strings.EqualFold(h.Class, arg)
 	case "at":
 		ok = h.Location == arg
+	case "act":
+		ok = num(h.CurrentAct())
+	case "standing", "favour":
+		who, op, rhs, _ := splitCompare(arg)
+		counts := h.Standing
+		if kind == "favour" {
+			counts = h.Favour
+		}
+		n, err := strconv.Atoi(rhs)
+		if err != nil {
+			n = counts[rhs]	// another society's standing
+		}
+		ok = compare(counts[who], op, n)
+	case "holder":
+		loc, holder, _ := strings.Cut(arg, "=")
+		ok = h.Holders[loc] == holder
+	case "hostile":
+		ok = h.Hostile(arg)
+	case "allegiance":
+		ok = h.Allegiance == arg || (arg == "none" && h.Allegiance == "")
+	case "companion":
+		ok = slices.Contains(h.Companions, arg)
+	case "returns":
+		ok = num(CurrentProfile.Returns)
+	case "ending":
+		ok = slices.Contains(CurrentProfile.Endings, arg)
 	}
 	return ok != neg
 }
