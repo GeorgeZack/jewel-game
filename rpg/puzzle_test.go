@@ -57,24 +57,28 @@ func TestPuzzleRoutesReplay(t *testing.T) {
 
 func TestPuzzleLosses(t *testing.T) {
 	pz := *PuzzleByID("vault")
-	// the quiet route's moves out of order still clear the pins, but jam the lock
-	r, err := pz.Replay([]string{ "swap 0,3 1,3", "swap 4,3 5,3", "swap 3,4 4,4" })
+	quiet := []string{ "swap 1,2 1,3", "swap 2,3 3,3", "swap 5,2 5,3" }
+	// finishing the goal by no route jams the lock (the vault's board leaves no way to clear its
+	// pins out of order without a tool, so take the quiet route away)
+	pz.Routes = pz.Routes[:2]
+	r, err := pz.Replay(quiet)
 	if err != nil || r.State != PuzzleLost || r.Lost != "jammed" {
-		t.Fatalf("out of order: %v %d %q", err, r.State, r.Lost)
+		t.Fatalf("no route: %v %d %q", err, r.State, r.Lost)
 	}
-	// running out of moves
+	// running out of moves, and a tool use counts as one
+	pz = *PuzzleByID("vault")
 	pz.Moves = 2
-	r, err = pz.Replay([]string{ "swap 0,3 1,3", "swap 3,4 4,4" })
-	if err != nil || r.State != PuzzleLost || r.Lost != "moves" {
+	r, err = pz.Replay([]string{ "tool lockpick 3,3", "swap 1,2 1,3" })
+	if err != nil || r.State != PuzzleLost || r.Lost != "moves" || r.Moves() != 2 {
 		t.Fatalf("out of moves: %v %d %q", err, r.State, r.Lost)
 	}
-	if r.Play("swap 4,3 5,3") {
+	if r.Play("swap 5,2 5,3") {
 		t.Fatalf("played on after losing")
 	}
 	// a fail condition
 	pz = *PuzzleByID("vault")
 	pz.Fail = []PuzzleCond{ { Cleared: []string{ "a" } } }
-	if r, _ := pz.Replay([]string{ "swap 0,3 1,3" }); r.State != PuzzleLost || r.Lost != "fail" {
+	if r, _ := pz.Replay([]string{ "swap 1,2 1,3" }); r.State != PuzzleLost || r.Lost != "fail" {
 		t.Fatalf("fail condition: %d %q", r.State, r.Lost)
 	}
 	// retrying is free: a new run starts from the authored board
@@ -90,7 +94,7 @@ func TestPuzzleIsDeterministic(t *testing.T) {
 	for _, refill := range []string{ "none", "queue", "seed" } {
 		pz := *PuzzleByID("vault")
 		pz.Refill, pz.Queue, pz.Seed = refill, "rbygpybgrpgybrpyg", 7
-		moves := pz.Routes[len(pz.Routes)-1].Solution
+		moves := pz.Routes[len(pz.Routes)-1].Solution[:1]	// later moves may need the board unrefilled
 		a, err1 := pz.Replay(moves)
 		b, err2 := pz.Replay(moves)
 		if err1 != nil || err2 != nil || dumpBoard(a) != dumpBoard(b) {
@@ -106,10 +110,10 @@ func TestPuzzleIsDeterministic(t *testing.T) {
 func TestPuzzleToolsNeedRites(t *testing.T) {
 	pz := PuzzleByID("vault")
 	knight, _ := NewPuzzleRun(pz, NewHero("Knight"))
-	if knight.Uses["force"] != 1 || knight.Uses["lockpick"] != 0 {
+	if knight.Uses["force"] != pz.Tools[0].Uses || knight.Uses["lockpick"] != 0 {
 		t.Fatalf("knight tools: %v", knight.Uses)
 	}
-	if knight.Play("tool lockpick") {
+	if knight.Play("tool lockpick 3,3") {
 		t.Fatalf("the knight picked the lock without a rite for it")
 	}
 	druid, _ := NewPuzzleRun(pz, NewHero("Druid"))
@@ -117,15 +121,19 @@ func TestPuzzleToolsNeedRites(t *testing.T) {
 		druid.Hero.AddXP(XPToNext(druid.Hero.Level))
 	}
 	druid, _ = NewPuzzleRun(pz, druid.Hero)
-	if !druid.Play("tool lockpick") || druid.Route == nil || druid.Route.ID != "lockpick" || druid.Uses["lockpick"] != 0 {
+	// the lockpick paints one gem: it only sets one pin, and only on a gem of its color
+	if druid.Play("tool lockpick 0,0") || !druid.Play("tool lockpick 3,3") || druid.State != PuzzlePlaying || druid.Uses["lockpick"] != 0 || druid.Moves() != 1 {
 		t.Fatalf("druid lockpick: %+v", druid)
 	}
-	// Force-clearing a pin is forcing the lock
-	r, _ := NewPuzzleRun(pz, nil)
-	if !r.Play("tool force 1,5") || r.Play("tool force 3,5") {
-		t.Fatalf("force uses")
+	for _, m := range []string{ "swap 1,2 1,3", "swap 5,2 5,3" } {
+		druid.Play(m)
 	}
-	for _, m := range []string{ "swap 3,4 4,4", "swap 4,3 5,3" } {
+	if druid.Route == nil || druid.Route.ID != "lockpick" {
+		t.Fatalf("druid lockpick route: %+v", druid)
+	}
+	// Forcing the bomb that blasts two pins is forcing the lock, for a knight too
+	r, _ := NewPuzzleRun(pz, NewHero("Knight"))
+	for _, m := range []string{ "tool force 2,4", "swap 5,2 5,3" } {
 		r.Play(m)
 	}
 	if r.State != PuzzleWon || r.Route.ID != "force" {

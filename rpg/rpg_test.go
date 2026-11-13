@@ -301,24 +301,20 @@ func TestLevelUp(t *testing.T) {
 	}
 }
 
-func TestShopAndMountsNeedStables(t *testing.T) {
+func TestShopBuysAndReequipsFree(t *testing.T) {
 	h := NewHero("Knight")
 	h.Gold, h.Level = 5000, 20
-	pony := ItemByID("pony")
-	if h.Buy(pony) {
-		t.Fatalf("no stables yet")
-	}
-	h.Build(BuildingByID("stables"))
-	if !h.Buy(pony) || h.Gear[SlotMount] != "pony" {
+	coin := ItemByID("lucky_coin")
+	if !h.Buy(coin) || h.Gear[SlotTrinket] != "lucky_coin" {
 		t.Fatalf("should buy")
 	}
 	gold := h.Gold
-	h.Buy(pony)
+	h.Buy(coin)
 	if h.Gold != gold {
 		t.Fatalf("re-equipping is free")
 	}
-	if NewHeroCombatant(h).Stats[Cunning] != h.Stats[Cunning]+5 {
-		t.Fatalf("mount bonus missing")
+	if NewHeroCombatant(h).GoldPct != 15 {
+		t.Fatalf("item bonus missing")
 	}
 }
 
@@ -492,7 +488,7 @@ func playOut(d *Duel) int {
 func bestShopGear(h *Hero) {
 	for i := range Items {
 		it := &Items[i]
-		if it.QuestOnly || it.Slot == SlotMount || it.Level > h.Level {
+		if it.QuestOnly || it.Level > h.Level {
 			continue
 		}
 		if cur := ItemByID(h.Gear[it.Slot]); cur == nil || it.Price > cur.Price {
@@ -658,10 +654,12 @@ func buyNodes(h *Hero) {
 	}
 }
 
-// spendLikeAPlayer is the simulator's fixed policy: residue buys Orrery nodes (buyNodes), gold
-// buys the best gear the hero can afford in each slot and then buildings in list order, and quest
-// rewards are worn when they beat what's on.
-func spendLikeAPlayer(h *Hero) {
+// spendLikeAPlayer is the simulator's fixed policy: residue buys Orrery nodes (buyNodes); gold
+// buys the best gear the hero can afford in each slot, then henchmen (hire to the cap, train one
+// rank at a time), then facility levels in list order; quest rewards are worn when they beat
+// what's on. At the academy it claims reports and dues, and posts every free henchman to site,
+// where the hero is about to fight. It returns the gold claimed from chapters and the ledger.
+func spendLikeAPlayer(h *Hero, site string) (dues int) {
 	buyNodes(h)
 	// quest items cost nothing, so rank by level
 	worth := func(id string) int {
@@ -678,9 +676,6 @@ func spendLikeAPlayer(h *Hero) {
 			if it.Slot != slot || (!owned && (it.QuestOnly || it.Price > h.Gold || it.Level > h.Level)) {
 				continue
 			}
-			if it.Slot == SlotMount && !h.Has("stables") {
-				continue
-			}
 			if worth(it.ID) > worth(h.Gear[slot]) && (best == nil || worth(it.ID) > worth(best.ID)) {
 				best = it
 			}
@@ -689,14 +684,34 @@ func spendLikeAPlayer(h *Hero) {
 			h.Buy(best)
 		}
 	}
-	for i := range Buildings {
-		h.Build(&Buildings[i])
+	if !h.AcademyOpen() {
+		return 0
 	}
+	gold := h.Gold
+	for i := range h.Henchmen {
+		h.Claim(i)
+	}
+	h.ClaimDues()
+	dues = h.Gold - gold
+	buyNodes(h)
+	for h.Hire() {
+	}
+	for i := range h.Henchmen {
+		h.Train(i)
+		if h.Henchmen[i].Post != site {
+			h.Recall(i)
+			h.Post(i, site)
+		}
+	}
+	for i := range Facilities {
+		h.Build(&Facilities[i])
+	}
+	return dues
 }
 
 // TestProgression plays the main quests in order with the AI as the hero, one hero per class,
-// and logs level, gold, residue earned so far in each color and Orrery nodes owned after each
-// quest (see the table with -v). A lost duel is fought again, keeping what the board paid, as a
+// and logs level, gold, residue earned so far in each color, Orrery nodes owned, gold claimed
+// from chapters and dues so far, henchmen ranks and facility levels after each quest (see the table with -v). A lost duel is fought again, keeping what the board paid, as a
 // player would. Economy numbers should come from here.
 func TestProgression(t *testing.T) {
 	const MAX_TRIES = 30	// duels per kill before the hero counts as stuck
@@ -704,7 +719,8 @@ func TestProgression(t *testing.T) {
 		h := NewHero(class.Name)
 		seed := int64(0)
 		var earned [NUM_MANA]int
-		t.Logf("%-8s %-14s %3s %5s %4s %5s %4s %4s %4s %4s %5s", class.Name, "quest", "lvl", "duels", "lost", "gold", "fire", "watr", "air", "erth", "nodes")
+		dues := 0
+		t.Logf("%-8s %-14s %3s %5s %4s %5s %4s %4s %4s %4s %5s %4s %4s %4s", class.Name, "quest", "lvl", "duels", "lost", "gold", "fire", "watr", "air", "erth", "nodes", "dues", "hm", "fac")
 		for i := range Quests {
 			q := &Quests[i]
 			if !q.Main {
@@ -713,6 +729,7 @@ func TestProgression(t *testing.T) {
 			h.Location = q.Giver
 			h.Accept(q)
 			h.Location = q.At
+			dues += spendLikeAPlayer(h, q.At)	// post henchmen where the fighting will be
 			card := RuleCardByID(FoeByID(q.Foe).Card)
 			duels, lost := 0, 0
 			for !slices.Contains(h.Done, q.ID) && duels < MAX_TRIES*q.Count {
@@ -730,14 +747,29 @@ func TestProgression(t *testing.T) {
 					earned[c] += n
 				}
 				if r.Won {
-					h.RecordKill(q.Foe, q.At)
+					h.RecordWin(q.At)
+					for _, done := range h.RecordKill(q.Foe, q.At) {
+						// the scene a quest ends with may set flags, the academy's founding among them
+						for _, st := range Scenes[done.DoneScene] {
+							if st.SetFlag != "" {
+								h.Flags[st.SetFlag] = true
+							}
+						}
+					}
 				} else {
 					lost++
 				}
-				spendLikeAPlayer(h)
+				dues += spendLikeAPlayer(h, q.At)
 			}
-			t.Logf("%-8s %-14s %3d %5d %4d %5d %4d %4d %4d %4d %5d", class.Name, q.ID, h.Level, duels, lost, h.Gold,
-				earned[Fire], earned[Water], earned[Air], earned[Earth], len(h.Nodes))
+			ranks, levels := 0, 0
+			for _, m := range h.Henchmen {
+				ranks += m.Rank
+			}
+			for _, n := range h.Facilities {
+				levels += n
+			}
+			t.Logf("%-8s %-14s %3d %5d %4d %5d %4d %4d %4d %4d %5d %4d %4d %4d", class.Name, q.ID, h.Level, duels, lost, h.Gold,
+				earned[Fire], earned[Water], earned[Air], earned[Earth], len(h.Nodes), dues, ranks, levels)
 			if !slices.Contains(h.Done, q.ID) {
 				t.Errorf("%s is stuck on %s at level %d", class.Name, q.ID, h.Level)
 				break

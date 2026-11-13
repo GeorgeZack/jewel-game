@@ -16,11 +16,15 @@ Diffusion), and some of it is still placeholder. See [attributions.md](attributi
   around them. Gold and stars pay out after the duel. Whatever the other side's move sets up, they get to use.
 - *Extra turns and Wilds:* match 4 and you go again. Match 5 and you also get a Wild, which completes
   any mana match and multiplies it. Running out of moves drains all mana and reshuffles.
-- *Heroes:* Knight, Warrior, Druid or Wizard, each with six spells unlocked by level (six can be
-  equipped). Levels give points for Fire, Water, Air, Earth, Battle, Cunning and Morale.
+- *Heroes:* Knight, Warrior, Druid or Wizard, each starting with a kit of rites (six can be
+  equipped). Levels give HP; stats (Fire, Water, Air, Earth, Battle, Cunning and Morale) and more
+  rites come from the Orrery, bought with the residue good matches leave behind.
 - *World:* walk the map between towns and wilds, take main and side quests, fight roaming foes and
   road ambushes. Quests open up the map through to the final boss.
-- *Spending gold:* gear in five slots from town shops, mounts, and permanent citadel buildings.
+- *Spending gold:* gear in four slots from town shops; then, once the academy is founded, henchmen
+  to hire, train and equip, and facilities to build and upgrade. Henchmen posted to a site run a
+  chapter there that completes as you win duels, paying gold and residue, and sites you hold pay
+  dues on every win.
 - *Story:* dialogue with portraits and choices, title cards, people to talk to in towns, and story
   flags that quests and scenes can check.
 
