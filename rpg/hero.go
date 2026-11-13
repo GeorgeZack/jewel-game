@@ -143,6 +143,12 @@ type Hero struct {
 	Finished	bool			// the story has been beaten
 	Flags		map[string]bool	`json:",omitempty"`	// story flags set by scenes
 	Seen		map[string]bool	`json:",omitempty"`	// scenes played
+	Act			int				// the story's act; 0 in a run saved before acts, read as 1
+	Standing	map[string]int	`json:",omitempty"`	// society → standing; never spent
+	Allegiance	string			`json:",omitempty"`	// the society joined at the lock
+	Companions	[]string		`json:",omitempty"`	// companions in the hero's company
+	Favour		map[string]int	`json:",omitempty"`	// companion → favour, whether in the company or not
+	Companion	string			`json:",omitempty"`	// the one who comes into fights
 }
 
 func NewHero(class string) *Hero {
@@ -156,6 +162,7 @@ func NewHero(class string) *Hero {
 		Active:		map[string]int{},
 		Flags:		map[string]bool{},
 		Seen:		map[string]bool{},
+		Act:		1,
 	}
 	h.takeSeat()
 	h.learnSpells()

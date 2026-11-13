@@ -260,34 +260,11 @@ func TestConditions(t *testing.T) {
 	}
 }
 
-// The whole story must be reachable: every main quest's giver and target open in time.
+// The whole story must be reachable: every main quest's giver and target open in time, on every
+// branch, with the done scenes played (see finishMainQuests in society_test.go).
 func TestStoryCanBeCompleted(t *testing.T) {
-	h := NewHero("Wizard")
-	for _, q := range Quests {
-		if !q.Main {
-			continue
-		}
-		offered := false
-		if h.Route(q.Giver) != nil || h.Location == q.Giver {
-			for _, o := range h.OfferedQuests(q.Giver) {
-				offered = offered || o.ID == q.ID
-			}
-		}
-		if !offered {
-			t.Fatalf("%s isn't offered", q.ID)
-		}
-		h.Location = q.Giver
-		h.Accept(&q)
-		if q.At != h.Location && h.Route(q.At) == nil {
-			t.Fatalf("%s: can't reach %s", q.ID, q.At)
-		}
-		h.Location = q.At
-		for range q.Count {
-			h.RecordKill(q.Foe, q.At)
-		}
-	}
-	if !h.Finished {
-		t.Fatalf("story not finished")
+	for _, a := range eachAllegiance() {
+		finishMainQuests(t, a)
 	}
 }
 

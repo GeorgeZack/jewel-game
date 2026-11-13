@@ -1,0 +1,3 @@
+- { id: tight, name: Tight, desc: A small board., width: 6, height: 6 }
+- { id: wide, name: Wide, desc: A wide board., width: 10 }
+- { id: tall, name: Tall, desc: A tall board., height: 10 }

@@ -1,0 +1,6 @@
+- { id: wren, name: Wren, society: crown, rite: shield_bash, cooldown: 9 }
+- id: moss
+  name: Moss
+  society: free
+  passive: { kind: mend, color: earth, size: 4, amount: 2 }
+- { id: tam, name: Tam, rite: bulwark }

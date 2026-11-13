@@ -224,6 +224,8 @@ func (v *QuestView) drawLedger(col *ui.Column) {
 		held = true
 		if holder == rpg.OUR_SOCIETY {
 			holder = text.T("ui.holder_ours", "your academy")
+		} else {
+			holder = rpg.SocietyName(holder)
 		}
 		col.Line(text.Tf("ui.ledger_row", "%s: %s, %d dues", l.Name, holder, h.Dues[l.ID]), 17, ui.TextColor)
 	}

@@ -1,0 +1,13 @@
+# A small campaign with a branch at the lock, for the tests of the story format (rpg/society_test.go).
+# Every feature of docs/story.md that the shipped story doesn't use yet is used here once.
+title: Fixture
+start: town
+opening: opening
+final_quest: claim
+acts:
+  - { title: Act I, subtitle: The road }
+  - { title: Act II, subtitle: The academy }
+  - { title: Act III, subtitle: The Engine }
+endings:
+  - { id: crown_ending, name: The Crown's Engine }
+  - { id: free_ending, name: The free Engine }

@@ -46,6 +46,7 @@ type PuzzleRoute struct {
 	ID			string		`yaml:"id"`
 	Name		string		`yaml:"name"`
 	Flag		string		`yaml:"flag"`		// set on the hero when this route is taken
+	Standing	map[string]int	`yaml:"standing,flow"`	// society → standing gained (or lost) by taking it
 	When		PuzzleCond	`yaml:"when"`
 	Solution	[]string	`yaml:"solution"`	// moves that take this route, replayed by validation
 }
@@ -421,9 +422,10 @@ func (p *Puzzle) Replay(moves []string) (*PuzzleRun, error) {
 
 // Finish banks a won puzzle: the route's flag is set on the hero.
 func (r *PuzzleRun) Finish(h *Hero) {
-	if r.State == PuzzleWon && r.Route.Flag != "" && h != nil {
-		h.Flags[r.Route.Flag] = true
+	if r.State != PuzzleWon || h == nil {
+		return
 	}
+	h.Apply(&Step{ SetFlag: r.Route.Flag, Standing: r.Route.Standing })
 }
 
 func checkPuzzles() []string {
@@ -498,6 +500,11 @@ func checkPuzzles() []string {
 		}
 		// every route's stored solution must still take that route
 		for _, r := range pz.Routes {
+			for soc := range r.Standing {
+				if SocietyByID(soc) == nil {
+					bad("%s route %s: standing with unknown society %q", where, r.ID, soc)
+				}
+			}
 			if len(r.Solution) == 0 {
 				bad("%s route %s: no stored solution", where, r.ID)
 				continue

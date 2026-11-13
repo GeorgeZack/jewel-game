@@ -187,6 +187,17 @@ ui:
   ledger_none: No site is held yet.
   ledger_row: "%s: %s, %d dues"
   holder_ours: your academy
+  act_title: "Act %d"
+  standing: Standing
+  standing_line: "%s  %+d"
+  standing_joined: (joined)
+  standing_hostile: (hostile)
+  companions: Companions
+  companions_help: One companion comes into your fights.
+  companion_line: "%s  (favour %d)"
+  companion_rite: "Rite: %s"
+  companion_bring: Bring into fights
+  companion_brought: Comes into fights
   claim_dues: "Claim %d dues"
   chapter_done: Chapter complete
   chapter_done_body: "%s\n\nClaim the report at the academy."
