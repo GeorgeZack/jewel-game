@@ -1,0 +1,51 @@
+opening:
+  - text: A vault stands in the town square.
+  - puzzle: { id: vault, routes: { force: vault_forced, quiet: vault_quiet }, lose: vault_left }
+  - text: The lockpick route has no scene of its own, so it carries on here.
+
+vault_forced:
+  - text: The alarm rings out across the square.
+vault_quiet:
+  - standing: { crown: 1 }
+vault_left:
+  - text: You leave the vault for another day.
+
+founding_done:
+  - act: 2
+  - standing: { crown: 2, free: 1 }
+  - companion_joins: wren
+  - companion_joins: moss
+  - companion_joins: tam
+  - favour: { wren: 2, moss: 1 }
+  - if: ["returns:1"]
+    then:
+      - text: You have been here before.
+  - if: [ending:crown_ending]
+    then:
+      - text: You remember the Crown's Engine.
+
+the_lock:
+  - text: Two societies want you.
+    choices:
+      - text: The Crown.
+        do:
+          - join_society: crown
+          - standing: { crown: 2 }
+          - set_holder: { at: town, holder: crown }
+      - text: Yourself.
+        if: ["favour:moss>=1"]
+        do:
+          - join_society: free
+          - standing: { free: 3 }
+          - set_holder: { at: town, holder: crown }
+
+to_act_3:
+  - act: 3
+  - duel: { foe: crown_guard, card: tall }
+
+claim_done:
+  - if: [allegiance:crown]
+    then:
+      - ending: crown_ending
+    else:
+      - ending: free_ending

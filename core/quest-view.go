@@ -115,6 +115,7 @@ type QuestView struct {
 	perkShown   string             // the perk in the duel's list whose description is open
 	puzzleTool  string // a Force waiting for its gem
 	puzzleShown int    // dev: moves of a stored solution replayed so far
+	puzzleRoute string // the route the last puzzle board was solved by, "" if it wasn't
 	devPuzzled  bool
 }
 
@@ -138,6 +139,7 @@ func NewQuestView(dm *DataManager) *QuestView {
 	if v.Profile, err = rpg.LoadProfile(rpg.ProfilePath()); err != nil {
 		ui.AddMessage("%s", text.Tf("log.profile_read", "Could not read profile, starting fresh: %v", err))
 	}
+	rpg.CurrentProfile = &v.Profile // conditions on the profile read it
 	if v.Hero != nil {
 		v.Screen = ScreenWorld
 	}
@@ -216,8 +218,8 @@ func (v *QuestView) Update() {
 	if v.scenes.WaitingForDuel() && v.Screen != ScreenDuel && len(v.modals) == 0 {
 		v.scenes.DuelDone(v.lastWon)
 	}
-	if v.scenes.puzzle && v.Screen != ScreenPuzzle && len(v.modals) == 0 {
-		v.scenes.puzzle = false
+	if v.scenes.puzzle != nil && v.Screen != ScreenPuzzle && len(v.modals) == 0 {
+		v.scenes.PuzzleDone(v.puzzleRoute)
 	}
 	if id := devPuzzle(); id != "" && !v.devPuzzled && v.Hero != nil && len(v.modals) == 0 {
 		v.devPuzzled = true
@@ -263,13 +265,14 @@ func (v *QuestView) updateTravel(dt float32) {
 		v.scenes.Play(here.EnterScene)
 		return
 	}
-	if len(here.Foes) > 0 && rand.Float32() < AMBUSH_CHANCE {
+	foes := v.Hero.AsHeld(here).Foes
+	if len(foes) > 0 && rand.Float32() < AMBUSH_CHANCE {
 		v.route = nil
-		foe := rpg.FoeByID(here.Foes[rand.Intn(len(here.Foes))])
+		foe := rpg.FoeByID(foes[rand.Intn(len(foes))])
 		v.show(Modal{
 			Title:   text.T("ui.ambush", "Ambush!"),
 			Body:    text.Tf("ui.ambush_body", "A %s jumps you on the road into %s.", foe.Name, here.Name),
-			Buttons: []ModalButton{{text.T("ui.fight", "Fight"), func() { v.startDuel(foe.ID, roamLevel(here, v.Hero), here.ID) }}},
+			Buttons: []ModalButton{{text.T("ui.fight", "Fight"), func() { v.startDuel(foe.ID, roamLevel(here, v.Hero), here.ID, "") }}},
 		})
 	}
 }
@@ -279,21 +282,23 @@ func roamLevel(l *rpg.Location, h *rpg.Hero) int {
 	return max(l.Level, min(h.Level, l.Level+3))
 }
 
-func (v *QuestView) startDuel(foeID string, level int, at string) {
+// startDuel fights a foe. card is the duel step's or the quest's rule card, "" for none: it wins
+// over the foe's own.
+func (v *QuestView) startDuel(foeID string, level int, at, card string) {
 	v.foeID, v.duelAt = foeID, at
 	v.settled = false
 	v.sideHit = [2]float32{}
 	v.blood = [2]float32{}
 	v.sideFlash = 0
 	foe := rpg.FoeByID(foeID)
-	card := rpg.RuleCardByID(foe.Card)
+	rule := rpg.CardFor(card, foe.Card)
 	if id := devCard(); id != "" {
-		card = rpg.RuleCardByID(id)
+		rule = rpg.RuleCardByID(id)
 	}
 	v.TM.Types = v.DM.DuelGemTypes
-	v.TM.Reset(rpg.BoardSettings(card, v.Hero.AetherOn()))
+	v.TM.Reset(rpg.BoardSettings(rule, v.Hero.AetherOn()))
 	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
-	d.Card = card
+	d.Card = rule
 	d.SetBoard(v.TM.Board)
 	d.OnHit = v.onHit
 	v.perkAt = map[string]float64{}

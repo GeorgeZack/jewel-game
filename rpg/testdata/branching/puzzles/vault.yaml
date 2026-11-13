@@ -1,0 +1,45 @@
+# The society vault: open the lock. Its three red tumbler pins (marked a, b and c) sit in the
+# bottom row between locked wards. Matching a pin's column drops what the next pin needs, so the
+# quiet way is left to right; the Lockpick paints one gem red; Force (or the bomb) is loud.
+# A prototype board; see docs/story.md for the format.
+id: vault
+name: The Society Vault
+objective: Clear the three tumbler pins. Clean, in order from the left, leaves no trace.
+moves: 5
+refill: none
+board:
+  - "y  g  y  b  g  b"
+  - "b  y  b  g  b  r"
+  - "y  r  r  y  r  y"
+  - "g  b  g  p  b  r"
+  - "p  r  y* r  g  g"
+  - "g  r  b# r  b# r"
+marks:
+  a: [1, 5]
+  b: [3, 5]
+  c: [5, 5]
+goal: { cleared: [a, b, c] }
+tools:
+  - { id: force, name: Force, kind: force, uses: 2, rites: [smite, cleave, thorns, firebolt] }
+  - { id: lockpick, name: Lockpick, kind: paint, from: p, to: r, uses: 1, rites: [overgrowth, transmute] }
+routes:
+  # the first route whose conditions hold when the pins are all cleared is the one taken
+  - id: force
+    name: Forced the lock
+    flag: vault_alarm
+    standing: { crown: -1 }
+    when: { blasted: true }
+    # Force the bomb above the left ward: it blasts pins a and b; then match c
+    solution: ["tool force 2,4", "swap 5,2 5,3"]
+  - id: lockpick
+    name: Picked the lock
+    flag: vault_picked
+    when: { tool: true }
+    # paint b's missing pin red, then match a and c in any order
+    solution: ["tool lockpick 3,3", "swap 1,2 1,3", "swap 5,2 5,3"]
+  - id: quiet
+    name: Slipped the lock
+    flag: vault_quiet
+    when: { order: [a, b, c] }
+    # each pin, once matched, drops what the next one needs: a, then b, then c
+    solution: ["swap 1,2 1,3", "swap 2,3 3,3", "swap 5,2 5,3"]

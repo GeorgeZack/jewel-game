@@ -214,7 +214,7 @@ func (v *QuestView) drawMapNode(r rl.Rectangle, l *rpg.Location) {
 // drawLocation is the right panel away from duels: what the hero can do here.
 func (v *QuestView) drawLocation(col *ui.Column) {
 	h := v.Hero
-	l := rpg.LocationByID(h.Location)
+	l := h.AsHeld(rpg.LocationByID(h.Location)) // as its holder, or a hostile society, has it
 	name := col.Next(36)
 	ui.TextFit(l.Name, name.X, name.Y, 30, name.Width, ui.Accent)
 	col.Paragraph(l.Desc, 16, ui.TextColor)
@@ -231,7 +231,7 @@ func (v *QuestView) drawLocation(col *ui.Column) {
 			foe := rpg.FoeByID(q.Foe)
 			if ui.Button(col.Next(40), text.Tf("ui.foe_level", "%s  L%d", foe.Name, q.FoeLevel), false) {
 				v.Screen = ScreenWorld
-				v.startDuel(q.Foe, q.FoeLevel, l.ID)
+				v.startDuel(q.Foe, q.FoeLevel, l.ID, q.Card)
 			}
 			col.Line(text.Tf("ui.quest_progress", "%s  %d / %d", q.Title, h.Active[q.ID], q.Count), 14, ui.DimText)
 		}
@@ -242,7 +242,7 @@ func (v *QuestView) drawLocation(col *ui.Column) {
 		for _, id := range l.Foes {
 			foe := rpg.FoeByID(id)
 			if ui.Button(col.Next(36), text.Tf("ui.foe_level", "%s  L%d", foe.Name, level), false) {
-				v.startDuel(id, level, l.ID)
+				v.startDuel(id, level, l.ID, "")
 			}
 		}
 	}
@@ -342,6 +342,8 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 		}
 		col.Paragraph(text.Tf("ui.gear_line", "%s  %s", rpg.SlotLabel(slot), name), 17, ui.TextColor)
 	}
+	v.drawStanding(col)
+	v.drawCompanions(col)
 	if !narrow() && ui.Button(rl.Rectangle{X: r.X + r.Width - 210, Y: r.Y + 24, Width: 180, Height: 38}, text.T("ui.new_hero", "New hero..."), false) {
 		v.confirmNewHero()
 	}
@@ -450,6 +452,7 @@ func (v *QuestView) drawShop(r rl.Rectangle) {
 		view = rl.Rectangle{X: r.X + 24, Y: r.Y + 86, Width: r.Width - 48, Height: r.Height - 104}
 	}
 	ui.Text(text.T("ui.shop", "Shop"), tx, ty, 38, ui.Accent)
+	here := rpg.LocationByID(h.Location)
 	ui.Text(text.Tf("ui.gold", "Gold %d", h.Gold), r.X+r.Width-200, r.Y+28, 24, goldColor)
 	top := v.shopScroll.Begin(view, uiScale())
 	col := ui.Column{X: view.X + 12, Y: top, W: view.Width - 40, Gap: 8}
@@ -461,7 +464,7 @@ func (v *QuestView) drawShop(r rl.Rectangle) {
 		for i := range rpg.Items {
 			it := &rpg.Items[i]
 			owned := slices.Contains(h.Owned, it.ID)
-			if it.Slot != slot || (it.QuestOnly && !owned) {
+			if it.Slot != slot || (it.QuestOnly && !owned) || (!owned && !h.Sells(here, it.ID)) {
 				continue
 			}
 			v.drawShopRow(&col, h, it)

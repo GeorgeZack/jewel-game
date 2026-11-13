@@ -17,7 +17,7 @@ func TestFoeCardReachesTheBoard(t *testing.T) {
 	rpg.FoeByID("rat").Card = "test"
 
 	v := &QuestView{TM: &TileManager{}, Hero: rpg.NewHero("Knight")}
-	v.startDuel("rat", 1, rpg.Story.Start)
+	v.startDuel("rat", 1, rpg.Story.Start, "")
 	s := v.TM.Board.Settings
 	if v.TM.Board.W() != 6 || v.TM.Board.H() != 10 || s.Gravity != board.Up || !s.Overcharge || !s.Duel {
 		t.Fatalf("card didn't reach the board: %+v", s)
@@ -26,8 +26,14 @@ func TestFoeCardReachesTheBoard(t *testing.T) {
 		t.Fatalf("duel isn't on the card's board")
 	}
 
-	v.startDuel("goblin", 1, rpg.Story.Start)
+	v.startDuel("goblin", 1, rpg.Story.Start, "")
 	if got, want := v.TM.Board.Settings, rpg.BoardSettings(nil, false); got != want || got.Width != 8 || got.Height != 8 {
 		t.Fatalf("a foe with no card should get the standard 8x8 duel, got %+v", got)
+	}
+
+	// a duel step's or a quest's card wins over the foe's
+	v.startDuel("rat", 1, rpg.Story.Start, "great_hall")
+	if v.Duel.Card == nil || v.Duel.Card.ID != "great_hall" || v.TM.Board.W() != 10 {
+		t.Fatalf("the step's card should win over the foe's: %+v", v.Duel.Card)
 	}
 }

@@ -55,7 +55,7 @@ func (v *QuestView) devTour() {
 		if foe == "" {
 			foe = "goblin"
 		}
-		v.startDuel(foe, v.Hero.Level, v.Hero.Location)
+		v.startDuel(foe, v.Hero.Level, v.Hero.Location, "")
 	} else if n == len(screens)+2 && devAutoplay() && v.InDuel() {
 		// close a rule card's box, so the screenshots go on to the duel itself
 		v.modals = nil

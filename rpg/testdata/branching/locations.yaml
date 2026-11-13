@@ -1,0 +1,31 @@
+- id: town
+  name: Town
+  town: true
+  open: true
+  x: 0.2
+  y: 0.5
+  level: 1
+  residue: fire
+  desc: A market town.
+  roads: [mill]
+  foes: [rat]
+  shop: [rusty_blade, leather]
+  variants:
+    # the first that holds wins: a hostile Crown's guards before the Crown's ordinary rule
+    - holder: crown
+      if: [hostile:crown]
+      desc: Crown guards bar the gate.
+      foes: [crown_guard]
+    - holder: crown
+      desc: The Crown's flag flies over the market.
+      shop: [steel_sword]
+- id: mill
+  name: Mill
+  open: true
+  x: 0.6
+  y: 0.5
+  level: 2
+  residue: water
+  desc: An old mill.
+  roads: [town]
+  foes: [rat, cutpurse]
