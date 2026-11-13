@@ -193,16 +193,33 @@ func box(r rl.Rectangle, on bool) {
 	rl.DrawRectangleRounded(r, 0.3, 6, col)
 }
 
+// LabelSize is the text size a button of this shape draws at: the largest at which every label fits.
+// Buttons in a row pass all their labels, so the row's text is one size.
+func LabelSize(r rl.Rectangle, labels ...string) float32 {
+	size := min(r.Height*0.5, 22)
+	for _, label := range labels {
+		for size > 13 && TextWidth(label, size) > r.Width-12 {
+			size--
+		}
+	}
+	return size
+}
+
 // Button draws a button and reports whether it was clicked this frame.
 func Button(r rl.Rectangle, label string, on bool) bool {
-	box(r, on)
-	size := min(r.Height*0.5, 22)
-	for size > 13 && TextWidth(label, size) > r.Width-12 {
-		size--
+	return ButtonSized(r, label, on, true, LabelSize(r, label))
+}
+
+// ButtonSized is a Button with its text size given (see LabelSize), greyed out and deaf when disabled.
+func ButtonSized(r rl.Rectangle, label string, on, enabled bool, size float32) bool {
+	if !enabled {
+		disabledButton(r, label, rl.Fade(DimText, 0.8), size)
+		return false
 	}
+	box(r, on)
 	col := TextColor
 	if on {
-		col = rl.Color{ R: 48, G: 28, B: 12, A: 255 }
+		col = rl.Color{R: 48, G: 28, B: 12, A: 255}
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
 	return clicked(r)
@@ -210,22 +227,18 @@ func Button(r rl.Rectangle, label string, on bool) bool {
 
 // ButtonIf is a Button that greys out and ignores clicks when disabled.
 func ButtonIf(r rl.Rectangle, label string, enabled bool) bool {
-	if enabled {
-		return Button(r, label, false)
-	}
-	DisabledButton(r, label, rl.Fade(DimText, 0.8))
-	return false
+	return ButtonSized(r, label, false, enabled, LabelSize(r, label))
 }
 
 // DisabledButton draws a dark, unclickable button. The label color can say why, e.g. red for too expensive.
 func DisabledButton(r rl.Rectangle, label string, col rl.Color) {
+	disabledButton(r, label, col, LabelSize(r, label))
+}
+
+func disabledButton(r rl.Rectangle, label string, col rl.Color, size float32) {
 	ensureTheme()
 	if !nine(themeButton, r, 10, rl.Color{R: 120, G: 115, B: 135, A: 150}) {
 		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.4))
-	}
-	size := min(r.Height*0.5, 22)
-	for size > 13 && TextWidth(label, size) > r.Width-12 {
-		size--
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)
 }

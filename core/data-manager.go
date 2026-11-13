@@ -130,7 +130,7 @@ func (dm *DataManager) DuelGemTypes() []*entities.GemType {
 	skull.BombIdle, skull.BombIdleFrames, skull.BombIdleFPS = dm.skullPlusIdle, dm.skullPlusIdleFrames, 5
 	gold := piece("Gold", rl.Color{R: 224, G: 120, B: 32, A: 255}, dm.coin, true, rl.Texture2D{}, "")
 	gold.Idle, gold.IdleFrames, gold.IdleFPS = dm.coinIdle, dm.coinIdleFrames, 10
-	star := piece("Star", rl.Color{R: 190, G: 110, B: 255, A: 255}, dm.star, true, rl.Texture2D{}, "")
+	star := piece("Star", rl.Color{R: 110, G: 225, B: 240, A: 255}, dm.star, true, rl.Texture2D{}, "")
 	star.Idle, star.IdleFrames, star.IdleFPS = dm.starIdle, dm.starIdleFrames, 8
 	return []*entities.GemType{
 		rpg.Fire:  piece("Fire", rl.Color{R: 240, G: 60, B: 50, A: 255}, rupee, rupeeFull, rl.Texture2D{}, "Rupee"),

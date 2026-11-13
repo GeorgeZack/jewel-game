@@ -182,9 +182,12 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 	name := col.Next(28)
 	ui.TextFit(text.Tf("ui.level_short", "%s  L%d", e.Name, e.Level), name.X, name.Y, 22, name.Width, ui.TextColor)
 	if c := v.Duel.Card; c != nil && c.ID != "standard" {
-		// the card's name sits under the foe's; its rule heads the scrolling list below
+		// the card's name sits under the foe's; a tap on it reopens the box with its rule
 		line := col.Next(18)
-		ui.TextFit(text.Tf("ui.card_name", "Card: %s", c.Name), line.X, line.Y, 15, line.Width, ui.Accent)
+		ui.TextFit(text.Tf("ui.card_name_tap", "Card: %s  (tap for its rule)", c.Name), line.X, line.Y, 15, line.Width, ui.Accent)
+		if ui.Clicked(line) {
+			v.showCard()
+		}
 	}
 	bar := col.Next(24)
 	v.hpBars[rpg.Enemy] = bar
@@ -204,9 +207,6 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 		return
 	}
 	col.Y = v.rightScroll.Begin(view, uiScale())
-	if c := v.Duel.Card; c != nil && c.ID != "standard" {
-		col.Paragraph(c.Desc, 13, ui.DimText)
-	}
 	for i, s := range e.Spells {
 		v.drawFoeMove(&col, e, s, i)
 	}

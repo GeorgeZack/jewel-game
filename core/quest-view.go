@@ -24,7 +24,7 @@ var (
 	hpColor    = rl.Color{R: 220, G: 60, B: 70, A: 255}
 	healColor  = rl.Color{R: 80, G: 220, B: 120, A: 255}
 	goldColor  = rl.Color{R: 224, G: 120, B: 32, A: 255}
-	xpColor    = rl.Color{R: 190, G: 110, B: 255, A: 255}
+	xpColor    = rl.Color{R: 110, G: 225, B: 240, A: 255}
 	manaColors = [rpg.NUM_MANA]rl.Color{
 		{R: 215, G: 60, B: 50, A: 255},
 		{R: 60, G: 115, B: 235, A: 255},
@@ -295,14 +295,6 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
 	d.Card = card
 	d.SetBoard(v.TM.Board)
-	if card != nil && card.ID != "standard" {
-		// a boss's rule, shown before the first move; the duel waits for the modal
-		v.show(Modal{
-			Title:   card.Name,
-			Body:    card.Desc,
-			Buttons: []ModalButton{{text.T("ui.fight", "Fight"), nil}},
-		})
-	}
 	d.OnHit = v.onHit
 	v.perkAt = map[string]float64{}
 	d.OnPerk = func(p *rpg.Perk) {
@@ -320,6 +312,8 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 		v.effects.Flash(flash{center: at, radius: 64, life: 0.45, col: healColor})
 	}
 	v.Duel = d
+	// a boss's rule, shown before the first move; the duel waits for the modal
+	v.showCard()
 	v.Screen = ScreenDuel
 	v.aiShowing = false
 	v.aiTimer = AI_THINK_TIME + 0.6 // let the board land
@@ -757,6 +751,19 @@ func (v *QuestView) drawPerks(col *ui.Column, c *rpg.Combatant) {
 			col.Paragraph(rpg.PerkAbout(p), 14, ui.DimText)
 		}
 	}
+}
+
+// showCard opens the box that states the duel's rule card in full.
+func (v *QuestView) showCard() {
+	c := v.Duel.Card
+	if c == nil || c.ID == "standard" {
+		return
+	}
+	v.show(Modal{
+		Title:   c.Name,
+		Body:    c.Desc,
+		Buttons: []ModalButton{{text.T("ui.fight", "Fight"), nil}},
+	})
 }
 
 // drawCard names the duel's rule card and its rule, while the duel is on.

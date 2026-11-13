@@ -41,9 +41,6 @@ func orreryPoint(c rl.Vector2, radius float32, rings int, n *rpg.OrreryNode) rl.
 // ORRERY_ZOOM is how far the phone zooms in on one region, so its nodes are big enough to tap.
 const ORRERY_ZOOM = 1.6
 
-// ORRERY_CORE_ZOOM is the phone's zoom on Aether's core, whose ring is the tightest.
-const ORRERY_CORE_ZOOM = 2.2
-
 // orreryRegions is each region with a seat, in the Orrery's order, as mana indices, and then
 // Aether's core, which has none.
 func orreryRegions() []int {
@@ -84,11 +81,16 @@ func (v *QuestView) drawOrrery(r rl.Rectangle) {
 		// a phone zooms in on one region at a time, so every node is a finger wide
 		regions := orreryRegions()
 		cells := ui.Row(col.Next(40), len(regions)+1, 4)
-		if ui.Button(cells[0], text.T("ui.orrery_all", "All"), v.orreryZoom == 0) {
+		labels := []string{text.T("ui.orrery_all", "All")}
+		for _, m := range regions {
+			labels = append(labels, rpg.ManaLabel(m))
+		}
+		size := ui.LabelSize(cells[0], labels...)
+		if ui.ButtonSized(cells[0], labels[0], v.orreryZoom == 0, true, size) {
 			v.orreryZoom = 0
 		}
-		for i, m := range regions {
-			if ui.Button(cells[i+1], rpg.ManaLabel(m), v.orreryZoom == i+1) {
+		for i := range regions {
+			if ui.ButtonSized(cells[i+1], labels[i+1], v.orreryZoom == i+1, true, size) {
 				v.orreryZoom = i + 1
 			}
 		}
@@ -154,14 +156,15 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 			a := rpg.Orrery[i].Angle * math.Pi / 180
 			focus = rl.Vector2{X: c.X + 0.68*radius*float32(math.Sin(a)), Y: c.Y - 0.68*radius*float32(math.Cos(a))}
 		} else {
-			zoom = ORRERY_CORE_ZOOM
+			// the core's ring is the tightest, so it fills the view and its nodes stand apart
+			zoom = (area.Width/2 - 40) * float32(rings+2) / (2 * radius)
 		}
 	}
 	at := func(n *rpg.OrreryNode) rl.Vector2 {
 		p := orreryPoint(c, radius, rings, n)
 		return rl.Vector2{X: c.X + (p.X-focus.X)*zoom, Y: c.Y + (p.Y-focus.Y)*zoom}
 	}
-	nodeR *= zoom
+	nodeR *= min(zoom, ORRERY_ZOOM) // nodes grow to a finger's width and no further
 
 	rl.DrawRectangleRounded(area, 0.04, 8, rl.Fade(rl.Black, 0.3))
 	if zoom == 1 {
@@ -308,9 +311,15 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 	col.Heading(text.T("ui.convert", "Convert"))
 	col.Paragraph(text.Tf("ui.convert_help", "%d of a color becomes %d colorless.", rpg.CONVERT_STEP, rpg.CONVERT_STEP*rpg.CONVERT_PCT/100), 15, ui.DimText)
 	mana := h.Mana()
-	for n, cell := range ui.Row(col.Next(38), len(mana), 6) {
+	cells := ui.Row(col.Next(38), len(mana), 6)
+	labels := make([]string, len(mana))
+	for n, i := range mana {
+		labels[n] = rpg.ManaLabel(i)
+	}
+	size := ui.LabelSize(cells[0], labels...)
+	for n, cell := range cells {
 		i := mana[n]
-		if ui.ButtonIf(cell, rpg.ManaLabel(i), h.Residue[i] >= rpg.CONVERT_STEP) && h.Convert(i) {
+		if ui.ButtonSized(cell, labels[n], false, h.Residue[i] >= rpg.CONVERT_STEP, size) && h.Convert(i) {
 			v.save()
 		}
 	}
