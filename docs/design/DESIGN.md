@@ -309,8 +309,11 @@ Open:
 
 - Stages 1 and 2 ship in the first release with the three endings; 3 and 4 follow (Settled).
   The save and the entities' early scenes are designed for all four.
-- [ ] How many returns before stage 2 and stage 4.
-- [ ] Whether foes scale with the return count.
+- **Settled, 13 Nov 2026:** a profile can return as many times as the player wants. Stage 2
+  (the price) opens after at least three returns; the number is a tunable in data.
+- **Settled, 13 Nov 2026:** foes do not scale with the return count. A later run is easier and
+  faster because of the Grimoire, and that is the fun of returning.
+- [ ] How many returns before stage 4.
 
 ## 6. Technical requirements
 
