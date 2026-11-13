@@ -3,6 +3,7 @@
 package core
 
 import (
+	"fmt"
 	"jewel-game/rpg"
 	"os"
 	"time"
@@ -33,8 +34,15 @@ func (v *QuestView) devTour() {
 	if n < len(screens) {
 		v.Screen = screens[n]
 		if v.Screen == ScreenOrrery {
-			// buy the first node the hero can, to show buying works in the running game
+			// JEWEL_ORRERY_ZOOM=n shows region n zoomed, as the phone's region buttons do
+			fmt.Sscan(os.Getenv("JEWEL_ORRERY_ZOOM"), &v.orreryZoom)
+			// JEWEL_ORRERY_NODE picks a node to look at; otherwise buy the first node the hero can,
+			// to show buying works in the running game
+			v.orrerySel = os.Getenv("JEWEL_ORRERY_NODE")
 			for i := range rpg.Orrery {
+				if v.orrerySel != "" {
+					break
+				}
 				if v.Hero.BuyNode(rpg.Orrery[i].ID) {
 					v.orrerySel = rpg.Orrery[i].ID
 					v.save()

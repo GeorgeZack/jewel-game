@@ -35,6 +35,7 @@ type Combatant struct {
 	Gold, XP		int		// collected this duel
 	Residue			[NUM_MANA]int	// collected this duel, on the hero's turns only
 	Foe				*Foe	// nil for the hero
+	Perks			[]*Perk	// from the hero's Orrery nodes; foes have none
 }
 
 func newCombatant(name string, level int, stats [NUM_STATS]int, hp, startMana int, spells []*Spell) *Combatant {
@@ -66,6 +67,11 @@ func NewHeroCombatant(h *Hero) *Combatant {
 	}
 	c := newCombatant(ClassByName(h.Class).Label(), h.Level, stats, HeroHP(h.Level)+b.HP, b.StartMana, spells)
 	c.SkullDamage, c.Armor, c.GoldPct, c.XPPct = b.SkullDamage, b.Armor, b.GoldPct, b.XPPct
+	c.Perks = heroPerks(h)
+	for _, p := range c.perksOf(PerkOverflow) {
+		c.MaxMana[p.Color] -= p.Amount
+		c.Mana[p.Color] = min(c.Mana[p.Color], c.MaxMana[p.Color])
+	}
 	return c
 }
 
@@ -126,6 +132,7 @@ type Duel struct {
 	Card	*RuleCard	// nil for the standard duel
 	OnHit	func(side, amount int)	// lets the view show damage from any source
 	OnHeal	func(side, amount int)
+	OnPerk	func(p *Perk)	// lets the view mark a hero perk that just worked
 	rng		*rand.Rand
 }
 
@@ -216,8 +223,13 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 		}
 	}
 	skullMatches := 0
+	fired := map[*Perk]bool{}
 	for _, m := range res.Matches {
-		if m.Size >= 4 {
+		traded := false
+		if m.Color < NUM_MANA {
+			traded = d.matchPerks(me, foe, m, fired)
+		}
+		if m.Size >= 4 && !d.wildFour(me, m, fired) && !traded {
 			g.Extra = true
 		}
 		switch {
@@ -239,10 +251,29 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 	if d.Card != nil {
 		card = *d.Card
 	}
+	for _, p := range me.perksOf(PerkForsake) {
+		if counts[p.Color] > 0 {
+			counts[p.Color] = 0
+			d.perkFired(fired, p)
+		}
+	}
+	var spill [NUM_MANA]int
 	for i := range me.Mana {
-		n := min(pct(counts[i], card.ManaPct), me.MaxMana[i]-me.Mana[i])
+		got := pct(counts[i], card.ManaPct)
+		n := min(got, me.MaxMana[i]-me.Mana[i])
 		me.Mana[i] += n
 		g.Mana[i] = n
+		for _, p := range me.perksOf(PerkOverflow) {
+			if p.Color == i && got > n {
+				spill[p.ToMana] += got - n
+				d.perkFired(fired, p)
+			}
+		}
+	}
+	for i, s := range spill {
+		n := min(s, me.MaxMana[i]-me.Mana[i])
+		me.Mana[i] += n
+		g.Mana[i] += n
 	}
 	g.Gold = pct(counts[Gold] * (2 + me.Level/2) * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100, card.GoldPct)
 	g.XP = pct(counts[Star] * (1 + me.Level/3) * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100, card.XPPct)
@@ -251,14 +282,68 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 
 	if counts[Skull] > 0 {
 		perMatch := me.Level/2 + me.SkullDamage + me.Stats[Battle]/4 + me.power(Might) - foe.Armor - foe.Stats[Morale]/10
+		for _, p := range me.perksOf(PerkForsake) {
+			if skullMatches > 0 {
+				perMatch += p.Amount
+				d.perkFired(fired, p)
+			}
+		}
 		dmg := counts[Skull]*SKULL_DAMAGE + bigSkulls*BIG_SKULL_BONUS + perMatch*max(skullMatches, 1)
 		g.Damage = d.Damage(foe, max(1, pct(dmg, card.SkullPct)))
+	}
+	if skullMatches > 0 && d.Board != nil {
+		for _, p := range me.perksOf(PerkSkullPaint) {
+			if paintBeside(d.Board, res, p.Color, p.Amount*skullMatches) > 0 {
+				d.perkFired(fired, p)
+			}
+		}
 	}
 	if g.Extra && !d.Over() {
 		d.Extra = true
 		d.logf("log.extra_turn", "%s earns an extra turn!", me.Name)
 	}
 	return g
+}
+
+// wildFour handles a hero's wild_four perk for a run of four: it plants the Wild and reports that
+// the run gives no extra turn.
+func (d *Duel) wildFour(me *Combatant, m board.Match, fired map[*Perk]bool) bool {
+	if m.Size != 4 || m.Color >= NUM_MANA {
+		return false
+	}
+	for _, p := range me.perksOf(PerkWildFour) {
+		if p.Color == m.Color {
+			if d.Board != nil {
+				if at := d.Board.RandomCells(1); len(at) > 0 {
+					d.Board.PlaceWild(at[0], p.Amount)
+				}
+			}
+			d.perkFired(fired, p)
+			return true
+		}
+	}
+	return false
+}
+
+// matchPerks runs a hero's strike and mend perks for one mana run, and reports whether a trade
+// perk took the run's extra turn.
+func (d *Duel) matchPerks(me, foe *Combatant, m board.Match, fired map[*Perk]bool) (traded bool) {
+	for _, p := range me.Perks {
+		if p.Color != m.Color || m.Size < p.Size {
+			continue
+		}
+		switch p.Kind {
+		case PerkStrike:
+			d.Damage(foe, p.Amount)
+		case PerkMend:
+			d.Heal(me, p.Amount)
+		default:
+			continue
+		}
+		d.perkFired(fired, p)
+		traded = traded || p.Trade
+	}
+	return traded
 }
 
 // CanCast reports whether a side could cast a spell now, ignoring whose turn it is.
@@ -376,6 +461,10 @@ func (d *Duel) Settle(h *Hero) Reward {
 	me, foe := d.Sides[Player], d.Sides[Enemy]
 	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP, Residue: me.Residue }
 	if r.Won {
+		// a bounty in the seat's color, so a hero who wins fast isn't starved of their own region
+		if seat := SeatOf(h.Class); seat != nil && seat.Mana >= 0 {
+			r.Residue[seat.Mana] += WIN_RESIDUE
+		}
 		h.Wins++
 		r.Gold += foe.Level * 8 * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
 		r.XP += foe.Level * 12 * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100
