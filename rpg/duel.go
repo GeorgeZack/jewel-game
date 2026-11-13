@@ -68,6 +68,7 @@ func NewHeroCombatant(h *Hero) *Combatant {
 	c := newCombatant(ClassByName(h.Class).Label(), h.Level, stats, HeroHP(h.Level)+b.HP, b.StartMana, spells)
 	c.SkullDamage, c.Armor, c.GoldPct, c.XPPct = b.SkullDamage, b.Armor, b.GoldPct, b.XPPct
 	c.Perks = heroPerks(h)
+	c.addCompanion(h.FightCompanion())
 	for _, p := range c.perksOf(PerkOverflow) {
 		c.MaxMana[p.Color] -= p.Amount
 		c.Mana[p.Color] = min(c.Mana[p.Color], c.MaxMana[p.Color])

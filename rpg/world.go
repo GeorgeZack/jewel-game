@@ -113,14 +113,16 @@ func ProfilePath() string {
 // SAVE_VERSION is written into every run save. Saves from before versioning have none and hold a
 // bare Hero; LoadRun migrates them. Version 1 is from before the academy, with buildings and mounts.
 // Version 2 is from the 24-node prototype Orrery. Version 3 is from before Aether, with four mana
-// colors in every stat and residue array.
-const SAVE_VERSION = 4
+// colors in every stat and residue array. Version 4 is from before acts, standing and companions:
+// it loads as is, in the first act.
+const SAVE_VERSION = 5
 
 // PROFILE_VERSION is written into every profile save.
 const PROFILE_VERSION = 1
 
 // Profile is what outlasts a run. It is saved apart from the run, so deleting a hero keeps it.
-// Nothing fills it in yet.
+// Ending steps add to Endings; the return (milestone 7) is to count Returns. Conditions read it
+// through CurrentProfile.
 type Profile struct {
 	Grimoire	[]string		`json:",omitempty"`	// entry IDs bought
 	Endings		[]string		`json:",omitempty"`	// endings seen
@@ -216,7 +218,7 @@ func LoadRun(path string) (*Hero, error) {
 		if version < SAVE_VERSION {
 			// an older run: it is converted below, so keep the original
 			backUp(path, data)
-			smallOrrery, fourMana = version < 3, true
+			smallOrrery, fourMana = version < 3, version < 4
 		}
 		if version < 2 {
 			var b struct{ Buildings []string }
@@ -288,6 +290,9 @@ func (h *Hero) fixUp() {
 	}
 	if h.Seen == nil {
 		h.Seen = map[string]bool{}
+	}
+	if h.Act == 0 {
+		h.Act = 1
 	}
 	if LocationByID(h.Location) == nil {
 		h.Location = Story.Start

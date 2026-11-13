@@ -41,7 +41,7 @@ type SceneRunner struct {
 	bg			string
 	skipping	bool
 	duel		*rpg.DuelStep	// waiting for this duel to end
-	puzzle		bool			// waiting for a puzzle board to be left
+	puzzle		*rpg.PuzzleStep	// waiting for this puzzle board to be left
 	lineScroll	ui.Scroll
 }
 
@@ -61,7 +61,7 @@ func (s *SceneRunner) Play(id string) {
 func (s *SceneRunner) Active() bool { return len(s.stack) > 0 || len(s.queue) > 0 }
 
 // Showing is true when the scene owns the screen (not while it waits for a duel).
-func (s *SceneRunner) Showing() bool { return s.Active() && s.duel == nil && !s.puzzle }
+func (s *SceneRunner) Showing() bool { return s.Active() && s.duel == nil && s.puzzle == nil }
 
 func (s *SceneRunner) WaitingForDuel() bool { return s.duel != nil }
 
@@ -71,7 +71,7 @@ func (s *SceneRunner) Stop() {
 }
 
 func (s *SceneRunner) Update(dt float32) {
-	if s.duel != nil || s.puzzle {
+	if s.duel != nil || s.puzzle != nil {
 		return
 	}
 	if len(s.stack) == 0 {
@@ -136,7 +136,7 @@ func (s *SceneRunner) blocked(dt float32) bool {
 		}
 		s.line = nil
 	}
-	return s.duel != nil || s.puzzle
+	return s.duel != nil || s.puzzle != nil
 }
 
 func (s *SceneRunner) push(id string) {
@@ -192,38 +192,16 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	}
 
 	// changes to the hero
-	if st.SetFlag != "" {
-		h.Flags[st.SetFlag] = true
-	}
-	if st.ClearFlag != "" {
-		delete(h.Flags, st.ClearFlag)
-	}
-	if st.Gold != 0 {
-		h.Gold = max(0, h.Gold+st.Gold)
-	}
-	if st.XP > 0 {
-		if h.AddXP(st.XP) > 0 {
-			s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
-		}
-	}
-	h.GiveItem(st.Item)
-	if q := rpg.QuestByID(st.AcceptQuest); q != nil {
-		if _, active := h.Active[q.ID]; !active && !h.Meets([]string{ "quest:" + q.ID }) {
-			h.Accept(q)
-		}
-	}
-	if st.Unlock != "" {
-		h.Flags["unlocked:"+st.Unlock] = true
-	}
-	if st.Travel != "" && rpg.LocationByID(st.Travel) != nil {
-		h.Location = st.Travel
+	travelled := h.Location
+	a := h.Apply(&st)
+	if h.Location != travelled {
 		s.v.route = nil
 	}
-	if hs := st.SetHolder; hs != nil && rpg.LocationByID(hs.At) != nil {
-		h.SetHolder(hs.At, hs.Holder)
+	if a.Levels > 0 {
+		s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
 	}
-	if st.End {
-		h.Finished = true
+	if a.Ending != "" {
+		s.v.save()	// the profile has the ending now
 	}
 
 	// presentation
@@ -242,6 +220,10 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	s.wait = st.Wait
 	if st.Title != "" {
 		s.title, s.titleT = &st, 0
+	}
+	if a.Act != nil && s.title == nil {
+		// a new act's title card; a title on the same step wins
+		s.title, s.titleT = &rpg.Step{ Title: a.Act.Title, Subtitle: a.Act.Subtitle }, 0
 	}
 	if st.Text != "" || len(st.Choices) > 0 {
 		s.line, s.shown, s.choices = &st, 0, nil
@@ -267,12 +249,12 @@ func (s *SceneRunner) exec(st rpg.Step) {
 		}
 		s.duel = d
 		s.line, s.title = nil, nil
-		s.v.startDuel(d.Foe, level, h.Location)
+		s.v.startDuel(d.Foe, level, h.Location, d.Card)
 	}
-	if st.Puzzle != "" && rpg.PuzzleByID(st.Puzzle) != nil {
-		s.puzzle = true
+	if pz := st.Puzzle; pz != nil && rpg.PuzzleByID(pz.ID) != nil {
+		s.puzzle = pz
 		s.line, s.title = nil, nil
-		s.v.startPuzzle(st.Puzzle)
+		s.v.startPuzzle(pz.ID)
 	}
 }
 
@@ -294,6 +276,21 @@ func (s *SceneRunner) DuelDone(won bool) {
 		s.push(d.Lose)
 	case !won:
 		s.stack = s.stack[:0]
+	}
+}
+
+// PuzzleDone resumes the scene after its puzzle board: route is the route taken, "" when the
+// board was left unsolved. A route or a loss with a scene of its own goes there; the rest carry on.
+func (s *SceneRunner) PuzzleDone(route string) {
+	pz := s.puzzle
+	s.puzzle = nil
+	next := pz.Lose
+	if route != "" {
+		next = pz.Routes[route]
+	}
+	if next != "" {
+		s.stack = s.stack[:0]
+		s.push(next)
 	}
 }
 

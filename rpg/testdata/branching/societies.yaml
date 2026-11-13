@@ -1,0 +1,10 @@
+- id: crown
+  name: The Royal Society
+  allegiance: true
+  hostile: [allegiance:free]
+- id: free
+  name: The Independents
+  allegiance: true
+  hostile: [allegiance:crown]
+- id: college
+  name: The Rival College

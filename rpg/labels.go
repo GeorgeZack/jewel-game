@@ -53,6 +53,9 @@ func PerkLabel(p *Perk) string {
 	if n := NodeByID(p.Node); n != nil {
 		return NodeLabel(n)
 	}
+	if c := CompanionByID(strings.TrimPrefix(p.Node, "companion:")); c != nil {
+		return c.Name
+	}
 	return p.Kind
 }
 
