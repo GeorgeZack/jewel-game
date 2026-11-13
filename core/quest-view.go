@@ -47,6 +47,7 @@ const (
 	ScreenShop
 	ScreenAcademy
 	ScreenOrrery
+	ScreenGrimoire
 	ScreenDuel
 	ScreenPuzzle
 )
@@ -103,6 +104,7 @@ type QuestView struct {
 	menuScroll  ui.Scroll
 	shopScroll ui.Scroll
 	academyScroll ui.Scroll
+	grimoireScroll ui.Scroll
 	postAt      int // which open site the academy posts henchmen to
 	leftScroll ui.Scroll
 	rightScroll ui.Scroll
@@ -669,6 +671,9 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 	ui.Bar(col.Next(24), text.T("ui.xp", "XP"), h.XP, rpg.XPToNext(h.Level), xpColor)
 	col.Line(text.Tf("ui.gold_gap", "Gold  %d", h.Gold), 20, goldColor)
 	col.Line(text.Tf("ui.wins", "Wins  %d    Losses  %d", h.Wins, h.Losses), 16, ui.DimText)
+	if v.Profile.Meta > 0 || h.Forfeit() > 0 {
+		col.Line(text.Tf("meta.summary", "%[1]s  %[2]d  (+%[3]d this act)", metaName(), v.Profile.Meta, h.Forfeit()), 16, ui.DimText)
+	}
 	if v.saveErr {
 		col.Line(text.T("ui.save_failed_short", "Saving failed, see F1 log"), 16, hpColor)
 	}
@@ -693,6 +698,7 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 	nav(ScreenQuests, text.Tf("ui.quests_count", "Quests  (%d)", len(h.Active)), true)
 	nav(ScreenShop, text.T("ui.shop_towns", "Shop (in towns)"), here.Town)
 	nav(ScreenAcademy, text.T("ui.academy_nav", "Academy"), h.AcademyOpen())
+	nav(ScreenGrimoire, text.T("meta.grimoire_nav", "Grimoire"), true)
 	if (v.Screen == ScreenShop && !here.Town) || (v.Screen == ScreenAcademy && !h.AcademyOpen()) {
 		v.Screen = ScreenWorld
 	}
@@ -1098,6 +1104,10 @@ func (v *QuestView) thankOnce() {
 	v.show(Modal{
 		Title:   text.T("ui.thanks_title", "Thanks for playing!"),
 		Body:    text.T("ui.thanks_body", "That's the end of this slice of the game. Your hero can keep exploring, and more is on the way."),
-		Buttons: []ModalButton{{text.T("ui.keep_playing", "Keep playing"), nil}},
+		Buttons: []ModalButton{
+			{text.T("ui.keep_playing", "Keep playing"), nil},
+			// the run is over: the return can begin the next one (DESIGN.md 5.8)
+			{text.T("meta.return", "Return..."), v.confirmReturn},
+		},
 	})
 }

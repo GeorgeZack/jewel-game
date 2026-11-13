@@ -28,6 +28,8 @@ func (v *QuestView) DrawCenter(r rl.Rectangle) {
 		v.drawAcademy(r)
 	case ScreenOrrery:
 		v.drawOrrery(r)
+	case ScreenGrimoire:
+		v.drawGrimoire(r)
 	}
 }
 
@@ -68,10 +70,7 @@ func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 		c := &rpg.Classes[i]
 		box := rl.Rectangle{X: grid.X + float32(i%2)*(w+20), Y: grid.Y + float32(i/2)*(h+20), Width: w, Height: h}
 		if card(box, false) {
-			v.Hero = rpg.NewHero(c.Name)
-			v.Screen = ScreenWorld
-			v.save()
-			v.scenes.Play(rpg.Story.Opening)
+			v.startRun(c.Name)
 		}
 		drawFoe("hero", foeColor(c.Color), rl.Vector2{X: box.X + box.Width/2, Y: box.Y + 58}, 36, v.time, 0, true)
 		col := ui.Column{X: box.X + 20, Y: box.Y + 104, W: box.Width - 40, Gap: 4}
@@ -352,7 +351,7 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 func (v *QuestView) confirmNewHero() {
 	v.show(Modal{
 		Title: text.T("ui.start_over", "Start over?"),
-		Body:  text.T("ui.start_over_body", "This deletes your current hero for good."),
+		Body:  text.T("ui.start_over_body", "This deletes your current hero for good. The Grimoire and what it holds are kept."),
 		Buttons: []ModalButton{
 			{text.T("ui.delete_hero", "Delete hero"), func() {
 				if err := rpg.DeleteRun(rpg.SavePath()); err != nil {
