@@ -134,7 +134,7 @@ ui:
   empty_slot: "-"
   new_hero: New hero...
   start_over: Start over?
-  start_over_body: This deletes your current hero for good.
+  start_over_body: This deletes your current hero for good. The Grimoire and what it holds are kept.
   delete_hero: Delete hero
   keep_playing: Keep playing
   spellbook: Spellbook
@@ -589,3 +589,37 @@ academy:
   report_1: "Rank %d staff kept the books at %s. The site is ours."
   report_2: "A rank %d chapter at %s took oaths from the locals."
   report_3: "Our rank %d hand at %s turned a rival's ledger over to us."
+
+# The return, the meta currency and the Grimoire (DESIGN.md 5.8). The currency and the entities
+# have no names yet: currency and entities are placeholders, one line each, to rename later.
+meta:
+  currency: Marks
+  entities: The Others
+  grimoire: The Grimoire
+  grimoire_nav: Grimoire
+  grimoire_about: The book outlasts the run. What you write in it changes how every later run starts.
+  banked: "%[1]s banked: %[2]d"
+  unbanked: "%[1]s earned this act, not yet banked: %[2]d"
+  summary: "%[1]s  %[2]d  (+%[3]d this act)"
+  returns: "Returns: %d"
+  lean: "Lean: %s"
+  lean_take: taking from them
+  lean_resist: resisting them
+  lean_none: undecided
+  return: Return...
+  return_early: Return now...
+  entries: Entries
+  more_later: Some pages are still stuck together. Return more often.
+  kind_take: Takes from them
+  kind_resist: Resists them
+  owned: Written
+  buy: "Write it  (%[1]d %[2]s)"
+  bought: "Written in the Grimoire: %s. It starts with your next run."
+  return_title: Return?
+  return_lose: The run ends. You lose your level, gold, gear, map, quests, academy and its staff, Orrery, standing, allegiance and companions, and start again at the first event, choosing a class.
+  return_forfeit: "This act is not over: the %[1]d %[2]s it has earned are forfeited."
+  return_nothing: This act has earned no %s yet, so none is forfeited.
+  return_keep: "Kept: %[1]d %[2]s banked, the Grimoire, the endings seen, and the count of returns."
+  stay: Stay
+  return_go: Return
+  forfeited: "Forfeited %[1]d %[2]s."

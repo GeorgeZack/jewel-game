@@ -3,7 +3,12 @@ title: The Hollow King
 map_name: The Marches
 start: emberfield              # location a new hero starts in
 opening: opening               # scene played when a hero is created
+first_event: opening           # every run starts here, after the class choice; a return restarts here
+return_scene: the_return       # the entities' scene at the start of a run after a return
+# No tutorial scene: the first run is the tutorial, and its hints are under if: ["!tutorial:done"].
 final_quest: king              # finishing this quest beats the story
+endings:                       # recorded on the profile; each pays meta currency the first time (grimoire.yaml)
+  - { id: king_falls, name: The Hollow King falls }
 blurb: >-
   Something in the north has every creature in the land running south.
   It will take someone to walk the other way.
