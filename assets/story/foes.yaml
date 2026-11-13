@@ -104,6 +104,7 @@
   spells: [firebreath, venom, roar]
 - id: barrow_lord
   name: Barrow Lord
+  boss: true
   shape: humanoid
   color: [110, 200, 180]
   hp_pct: 115
@@ -113,6 +114,7 @@
   card: barrow_hush
 - id: warchief
   name: Redtusk Warchief
+  boss: true
   shape: brute
   color: [200, 80, 60]
   hp_pct: 130
@@ -122,6 +124,7 @@
   card: war_drums
 - id: high_priest
   name: Drowned Priest
+  boss: true
   shape: ghost
   color: [70, 170, 190]
   hp_pct: 125
@@ -130,6 +133,7 @@
   spells: [mana_burn, drain_life, bone_ward, dark_pact, hollow_hymn]
 - id: ember_wyrm
   name: Ember Wyrm
+  boss: true
   shape: dragon
   color: [225, 90, 40]
   hp_pct: 135
@@ -139,6 +143,7 @@
   card: updraft
 - id: hollow_king
   name: The Hollow King
+  boss: true
   shape: ghost
   color: [175, 80, 220]
   hp_pct: 150
