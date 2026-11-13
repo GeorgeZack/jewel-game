@@ -7,7 +7,7 @@ import (
 )
 
 // Residue is what good matches leave behind, one pool per mana color plus a colorless pool. It is
-// spent on the Orrery. Index it with Fire..Earth, or Colorless.
+// spent on the Orrery. Index it with Fire..Aether, or Colorless.
 const (
 	Colorless = NUM_MANA
 	NUM_RESIDUE = NUM_MANA + 1
@@ -30,8 +30,8 @@ const (
 type OrreryNode struct {
 	ID			string			`yaml:"id"`
 	Name		string			`yaml:"name"`
-	Color		string			`yaml:"color"`	// the region: fire, water, air or earth
-	Ring		int				`yaml:"ring"`	// 1 is the innermost
+	Color		string			`yaml:"color"`	// the region: fire, water, air, earth or aether
+	Ring		int				`yaml:"ring"`	// 1 is the innermost of the seated regions; 0 is Aether's core
 	Angle		float64			`yaml:"angle"`	// degrees clockwise from the top
 	Links		[]string		`yaml:"links"`	// joined both ways
 	Cost		int				`yaml:"cost"`	// residue of the region's color
@@ -110,15 +110,15 @@ func inKit(class string, s *Spell) bool {
 	return s.Class == class && s.Level <= KIT_LEVEL
 }
 
-// reachable lists the nodes that can be reached by links from a node.
-func reachable(from string) map[string]bool {
+// reachable lists the nodes that can be reached by links from a node, through open regions only.
+func reachable(from string, aether bool) map[string]bool {
 	seen := map[string]bool{ from: true }
 	todo := []string{ from }
 	for len(todo) > 0 {
 		n := NodeByID(todo[0])
 		todo = todo[1:]
 		for _, id := range n.Near {
-			if !seen[id] {
+			if !seen[id] && regionOpen(NodeByID(id), aether) {
 				seen[id] = true
 				todo = append(todo, id)
 			}
@@ -143,10 +143,13 @@ func checkOrrery() []string {
 		}
 		seen[n.ID] = true
 		if n.Mana < 0 {
-			bad("%s: unknown color %q (fire, water, air or earth)", where, n.Color)
+			bad("%s: unknown color %q (fire, water, air, earth or aether)", where, n.Color)
 		}
-		if n.Ring < 1 {
-			bad("%s: ring %d should be 1 or more", where, n.Ring)
+		if n.Ring < 0 {
+			bad("%s: ring %d should be 0 or more", where, n.Ring)
+		}
+		if n.Mana == Aether && n.Seat != "" {
+			bad("%s: the Aether region has no seat", where)
 		}
 		for _, id := range n.Links {
 			if NodeByID(id) == nil || id == n.ID {
@@ -180,10 +183,13 @@ func checkOrrery() []string {
 			bad("orrery.yaml: class %s has no seat", c.Name)
 			continue
 		}
-		got := reachable(seat.ID)
+		// every node once Aether is on, and the four regions while it is locked
+		open, locked := reachable(seat.ID, true), reachable(seat.ID, false)
 		for _, n := range Orrery {
-			if !got[n.ID] {
+			if !open[n.ID] {
 				bad("orrery node %s: can't be reached from the %s seat", n.ID, c.Name)
+			} else if n.Mana != Aether && !locked[n.ID] {
+				bad("orrery node %s: can't be reached from the %s seat while Aether is locked", n.ID, c.Name)
 			}
 		}
 	}
@@ -203,9 +209,17 @@ func (h *Hero) takeSeat() {
 
 func (h *Hero) Owns(node string) bool { return slices.Contains(h.Nodes, node) }
 
-// Reaches reports whether a node is next to one the hero owns.
+// regionOpen reports whether a node's region can be bought in: Aether's only once it is on.
+func regionOpen(n *OrreryNode, aether bool) bool {
+	return n != nil && (n.Mana != Aether || aether)
+}
+
+// Locked reports whether a node is in a region this run hasn't opened yet.
+func (h *Hero) Locked(n *OrreryNode) bool { return !regionOpen(n, h.AetherOn()) }
+
+// Reaches reports whether a node is next to one the hero owns, in a region that is open.
 func (h *Hero) Reaches(n *OrreryNode) bool {
-	return slices.ContainsFunc(n.Near, h.Owns)
+	return !h.Locked(n) && slices.ContainsFunc(n.Near, h.Owns)
 }
 
 // CanAfford: the region's residue pays first and colorless makes up the rest.

@@ -486,3 +486,27 @@ func TestBombClearsAreaInDuel(t *testing.T) {
 		t.Fatalf("bomb should clear 3x2 at the edge: %+v", res)
 	}
 }
+
+// A missing color never arrives: not on the first fill, a refill, a reroll or a shuffle.
+func TestMissingColorNeverArrives(t *testing.T) {
+	s := DefaultSettings()
+	s.NumColors, s.Missing = 8, 1<<4
+	for seed := range int64(20) {
+		b := NewBoard(s, seed)
+		for range 30 {
+			if a, c, ok := b.FindMove(); ok {
+				b.Swap(a, c)
+				b.BeginMove(a, c)
+			}
+			for b.Step() != nil {
+				b.Collapse()
+			}
+			b.Shuffle()
+			b.each(func(p Point, g *Gem) {
+				if g.Color == 4 {
+					t.Fatalf("seed %d: color 4 at %v", seed, p)
+				}
+			})
+		}
+	}
+}

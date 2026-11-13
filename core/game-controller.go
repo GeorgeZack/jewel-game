@@ -196,7 +196,8 @@ func (c *GameController) centerPanel() rl.Rectangle { return centerPanelRect() }
 // boardArea is in screen space.
 func (c *GameController) boardArea() rl.Rectangle {
 	if narrow() {
-		return phoneBoardRect(float32(rl.GetScreenWidth()), float32(rl.GetScreenHeight()))
+		b := c.Active().Board
+		return phoneBoardRect(float32(rl.GetScreenWidth()), float32(rl.GetScreenHeight()), b.W(), b.H())
 	}
 	s := uiScale()
 	l, r := c.leftPanel(), c.rightPanel()

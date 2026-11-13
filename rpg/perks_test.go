@@ -83,7 +83,10 @@ func matchWorth(me *Combatant, m board.Match) int {
 					v += 2 * p.Amount
 				case p.Kind == PerkMend && me.HP < me.MaxHP:
 					v += min(2*p.Amount, me.MaxHP-me.HP)
+				case p.Kind == PerkHunger && me.Mana[m.Color] < me.MaxMana[m.Color]:
+					v += p.Amount
 				}
+				v -= 2 * p.Backlash
 				traded = traded || (p.Trade && (p.Kind == PerkStrike || p.Kind == PerkMend))
 			}
 		}
@@ -112,7 +115,7 @@ func perkDuel(t *testing.T, node string) *Duel {
 		h.Nodes = append(h.Nodes, node)
 	}
 	d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID("rat"), 1), 1)
-	d.SetBoard(board.NewBoard(BoardSettings(nil), 1))
+	d.SetBoard(board.NewBoard(BoardSettings(nil, false), 1))
 	d.Turn = Player
 	return d
 }
@@ -344,7 +347,7 @@ func TestSmallOrreryRunIsRefunded(t *testing.T) {
 	if err != nil || h == nil {
 		t.Fatalf("old grid run: %v", err)
 	}
-	if !slices.Equal(h.Nodes, []string{ "fire_seat" }) || h.Residue != [NUM_RESIDUE]int{ 43, 0, 0, 0, 13 } || h.Spent != [NUM_RESIDUE]int{} {
+	if !slices.Equal(h.Nodes, []string{ "fire_seat" }) || h.Residue != [NUM_RESIDUE]int{ 43, 0, 0, 0, 0, 13 } || h.Spent != [NUM_RESIDUE]int{} {
 		t.Fatalf("not refunded: nodes %v, residue %v, spent %v", h.Nodes, h.Residue, h.Spent)
 	}
 	if slices.Contains(h.Spells, "hamstring") || h.Gold != 40 {
@@ -418,8 +421,9 @@ type fairBoss struct {
 func fullSim() bool { return os.Getenv("JEWEL_FULL_SIM") != "" }
 
 // fairRate fights every class with the given perk nodes against each boss, seeds duels per class,
-// all at once. It returns the win rate per boss and overall, in percent, and the average turns.
-func fairRate(t *testing.T, bosses []fairBoss, seeds int, nodes []string) (per []int, all, turns int) {
+// all at once, on the card's board with or without Aether. It returns the win rate per boss and
+// overall, in percent, and the average turns.
+func fairRate(t *testing.T, bosses []fairBoss, seeds int, nodes []string, card *RuleCard, aether bool) (per []int, all, turns int) {
 	type result struct{ boss, won, turns int; done bool }
 	out := make(chan result)
 	jobs := 0
@@ -431,7 +435,8 @@ func fairRate(t *testing.T, bosses []fairBoss, seeds int, nodes []string) (per [
 					h := fairHero(class.Name, f.hero)
 					h.Nodes = append(h.Nodes, nodes...)
 					d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
-					d.SetBoard(board.NewBoard(BoardSettings(nil), int64(seed)))
+					d.SetBoard(board.NewBoard(BoardSettings(card, aether), int64(seed)))
+					d.Card = card
 					n := playOut(d)
 					w := 0
 					if d.Winner == Player {
@@ -469,6 +474,7 @@ var fairPairs = [][]string{ {"tidewell", "still_pool"}, {"kindling", "pyre_oath"
 // finish, no row may drag past MAX_TURNS, and the win rate must stay within band points of
 // the heroes without perks (see the table with -v). JEWEL_FULL_SIM=1 runs more bosses and seeds.
 func TestPerksStayFair(t *testing.T) {
+	t.Parallel()	// it only reads the story, so it shares the CPU with the other simulator runs
 	const MAX_TURNS = 160	// average turns, both sides counted, as TestDuelsFinishAndAreFair
 	// the quick run is a smoke test with few duels, so its band is wider
 	band := 35	// percentage points a perk, or a pair, may move the win rate
@@ -491,11 +497,14 @@ func TestPerksStayFair(t *testing.T) {
 		}
 		t.Logf("%s %4d%% %5d", line, all, turns)
 	}
-	basePer, base, baseTurns := fairRate(t, bosses, seeds, nil)
+	basePer, base, baseTurns := fairRate(t, bosses, seeds, nil, nil, false)
 	row("(none)", basePer, base, baseTurns)
 	if base < 30 || base > 70 {
 		t.Errorf("the baseline wins %d%%; the matchups should be near 50%% to separate perks", base)
 	}
+	// Aether's perks only work on a board with Aether, so they are measured against one
+	aetherPer, aetherBase, aetherTurns := fairRate(t, bosses, seeds, nil, nil, true)
+	row("(none, with Aether)", aetherPer, aetherBase, aetherTurns)
 	var sets [][]string
 	for i := range Orrery {
 		if Orrery[i].Perk != nil {
@@ -504,7 +513,12 @@ func TestPerksStayFair(t *testing.T) {
 	}
 	sets = append(sets, fairPairs...)
 	for _, nodes := range sets {
-		per, all, turns := fairRate(t, bosses, seeds, nodes)
+		aether := slices.ContainsFunc(nodes, func(id string) bool { return NodeByID(id).Mana == Aether })
+		base := base
+		if aether {
+			base = aetherBase
+		}
+		per, all, turns := fairRate(t, bosses, seeds, nodes, nil, aether)
 		name := strings.Join(nodes, "+")
 		row(name, per, all, turns)
 		if all < base-band || all > base+band {
@@ -512,6 +526,45 @@ func TestPerksStayFair(t *testing.T) {
 		}
 		if turns > MAX_TURNS {
 			t.Errorf("%s drags: %d turns", name, turns)
+		}
+	}
+}
+
+// TestCardsStayFair plays every rule card the way TestPerksStayFair plays a perk: heroes of
+// every class against bosses they beat about half the time on the standard duel, with and
+// without Aether. Every duel must finish, no row may drag past MAX_TURNS, and the win rate must
+// stay within band points of the same matchups without a card (see the table with -v).
+// JEWEL_FULL_SIM=1 runs more bosses and seeds.
+func TestCardsStayFair(t *testing.T) {
+	t.Parallel()	// it only reads the story, so it shares the CPU with the other simulator runs
+	const MAX_TURNS = 160
+	band := 35
+	bosses := []fairBoss{{"orc", 9, 3}, {"hollow_king", 16, 11}}
+	seeds := 2
+	if fullSim() {
+		band = 20
+		bosses = []fairBoss{{"barrow_lord", 6, 3}, {"orc", 9, 3}, {"high_priest", 12, 6}, {"hollow_king", 16, 11}}
+		seeds = 12
+	}
+	t.Logf("%-28s %5s %5s", "card", "all", "turns")
+	for _, aether := range []bool{ false, true } {
+		_, base, baseTurns := fairRate(t, bosses, seeds, nil, nil, aether)
+		mode := ""
+		if aether {
+			mode = ", Aether"
+		}
+		t.Logf("%-28s %4d%% %5d", "(no card"+mode+")", base, baseTurns)
+		for i := range RuleCards {
+			c := &RuleCards[i]
+			_, all, turns := fairRate(t, bosses, seeds, nil, c, aether)
+			name := c.ID + mode
+			t.Logf("%-28s %4d%% %5d", name, all, turns)
+			if all < base-band || all > base+band {
+				t.Errorf("%s moves the win rate from %d%% to %d%%", name, base, all)
+			}
+			if turns > MAX_TURNS {
+				t.Errorf("%s drags: %d turns", name, turns)
+			}
 		}
 	}
 }

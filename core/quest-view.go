@@ -30,9 +30,10 @@ var (
 		{R: 60, G: 115, B: 235, A: 255},
 		{R: 245, G: 220, B: 90, A: 255},
 		{R: 60, G: 175, B: 80, A: 255},
+		{R: 200, G: 80, B: 235, A: 255},
 	}
 	// manaGems are the stills drawn beside a spell's cost. Same order as manaColors.
-	manaGems = [rpg.NUM_MANA]string{"Rupee", "Sapphire", "Crystal", "Emerald"}
+	manaGems = [rpg.NUM_MANA]string{"Rupee", "Sapphire", "Crystal", "Emerald", "Amethyst"}
 )
 
 type Screen int
@@ -118,7 +119,7 @@ type QuestView struct {
 }
 
 func NewQuestView(dm *DataManager) *QuestView {
-	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(nil), dm)}
+	v := &QuestView{DM: dm, TM: NewTileManager(rpg.BoardSettings(nil, false), dm)}
 	v.scenes.v = v
 	v.ReloadStory()
 	v.TM.Types = dm.DuelGemTypes
@@ -290,10 +291,18 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 		card = rpg.RuleCardByID(id)
 	}
 	v.TM.Types = v.DM.DuelGemTypes
-	v.TM.Reset(rpg.BoardSettings(card))
+	v.TM.Reset(rpg.BoardSettings(card, v.Hero.AetherOn()))
 	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
 	d.Card = card
 	d.SetBoard(v.TM.Board)
+	if card != nil && card.ID != "standard" {
+		// a boss's rule, shown before the first move; the duel waits for the modal
+		v.show(Modal{
+			Title:   card.Name,
+			Body:    card.Desc,
+			Buttons: []ModalButton{{text.T("ui.fight", "Fight"), nil}},
+		})
+	}
 	d.OnHit = v.onHit
 	v.perkAt = map[string]float64{}
 	d.OnPerk = func(p *rpg.Perk) {
@@ -750,6 +759,16 @@ func (v *QuestView) drawPerks(col *ui.Column, c *rpg.Combatant) {
 	}
 }
 
+// drawCard names the duel's rule card and its rule, while the duel is on.
+func (v *QuestView) drawCard(col *ui.Column) {
+	c := v.Duel.Card
+	if c == nil || c.ID == "standard" {
+		return
+	}
+	col.Line(text.Tf("ui.card_name", "Card: %s", c.Name), 18, ui.Accent)
+	col.Paragraph(c.Desc, 14, ui.DimText)
+}
+
 // drawSide draws one combatant: portrait, bars, status and spells.
 func (v *QuestView) drawSide(col *ui.Column, side int) {
 	d := v.Duel
@@ -786,9 +805,9 @@ func (v *QuestView) drawSide(col *ui.Column, side int) {
 	if hit > 0 {
 		rl.DrawRectangleRec(v.hpBars[side], rl.Fade(rl.White, 0.45*hit))
 	}
-	for i := range c.Mana {
+	for n, i := range d.Mana() {
 		r := col.Next(26)
-		if i == 0 {
+		if n == 0 {
 			v.manaBars[side] = r
 		}
 		ui.Bar(r, rpg.ManaLabel(i), c.Mana[i], c.MaxMana[i], manaColors[i])
@@ -912,6 +931,7 @@ func (v *QuestView) DrawRight(r rl.Rectangle) {
 	case v.Screen == ScreenPuzzle:
 		v.drawPuzzleInfo(&col)
 	case v.InDuel():
+		v.drawCard(&col)
 		v.drawSide(&col, rpg.Enemy)
 		col.Heading(text.T("ui.battle_log", "Battle log"))
 		bottom := r.Y + r.Height - 24

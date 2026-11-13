@@ -110,12 +110,14 @@ ui:
   node_rite_level: "Castable from level %d"
   node_seat: "The %s's seat"
   node_owned: Owned
+  node_locked: Locked. This region opens later in the story.
   node_buy: "Buy  (%d %s)"
   node_far: "Not next to a node you own  (%d %s)"
   orrery_all: All
   orrery_legend: "Small: stats. Diamond: a rite. Large: a perk."
   orrery_owned: "%d of %d nodes owned"
   perks: Perks
+  card_name: "Card: %s"
   convert: Convert
   convert_help: "%d of a color becomes %d colorless."
   respec: Respec
@@ -325,6 +327,10 @@ stat:
     name: Earth
     help: "+1 max Earth mana. Every 6 adds +1 Earth per match."
     now: "+%d max Earth mana, +%d per match"
+  aether:
+    name: Aether
+    help: "+1 max Aether mana. Every 6 adds +1 Aether per match."
+    now: "+%d max Aether mana, +%d per match"
   battle:
     name: Battle
     help: Every 4 adds +1 damage per skull match.
@@ -460,6 +466,24 @@ spell:
   dark_pact:
     name: Dark Pact
     desc: Turn all gold into skulls.
+  hollow_hymn:
+    name: Hollow Hymn
+    desc: Deal 6 and burn 4 of each foe mana.
+  void_lash:
+    name: Void Lash
+    desc: Deal 10 + Aether/2 damage.
+  void_bolt:
+    name: Void Bolt
+    desc: Deal 8 + Aether/2 damage.
+  unmake:
+    name: Unmake
+    desc: Turn all gold and stars into skulls.
+  eclipse:
+    name: Eclipse
+    desc: Silence the foe for 2 turns and burn 5 of each of its mana.
+  oblivion:
+    name: Oblivion
+    desc: Deal 25 + Aether damage. You lose 8 HP.
 
 item:
   rusty_blade:
@@ -545,6 +569,9 @@ rule:
   forsake: "Skull matches deal %d more, but %s matches give you no mana."
   seed_wild: "Duels start with %d x%d Wilds on the board, for either side to take."
   seed_bomb: "Duels start with %d +5 skulls on the board, for either side to take."
+  hunger: "A match of %d or more %s also drains %d of your %s mana into %s."
+  blood_price: "A rite short of %s may take the rest from your HP, %d HP for each."
+  backlash: "Each time, you lose %d HP."
 
 academy:
   report_1: "Rank %d staff kept the books at %s. The site is ours."

@@ -324,6 +324,9 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	}
 	col.Heading(text.T("ui.stats", "Stats"))
 	for stat := range rpg.NUM_STATS {
+		if !h.StatShown(stat) {
+			continue
+		}
 		row := col.Next(50)
 		ui.Text(text.Tf("ui.stat_line", "%s  %d", rpg.StatLabel(stat), c.Stats[stat]), row.X, row.Y+2, 22, ui.TextColor)
 		ui.TextFit(rpg.StatBonus(stat, c.Stats[stat]), row.X, row.Y+28, 16, row.Width, ui.DimText)
