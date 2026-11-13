@@ -147,7 +147,8 @@ ui:
   academy_help: Gold builds facilities and pays your henchmen. Chapters and dues only move when you win duels.
   academy_locked: The academy has not been founded yet.
   facilities: Facilities
-  facility_level: "%s  %d / %d"
+  facility_level: "Level %d / %d"
+  facility_next: "Next: %s"
   facility_locked: Not available yet.
   built: Built
   build: "Build %d"
@@ -157,7 +158,9 @@ ui:
   henchman: "Rank %d henchman"
   henchman_gear: "Gear: %s"
   henchman_free: Free
-  henchman_posted: "At %s, %d / %d wins"
+  henchman_posted: "At %s (%s), %d / %d wins"
+  recall: Recall
+  post_pays: "%s chapters pay %s residue."
   henchman_report: "Report from %s"
   train: "Train %d"
   max_rank: Top rank
@@ -168,7 +171,7 @@ ui:
   claim: Claim
   report_pays: "Pays %d gold, %d %s residue."
   chapters: Chapters and ledger
-  chapters_help: "A posted henchman's chapter completes after %d of your wins, anywhere. Sites you hold pay %d dues on each win there."
+  chapters_help: "A posted henchman's chapter completes after %d of your wins at that site, and pays residue in its color. Recalling one loses its progress. Sites you hold pay %d dues on each win there."
   ledger_none: No site is held yet.
   ledger_row: "%s: %s, %d dues"
   holder_ours: your academy

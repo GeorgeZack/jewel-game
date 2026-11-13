@@ -51,6 +51,7 @@ type Location struct {
 	X			float32		`yaml:"x"`			// 0..1 on the map
 	Y			float32		`yaml:"y"`
 	Level		int			`yaml:"level"`		// roaming foes' level
+	Residue		string		`yaml:"residue"`	// color the site's chapters pay residue in: fire, water, air or earth
 	Desc		string		`yaml:"desc"`
 	Roads		[]string	`yaml:"roads,flow"`
 	Foes		[]string	`yaml:"foes,flow"`
@@ -389,6 +390,9 @@ func Validate() []string {
 			} else if !slices.Contains(other.Roads, l.ID) {
 				bad("%s: road to %s is one-way, add %s to its roads", where, r, l.ID)
 			}
+		}
+		if manaByName(l.Residue) < 0 {
+			bad("%s: residue %q should be fire, water, air or earth", where, l.Residue)
 		}
 		conds(where, l.Requires)
 		scene(where+" enter_scene", l.EnterScene)

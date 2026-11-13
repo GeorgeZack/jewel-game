@@ -55,30 +55,36 @@ func (v *QuestView) drawFacilities(col *ui.Column) {
 	if narrow() {
 		cols = 1
 	}
+	// On a phone the button gets its own row, so every title has the plaque's full width.
+	rowH, btnW := float32(96), float32(124)
+	if narrow() {
+		rowH = 136
+	}
 	var cells []rl.Rectangle
 	for i := range rpg.Facilities {
 		if i%cols == 0 {
-			cells = ui.Row(col.Next(96), cols, 10)
+			cells = ui.Row(col.Next(rowH), cols, 10)
 		}
 		f := &rpg.Facilities[i]
 		row := cells[i%cols]
 		lvl := h.FacilityLevel(f.ID)
 		plaque(row, lvl > 0)
-		btnW := float32(124)
-		if narrow() {
-			btnW = 112
-		}
 		in := rl.Rectangle{X: row.X + 20, Y: row.Y + 12, Width: row.Width - 40}
-		ui.TextFit(text.Tf("ui.facility_level", "%s  %d / %d", f.Name, lvl, len(f.Levels)), in.X, in.Y, 22, in.Width-btnW-6, ui.TextColor)
+		titleW := in.Width - btnW - 8
+		btn := rl.Rectangle{X: in.X + in.Width - btnW, Y: row.Y + 10, Width: btnW, Height: 34}
+		if narrow() {
+			titleW = in.Width
+			btn = rl.Rectangle{X: in.X, Y: row.Y + rowH - 50, Width: in.Width, Height: 34}
+		}
+		ui.TextFit(f.Name, in.X, in.Y, 22, titleW, ui.TextColor)
 		ui.TextFit(f.Desc, in.X, in.Y+32, 16, in.Width, ui.DimText)
-		next := ""
+		next := text.Tf("ui.facility_level", "Level %d / %d", lvl, len(f.Levels))
 		if !h.FacilityAvailable(f) {
-			next = text.T("ui.facility_locked", "Not available yet.")
+			next += ". " + text.T("ui.facility_locked", "Not available yet.")
 		} else if lvl < len(f.Levels) {
-			next = rpg.LevelAbout(f.Levels[lvl])
+			next += ". " + text.Tf("ui.facility_next", "Next: %s", rpg.LevelAbout(f.Levels[lvl]))
 		}
 		ui.TextFit(next, in.X, in.Y+54, 16, in.Width, ui.TextColor)
-		btn := rl.Rectangle{X: in.X + in.Width - btnW, Y: row.Y + 10, Width: btnW, Height: 34}
 		cost := h.NextCost(f)
 		label := text.Tf("ui.build", "Build %d", cost)
 		if lvl > 0 {
@@ -119,7 +125,7 @@ func (v *QuestView) drawHenchmen(col *ui.Column) {
 		case m.Report != nil:
 			status = text.Tf("ui.henchman_report", "Report from %s", rpg.LocationByID(m.Report.At).Name)
 		case m.Post != "":
-			status = text.Tf("ui.henchman_posted", "At %s, %d / %d wins", rpg.LocationByID(m.Post).Name, m.Wins, rpg.CHAPTER_WINS)
+			status = text.Tf("ui.henchman_posted", "At %s (%s), %d / %d wins", rpg.LocationByID(m.Post).Name, rpg.ManaLabel(rpg.SiteColor(m.Post)), m.Wins, rpg.CHAPTER_WINS)
 		}
 		gear := text.T("ui.gear_none", "No gear")
 		if it := rpg.ItemByID(m.Gear); it != nil {
@@ -147,6 +153,11 @@ func (v *QuestView) drawHenchmen(col *ui.Column) {
 		case m.Post == "" && len(sites) > 0:
 			if ui.Button(btns[2], text.T("ui.post", "Post"), false) {
 				h.Post(i, sites[v.postAt%len(sites)].ID)
+				v.save()
+			}
+		case m.Post != "":
+			if ui.Button(btns[2], text.T("ui.recall", "Recall"), false) {
+				h.Recall(i)
 				v.save()
 			}
 		default:
@@ -196,10 +207,12 @@ func (v *QuestView) postSites() []*rpg.Location {
 func (v *QuestView) drawLedger(col *ui.Column) {
 	h := v.Hero
 	col.Heading(text.T("ui.chapters", "Chapters and ledger"))
-	col.Paragraph(text.Tf("ui.chapters_help", "A posted henchman's chapter completes after %d of your wins, anywhere. Sites you hold pay %d dues on each win there.", rpg.CHAPTER_WINS, rpg.DUES_PER_WIN), 16, ui.DimText)
+	col.Paragraph(text.Tf("ui.chapters_help", "A posted henchman's chapter completes after %d of your wins at that site, and pays residue in its color. Recalling one loses its progress. Sites you hold pay %d dues on each win there.", rpg.CHAPTER_WINS, rpg.DUES_PER_WIN), 16, ui.DimText)
 	if sites := v.postSites(); len(sites) > 0 {
 		v.postAt = (v.postAt%len(sites) + len(sites)) % len(sites)
-		v.postAt += ui.Stepper(col.Next(34), text.T("ui.post_to_label", "Post to"), sites[v.postAt].Name)
+		site := sites[v.postAt]
+		v.postAt += ui.Stepper(col.Next(34), text.T("ui.post_to_label", "Post to"), site.Name)
+		col.Line(text.Tf("ui.post_pays", "%s chapters pay %s residue.", site.Name, rpg.ManaLabel(rpg.SiteColor(site.ID))), 16, ui.DimText)
 	}
 	held := false
 	for i := range rpg.Locations {

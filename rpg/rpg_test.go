@@ -657,9 +657,9 @@ func buyNodes(h *Hero) {
 // spendLikeAPlayer is the simulator's fixed policy: residue buys Orrery nodes (buyNodes); gold
 // buys the best gear the hero can afford in each slot, then henchmen (hire to the cap, train one
 // rank at a time), then facility levels in list order; quest rewards are worn when they beat
-// what's on. At the academy it claims reports and dues, and posts every free henchman. It returns
-// the gold claimed from chapters and the ledger.
-func spendLikeAPlayer(h *Hero) (dues int) {
+// what's on. At the academy it claims reports and dues, and posts every free henchman to site,
+// where the hero is about to fight. It returns the gold claimed from chapters and the ledger.
+func spendLikeAPlayer(h *Hero, site string) (dues int) {
 	buyNodes(h)
 	// quest items cost nothing, so rank by level
 	worth := func(id string) int {
@@ -698,8 +698,9 @@ func spendLikeAPlayer(h *Hero) (dues int) {
 	}
 	for i := range h.Henchmen {
 		h.Train(i)
-		if h.Henchmen[i].Post == "" {
-			h.Post(i, h.Location)
+		if h.Henchmen[i].Post != site {
+			h.Recall(i)
+			h.Post(i, site)
 		}
 	}
 	for i := range Facilities {
@@ -728,6 +729,7 @@ func TestProgression(t *testing.T) {
 			h.Location = q.Giver
 			h.Accept(q)
 			h.Location = q.At
+			dues += spendLikeAPlayer(h, q.At)	// post henchmen where the fighting will be
 			card := RuleCardByID(FoeByID(q.Foe).Card)
 			duels, lost := 0, 0
 			for !slices.Contains(h.Done, q.ID) && duels < MAX_TRIES*q.Count {
@@ -757,7 +759,7 @@ func TestProgression(t *testing.T) {
 				} else {
 					lost++
 				}
-				dues += spendLikeAPlayer(h)
+				dues += spendLikeAPlayer(h, q.At)
 			}
 			ranks, levels := 0, 0
 			for _, m := range h.Henchmen {

@@ -120,16 +120,20 @@ func TestChapterAdvancesOnWinsAndPaysByRank(t *testing.T) {
 		if !h.Post(0, "mossgate") || h.Post(0, "mossgate") {
 			t.Fatalf("posting: %+v", h.Henchmen)
 		}
-		// saving and loading, or anything but a win, moves nothing
+		// a win elsewhere, or anything but a win, moves nothing
+		h.RecordWin("emberfield")
+		if h.Henchmen[0].Wins != 0 {
+			t.Fatalf("a win elsewhere moved the chapter")
+		}
 		for i := 1; i < CHAPTER_WINS; i++ {
-			if len(h.RecordWin("emberfield")) != 0 {
+			if len(h.RecordWin("mossgate")) != 0 {
 				t.Fatalf("completed early")
 			}
 		}
 		if h.Henchmen[0].Wins != CHAPTER_WINS-1 || h.Held("mossgate") {
 			t.Fatalf("progress %+v", h.Henchmen[0])
 		}
-		done := h.RecordWin("emberfield")
+		done := h.RecordWin("mossgate")
 		if len(done) != 1 || !h.Held("mossgate") || done[0].Line == "" {
 			t.Fatalf("chapter didn't complete: %+v", h)
 		}
@@ -137,11 +141,16 @@ func TestChapterAdvancesOnWinsAndPaysByRank(t *testing.T) {
 		if !h.Claim(0) || h.Henchmen[0].Post != "" || h.Henchmen[0].Report != nil || h.Gold != gold+done[0].Gold {
 			t.Fatalf("claim: %+v", h)
 		}
-		if c := SiteColor("mossgate"); h.Residue[c] != res[c]+done[0].Residue[c] || done[0].Residue[c] == 0 {
+		if c := SiteColor("mossgate"); c != Earth || h.Residue[c] != res[c]+done[0].Residue[c] || done[0].Residue[c] == 0 {
 			t.Fatalf("residue: %v", h.Residue)
 		}
-		if h.Claim(0) {
-			t.Fatalf("claimed twice")
+		if h.Claim(0) || h.Recall(0) {
+			t.Fatalf("claimed twice, or recalled a free henchman")
+		}
+		h.Post(0, "emberfield")
+		h.RecordWin("emberfield")
+		if !h.Recall(0) || h.Henchmen[0].Post != "" || h.Henchmen[0].Wins != 0 {
+			t.Fatalf("recall: %+v", h.Henchmen[0])
 		}
 		return done[0]
 	}
@@ -209,7 +218,7 @@ func TestFacilitiesAndHolderStepValidate(t *testing.T) {
 	files := memFiles{
 		"s/story.yaml":     "start: a",
 		"s/foes.yaml":      "- { id: rat, name: Rat }",
-		"s/locations.yaml": "- { id: a, name: A, open: true }",
+		"s/locations.yaml": "- { id: a, name: A, open: true, residue: water }\n- { id: b, name: B, residue: lava }",
 		"s/quests.yaml":    "[]",
 		"s/facilities.yaml": "- { id: f, name: F, requires: [quest:nope], levels: [ { cost: 10 }, { gold_pct: 5 } ] }\n" +
 			"- { id: f, name: Twice, levels: [ { cost: 1 } ] }\n- { id: g, name: G }",
@@ -220,7 +229,7 @@ func TestFacilitiesAndHolderStepValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 	all := strings.Join(problems, "\n")
-	for _, w := range []string{ "unknown quest", "level 2 needs a gold cost", "defined twice", "facility g: needs at least one level", "set_holder at unknown location \"nowhere\"" } {
+	for _, w := range []string{ "unknown quest", "level 2 needs a gold cost", "defined twice", "facility g: needs at least one level", "set_holder at unknown location \"nowhere\"", "location b: residue \"lava\"" } {
 		if !strings.Contains(all, w) {
 			t.Errorf("no problem mentioning %q in:\n%s", w, all)
 		}
