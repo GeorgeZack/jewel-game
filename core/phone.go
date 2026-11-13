@@ -242,6 +242,7 @@ func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
 	if status != "" {
 		col.Paragraph(status, 15, ui.Accent)
 	}
+	v.drawPerkLine(&col, p)
 	btns := col.Next(44)
 	gap := float32(8)
 	half := (btns.Width - gap) / 2
@@ -264,6 +265,32 @@ func (v *QuestView) drawPhoneDock(r rl.Rectangle) {
 		v.drawSpell(&col, p, s, i, rpg.Player)
 	}
 	v.dockScroll.End(col.Y)
+}
+
+// drawPerkLine lists a side's perks in a few short rows for the phone dock, each lit for a moment
+// when it works; the battle log says what happened.
+func (v *QuestView) drawPerkLine(col *ui.Column, c *rpg.Combatant) {
+	if len(c.Perks) == 0 {
+		return
+	}
+	const size, rowH = 15, 20
+	x, y := col.X, col.Y
+	for _, p := range c.Perks {
+		name := rpg.PerkLabel(p)
+		w := 14 + ui.TextWidth(name, size) + 12
+		if x > col.X && x+w > col.X+col.W {
+			x, y = col.X, y+rowH
+		}
+		tc := ui.DimText
+		if t, ok := v.perkAt[p.Node]; ok && v.time-t < 1.2 {
+			tc = ui.Accent
+			rl.DrawRectangleRec(rl.Rectangle{X: x - 2, Y: y, Width: w - 8, Height: rowH - 2}, rl.Fade(residueColor(p.Color), 0.3))
+		}
+		rl.DrawCircleV(rl.Vector2{X: x + 5, Y: y + rowH/2 - 1}, 5, residueColor(p.Color))
+		ui.Text(name, x+14, y+1, size, tc)
+		x += w
+	}
+	col.Y = y + rowH + col.Gap
 }
 
 // drawPhoneMana draws the four mana pools as short bars across one row.

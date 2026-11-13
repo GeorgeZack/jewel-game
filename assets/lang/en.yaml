@@ -98,20 +98,30 @@ ui:
   node_cost: "%d"
   residue: Residue
   residue_pool: "%d"
-  orrery_help: "Matches of four, five, and cascades leave residue of their color. Nodes cost their region's color; colorless pays for any. Buy nodes next to ones you own."
+  orrery_help: "Fours, fives and cascades leave residue of their color. Nodes cost their region's color; colorless pays for any."
   node_region: "%s region"
+  node_region_kind: "%s  ·  %s region"
+  node_kind_seat: Seat
+  node_kind_perk: Perk
+  node_kind_rite: Rite
+  node_kind_stats: Stats
   node_stat: "%+d %s"
   node_rite: "Rite: %s. %s"
   node_rite_level: "Castable from level %d"
   node_seat: "The %s's seat"
   node_owned: Owned
   node_buy: "Buy  (%d %s)"
-  node_far: Not next to a node you own
+  node_far: "Not next to a node you own  (%d %s)"
+  orrery_all: All
+  orrery_legend: "Small: stats. Diamond: a rite. Large: a perk."
+  orrery_owned: "%d of %d nodes owned"
+  perks: Perks
   convert: Convert
   convert_help: "%d of a color becomes %d colorless."
   respec: Respec
   respec_help: "Refund the residue your nodes took and go back to your seat."
   respec_button: "Respec  (%d gold)"
+  respec_free: "Respec  (free)"
   residue_gain: " +%d %s"
   residue_line: "\n\nResidue:%s."
   in_a_duel: In a duel
@@ -246,6 +256,7 @@ log:
   moves_first: "%s moves first."
   falls: "%s falls!"
   extra_turn: "%s earns an extra turn!"
+  perk: "%s: %s!"
   casts: "%s casts %s."
   stunned: "%s is stunned!"
   mana_drain: "No moves left: half your mana drains away!"
@@ -520,6 +531,17 @@ perk:
   armor: "blocks %d"
   henchmen: "+%d henchmen"
   chapter_pct: "+%d%% chapter pay"
+  free_respec: free Orrery respec
+
+rule:
+  strike: "A match of %d or more %s also deals %d damage."
+  mend: "A match of %d or more %s also heals you %d."
+  wild_four: "A match of four %s plants a x%d Wild instead of giving an extra turn."
+  skull_paint: "Each skull match turns %d gems beside it into %s."
+  overflow: "%s mana past your max spills into %s instead of being lost."
+  forsake: "Skull matches deal %d more, but %s matches give you no mana."
+  seed_wild: "Duels start with %d x%d Wilds on the board, for either side to take."
+  seed_bomb: "Duels start with %d +5 skulls on the board, for either side to take."
 
 academy:
   report_1: "Rank %d staff kept the books at %s. The site is ours."
