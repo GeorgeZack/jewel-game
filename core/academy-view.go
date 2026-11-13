@@ -56,13 +56,30 @@ func (v *QuestView) drawFacilities(col *ui.Column) {
 		cols = 1
 	}
 	// On a phone the button gets its own row, so every title has the plaque's full width.
-	rowH, btnW := float32(96), float32(124)
-	if narrow() {
-		rowH = 136
+	const btnW = 124
+	about := func(f *rpg.Facility) string {
+		lvl := h.FacilityLevel(f.ID)
+		next := text.Tf("ui.facility_level", "Level %d / %d", lvl, len(f.Levels))
+		if !h.FacilityAvailable(f) {
+			next += ". " + text.T("ui.facility_locked", "Not available yet.")
+		} else if lvl < len(f.Levels) {
+			next += ". " + text.Tf("ui.facility_next", "Next: %s", rpg.LevelAbout(f.Levels[lvl]))
+		}
+		return next
 	}
 	var cells []rl.Rectangle
 	for i := range rpg.Facilities {
 		if i%cols == 0 {
+			// a row is as tall as its longest plaque, whose lines wrap
+			textW := (col.W-10*float32(cols-1))/float32(cols) - 40
+			rowH := float32(0)
+			for j := i; j < min(i+cols, len(rpg.Facilities)); j++ {
+				g := &rpg.Facilities[j]
+				rowH = max(rowH, 54+ui.MeasureParagraph(g.Desc, 16, textW)+ui.MeasureParagraph(about(g), 16, textW))
+			}
+			if narrow() {
+				rowH += 44
+			}
 			cells = ui.Row(col.Next(rowH), cols, 10)
 		}
 		f := &rpg.Facilities[i]
@@ -74,17 +91,12 @@ func (v *QuestView) drawFacilities(col *ui.Column) {
 		btn := rl.Rectangle{X: in.X + in.Width - btnW, Y: row.Y + 10, Width: btnW, Height: 34}
 		if narrow() {
 			titleW = in.Width
-			btn = rl.Rectangle{X: in.X, Y: row.Y + rowH - 50, Width: in.Width, Height: 34}
+			btn = rl.Rectangle{X: in.X, Y: row.Y + row.Height - 50, Width: in.Width, Height: 34}
 		}
 		ui.TextFit(f.Name, in.X, in.Y, 22, titleW, ui.TextColor)
-		ui.TextFit(f.Desc, in.X, in.Y+32, 16, in.Width, ui.DimText)
-		next := text.Tf("ui.facility_level", "Level %d / %d", lvl, len(f.Levels))
-		if !h.FacilityAvailable(f) {
-			next += ". " + text.T("ui.facility_locked", "Not available yet.")
-		} else if lvl < len(f.Levels) {
-			next += ". " + text.Tf("ui.facility_next", "Next: %s", rpg.LevelAbout(f.Levels[lvl]))
-		}
-		ui.TextFit(next, in.X, in.Y+54, 16, in.Width, ui.TextColor)
+		y := in.Y + 32
+		y += ui.Wrapped(f.Desc, in.X, y, 16, in.Width, ui.DimText)
+		ui.Wrapped(about(f), in.X, y, 16, in.Width, ui.TextColor)
 		cost := h.NextCost(f)
 		label := text.Tf("ui.build", "Build %d", cost)
 		if lvl > 0 {
