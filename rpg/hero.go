@@ -68,7 +68,7 @@ func ClassByName(name string) *Class {
 	return &Classes[0]
 }
 
-// Bonus is what gear, mounts and citadel buildings add to a hero.
+// Bonus is what gear, facilities and Orrery nodes add to a hero.
 type Bonus struct {
 	Stats		[NUM_STATS]int
 	HP			int
@@ -104,7 +104,10 @@ type Hero struct {
 	Gear		map[string]string	// slot → item ID
 	Owned		[]string
 	Spells		[]string		// equipped, at most MAX_SPELLS
-	Buildings	[]string
+	Facilities	map[string]int		`json:",omitempty"`	// facility ID → levels built
+	Henchmen	[]Henchman		`json:",omitempty"`
+	Dues		map[string]int		`json:",omitempty"`	// the ledger: site → dues not yet claimed
+	Holders		map[string]string	`json:",omitempty"`	// site → who holds it; none means no one
 	Location	string
 	Active		map[string]int	// quest ID → kills so far
 	Done		[]string
@@ -181,17 +184,12 @@ func (h *Hero) ToggleSpell(id string) {
 	}
 }
 
-// TotalBonus adds up gear, buildings and Orrery nodes.
+// TotalBonus adds up gear, facilities and Orrery nodes.
 func (h *Hero) TotalBonus() Bonus {
-	var b Bonus
+	b := h.facilityBonus()
 	for _, id := range h.Gear {
 		if it := ItemByID(id); it != nil {
 			b.add(it.Bonus)
-		}
-	}
-	for _, id := range h.Buildings {
-		if bd := BuildingByID(id); bd != nil {
-			b.add(bd.Bonus)
 		}
 	}
 	for _, id := range h.Nodes {
@@ -202,27 +200,21 @@ func (h *Hero) TotalBonus() Bonus {
 	return b
 }
 
-func (h *Hero) Has(building string) bool { return slices.Contains(h.Buildings, building) }
-
 // Buy pays for an item and equips it. Items already owned swap in for free.
 func (h *Hero) Buy(it *Item) bool {
 	if !slices.Contains(h.Owned, it.ID) {
-		if h.Gold < it.Price || h.Level < it.Level || (it.Slot == SlotMount && !h.Has("stables")) {
+		if h.Gold < it.Price || h.Level < it.Level {
 			return false
 		}
 		h.Gold -= it.Price
 		h.Owned = append(h.Owned, it.ID)
 	}
-	h.Gear[it.Slot] = it.ID
-	return true
-}
-
-func (h *Hero) Build(b *Building) bool {
-	if h.Has(b.ID) || h.Gold < b.Price {
-		return false
+	for i := range h.Henchmen {
+		if h.Henchmen[i].Gear == it.ID {
+			h.Henchmen[i].Gear = ""
+		}
 	}
-	h.Gold -= b.Price
-	h.Buildings = append(h.Buildings, b.ID)
+	h.Gear[it.Slot] = it.ID
 	return true
 }
 
@@ -231,10 +223,9 @@ const (
 	SlotArmor	= "Armor"
 	SlotHelm	= "Helm"
 	SlotTrinket	= "Trinket"
-	SlotMount	= "Mount"
 )
 
-var Slots = []string{ SlotWeapon, SlotArmor, SlotHelm, SlotTrinket, SlotMount }
+var Slots = []string{ SlotWeapon, SlotArmor, SlotHelm, SlotTrinket }
 
 type Item struct {
 	ID, Name	string
@@ -279,43 +270,12 @@ var Items = []Item{
 	{ "mana_charm", "Mana Charm", SlotTrinket, 3, 170, "+4 starting mana", Bonus{ StartMana: 4 }, false },
 	{ "fox_tail", "Fox Tail", SlotTrinket, 6, 380, "+6 Cunning", Bonus{ Stats: stat(Cunning, 6) }, false },
 	{ "heart_stone", "Heartstone", SlotTrinket, 8, 0, "+40 HP, +8 starting mana", Bonus{ HP: 40, StartMana: 8 }, true },
-
-	{ "pony", "Sturdy Pony", SlotMount, 2, 150, "+5 Cunning", Bonus{ Stats: stat(Cunning, 5) }, false },
-	{ "warhorse", "Warhorse", SlotMount, 6, 500, "+4 Battle, +15 HP", Bonus{ Stats: stat(Battle, 4), HP: 15 }, false },
-	{ "griffin", "Griffin", SlotMount, 11, 1400, "+10 Cunning, +5 Battle, +25% gold", Bonus{ Stats: [NUM_STATS]int{ 0, 0, 0, 0, 5, 10 }, GoldPct: 25 }, false },
 }
 
 func ItemByID(id string) *Item {
 	for i := range Items {
 		if Items[i].ID == id {
 			return &Items[i]
-		}
-	}
-	return nil
-}
-
-// Building is a permanent citadel upgrade.
-type Building struct {
-	ID, Name	string
-	Price		int
-	Desc		string
-	Bonus		Bonus
-}
-
-var Buildings = []Building{
-	{ "treasury", "Treasury", 200, "+20% gold from every duel", Bonus{ GoldPct: 20 } },
-	{ "stables", "Stables", 250, "Lets you buy mounts in town", Bonus{} },
-	{ "barracks", "Barracks", 400, "+3 Battle, +1 skull damage", Bonus{ Stats: stat(Battle, 3), SkullDamage: 1 } },
-	{ "library", "Library", 500, "+20% XP from every duel", Bonus{ XPPct: 20 } },
-	{ "temple", "Temple", 600, "+30 HP, +3 Morale", Bonus{ HP: 30, Stats: stat(Morale, 3) } },
-	{ "mage_tower", "Mage Tower", 800, "+4 all masteries, +3 starting mana", Bonus{ Stats: allMastery(4), StartMana: 3 } },
-	{ "war_room", "War Room", 1200, "+3 skull damage, blocks 1", Bonus{ SkullDamage: 3, Armor: 1 } },
-}
-
-func BuildingByID(id string) *Building {
-	for i := range Buildings {
-		if Buildings[i].ID == id {
-			return &Buildings[i]
 		}
 	}
 	return nil

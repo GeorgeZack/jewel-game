@@ -111,8 +111,8 @@ func ProfilePath() string {
 }
 
 // SAVE_VERSION is written into every run save. Saves from before versioning have none and hold a
-// bare Hero; LoadRun migrates them.
-const SAVE_VERSION = 1
+// bare Hero; LoadRun migrates them. Version 1 is from before the academy, with buildings and mounts.
+const SAVE_VERSION = 2
 
 // PROFILE_VERSION is written into every profile save.
 const PROFILE_VERSION = 1
@@ -188,34 +188,46 @@ func saveVersion(data []byte, newest int) (int, error) {
 // a newer version of the game, is an error, and the nil it returns starts fresh.
 func LoadRun(path string) (*Hero, error) {
 	var h *Hero
+	var buildings []string
+	old := false
 	err := readOrBackUp(path, func(data []byte) error {
 		version, err := saveVersion(data, SAVE_VERSION)
 		if err != nil {
 			return err
 		}
-		if version == 0 {
-			// version 0 was a bare hero, from before the Orrery too: keep the original
-			h = &Hero{}
-			if err := json.Unmarshal(data, h); err != nil {
+		// version 0 was a bare hero; later versions wrap it
+		run := data
+		if version > 0 {
+			var f struct{ Run json.RawMessage }
+			if err := json.Unmarshal(data, &f); err != nil {
 				return err
 			}
-			backUp(path, data)
+			run = f.Run
+		}
+		if len(run) == 0 || string(run) == "null" {
 			return nil
 		}
-		var f runFile
-		err = json.Unmarshal(data, &f)
-		h = f.Run
-		if err == nil && h != nil && h.Nodes == nil {
-			// a run from before the Orrery: fixUp converts it, so keep the original
+		h = &Hero{}
+		if err := json.Unmarshal(run, h); err != nil {
+			return err
+		}
+		if version < SAVE_VERSION {
+			// an older run: it is converted below, so keep the original
+			var b struct{ Buildings []string }
+			json.Unmarshal(run, &b)
+			buildings, old = b.Buildings, true
 			backUp(path, data)
 		}
-		return err
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	if h != nil {
 		h.fixUp()
+		if old {
+			h.fromBeforeAcademy(buildings)
+		}
 	}
 	return h, nil
 }

@@ -21,7 +21,7 @@ type Puzzle struct {
 	Board		[]string		`yaml:"board"`		// rows, top first: a color letter per cell, see docs/story.md
 	Marks		map[string][2]int	`yaml:"marks"`	// mark → [x, y]
 	Gravity		string			`yaml:"gravity"`
-	Moves		int				`yaml:"moves"`		// swaps allowed
+	Moves		int				`yaml:"moves"`		// moves allowed: swaps and tool uses
 	Refill		string			`yaml:"refill"`		// none (default), queue or seed
 	Queue		string			`yaml:"queue"`		// refill colors in order, for refill: queue
 	Seed		int64			`yaml:"seed"`
@@ -39,7 +39,7 @@ type PuzzleCond struct {
 	Tool		*bool		`yaml:"tool"`		// a tool was used, or none was
 	MaxMatch	int			`yaml:"max_match"`	// the largest match was at most this
 	MinMatch	int			`yaml:"min_match"`	// the largest match was at least this
-	MaxMoves	int			`yaml:"max_moves"`	// at most this many swaps were made
+	MaxMoves	int			`yaml:"max_moves"`	// at most this many moves (swaps and tool uses) were made
 }
 
 type PuzzleRoute struct {
@@ -54,8 +54,8 @@ type PuzzleRoute struct {
 type PuzzleTool struct {
 	ID		string		`yaml:"id"`
 	Name	string		`yaml:"name"`
-	Kind	string		`yaml:"kind"`	// force: clear one gem; convert: repaint one color as another
-	From	string		`yaml:"from"`	// convert: color letters
+	Kind	string		`yaml:"kind"`	// force: clear one gem; convert: repaint one color as another; paint: repaint one gem
+	From	string		`yaml:"from"`	// convert and paint: color letters
 	To		string		`yaml:"to"`
 	Rites	[]string	`yaml:"rites"`	// the hero needs one of these rites
 	Uses	int			`yaml:"uses"`
@@ -165,6 +165,7 @@ type PuzzleRun struct {
 	Board		*board.Board
 	Uses		map[string]int	// tool ID → uses left
 	ToolUsed	bool
+	toolMoves	int			// tool uses, which count as moves
 	State		PuzzleState
 	Route		*PuzzleRoute
 	Lost		string		// why: moves, stuck, fail or jammed
@@ -204,8 +205,11 @@ func (r *PuzzleRun) HasTool(t *PuzzleTool) bool {
 	})
 }
 
-// Moves is how many swaps have been made.
-func (r *PuzzleRun) Moves() int { return r.Board.Moves }
+// Moves is how many moves have been made: swaps and tool uses.
+func (r *PuzzleRun) Moves() int { return r.Board.Moves + r.toolMoves }
+
+// Targeted reports whether a tool is aimed at one gem.
+func (t *PuzzleTool) Targeted() bool { return t.Kind == "force" || t.Kind == "paint" }
 
 // MarkAt names the mark on the gem at p, or "".
 func (r *PuzzleRun) MarkAt(p board.Point) string {
@@ -324,11 +328,18 @@ func (r *PuzzleRun) ApplyTool(id string, p board.Point) bool {
 		if r.Board.Convert(puzzleColor(t.From), puzzleColor(t.To)) == 0 {
 			return false
 		}
+	case "paint":
+		g := r.Board.At(p)
+		if g == nil || g.Locked || g.Special != board.None || g.Color != puzzleColor(t.From) {
+			return false
+		}
+		g.Color = puzzleColor(t.To)
 	default:
 		return false
 	}
 	r.Uses[id]--
 	r.ToolUsed = true
+	r.toolMoves++
 	r.Board.StartChain()
 	return true
 }
@@ -469,12 +480,12 @@ func checkPuzzles() []string {
 		for _, t := range pz.Tools {
 			switch t.Kind {
 			case "force":
-			case "convert":
+			case "convert", "paint":
 				if puzzleColor(t.From) < 0 || puzzleColor(t.To) < 0 {
 					bad("%s tool %s: convert needs from and to colors", where, t.ID)
 				}
 			default:
-				bad("%s tool %s: unknown kind %q (force or convert)", where, t.ID, t.Kind)
+				bad("%s tool %s: unknown kind %q (force, convert or paint)", where, t.ID, t.Kind)
 			}
 			for _, id := range t.Rites {
 				if s := SpellByID(id); s == nil || s.Class == "" {

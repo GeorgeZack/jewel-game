@@ -51,6 +51,7 @@ type Location struct {
 	X			float32		`yaml:"x"`			// 0..1 on the map
 	Y			float32		`yaml:"y"`
 	Level		int			`yaml:"level"`		// roaming foes' level
+	Residue		string		`yaml:"residue"`	// color the site's chapters pay residue in: fire, water, air or earth
 	Desc		string		`yaml:"desc"`
 	Roads		[]string	`yaml:"roads,flow"`
 	Foes		[]string	`yaml:"foes,flow"`
@@ -130,6 +131,14 @@ type Step struct {
 	AcceptQuest	string		`yaml:"accept_quest"`
 	Unlock		string		`yaml:"unlock"`	// open a location
 	Travel		string		`yaml:"travel"`	// move the hero there
+	SetHolder	*HolderStep	`yaml:"set_holder"`	// change who holds a site
+}
+
+// HolderStep says who holds a location from now on. An empty holder means no one does; the
+// player's own society is "academy".
+type HolderStep struct {
+	At		string	`yaml:"at"`
+	Holder	string	`yaml:"holder"`
 }
 
 type Choice struct {
@@ -206,6 +215,7 @@ type storyData struct {
 	scenes		map[string][]Step
 	cards		[]RuleCard
 	orrery		[]OrreryNode
+	facilities	[]Facility
 	puzzles		[]Puzzle
 }
 
@@ -239,6 +249,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		{ "characters.yaml", &s.characters, false },
 		{ "cards.yaml", &s.cards, false },
 		{ "orrery.yaml", &s.orrery, false },
+		{ "facilities.yaml", &s.facilities, false },
 	} {
 		if err := parse(f.name, f.out, f.required); err != nil {
 			return nil, err
@@ -300,7 +311,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 	if len(s.foes) == 0 || len(s.locations) == 0 {
 		return nil, fmt.Errorf("the story needs at least one foe and one location")
 	}
-	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery, Puzzles = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery, s.puzzles
+	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery, Puzzles, Facilities = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery, s.puzzles, s.facilities
 	if LocationByID(Story.Start) == nil {
 		problems = append(problems, fmt.Sprintf("story.yaml: start location %q doesn't exist, using %q", Story.Start, Locations[0].ID))
 		Story.Start = Locations[0].ID
@@ -354,6 +365,7 @@ func Validate() []string {
 	p = append(p, checkCards()...)
 	p = append(p, checkOrrery()...)
 	p = append(p, checkPuzzles()...)
+	p = append(p, checkFacilities()...)
 	for _, f := range Foes {
 		for _, s := range f.Spells {
 			if SpellByID(s) == nil {
@@ -378,6 +390,9 @@ func Validate() []string {
 			} else if !slices.Contains(other.Roads, l.ID) {
 				bad("%s: road to %s is one-way, add %s to its roads", where, r, l.ID)
 			}
+		}
+		if manaByName(l.Residue) < 0 {
+			bad("%s: residue %q should be fire, water, air or earth", where, l.Residue)
 		}
 		conds(where, l.Requires)
 		scene(where+" enter_scene", l.EnterScene)
@@ -466,6 +481,9 @@ func checkSteps(where string, steps []Step) []string {
 		}
 		if s.AcceptQuest != "" && QuestByID(s.AcceptQuest) == nil {
 			bad("step %d: unknown quest %q", i+1, s.AcceptQuest)
+		}
+		if h := s.SetHolder; h != nil && LocationByID(h.At) == nil {
+			bad("step %d: set_holder at unknown location %q", i+1, h.At)
 		}
 		for _, l := range []string{ s.Unlock, s.Travel } {
 			if l != "" && LocationByID(l) == nil {

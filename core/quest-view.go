@@ -44,7 +44,7 @@ const (
 	ScreenSpells
 	ScreenQuests
 	ScreenShop
-	ScreenCitadel
+	ScreenAcademy
 	ScreenOrrery
 	ScreenDuel
 	ScreenPuzzle
@@ -101,6 +101,8 @@ type QuestView struct {
 
 	menuScroll  ui.Scroll
 	shopScroll ui.Scroll
+	academyScroll ui.Scroll
+	postAt      int // which open site the academy posts henchmen to
 	leftScroll ui.Scroll
 	rightScroll ui.Scroll
 	dockScroll  ui.Scroll
@@ -487,6 +489,9 @@ func (v *QuestView) finishDuel() {
 			Title: text.T("ui.victory", "Victory!"),
 			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP) + residue,
 		})
+		for _, rep := range h.RecordWin(v.duelAt) {
+			v.show(Modal{Title: text.T("ui.chapter_done", "Chapter complete"), Body: text.Tf("ui.chapter_done_body", "%s\n\nClaim the report at the academy.", rep.Line)})
+		}
 		for _, q := range h.RecordKill(v.foeID, v.duelAt) {
 			body := text.Tf("ui.quest_done_body", "%s\n\nReward: %d gold, %d XP.", q.Outro, q.Gold, q.XP)
 			if it := rpg.ItemByID(q.Item); it != nil {
@@ -670,8 +675,8 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 	nav(ScreenSpells, text.T("ui.spells", "Spells"), true)
 	nav(ScreenQuests, text.Tf("ui.quests_count", "Quests  (%d)", len(h.Active)), true)
 	nav(ScreenShop, text.T("ui.shop_towns", "Shop (in towns)"), here.Town)
-	nav(ScreenCitadel, text.T("ui.citadel_nav", "Citadel"), true)
-	if v.Screen == ScreenShop && !here.Town {
+	nav(ScreenAcademy, text.T("ui.academy_nav", "Academy"), h.AcademyOpen())
+	if (v.Screen == ScreenShop && !here.Town) || (v.Screen == ScreenAcademy && !h.AcademyOpen()) {
 		v.Screen = ScreenWorld
 	}
 

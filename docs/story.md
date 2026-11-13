@@ -41,6 +41,7 @@ assets/story/
   quests.yaml       quests
   cards.yaml        rule cards: a different board or payouts for a duel (optional)
   orrery.yaml       the Orrery: the upgrade grid heroes buy with residue (optional)
+  facilities.yaml   the academy's facilities, built and upgraded with gold (optional)
   puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
@@ -121,6 +122,7 @@ blurb: >-                    # shown next to the class picker
   x: 0.38                    # position on the map, 0 = left/top, 1 = right/bottom
   y: 0.74
   level: 2                   # level of the roaming foes here
+  residue: water             # color of the residue chapters here pay: fire, water, air or earth
   desc: A toll town grown fat on the river trade.
   roads: [mossgate, barrow]  # roads go both ways: list this one in theirs too
   foes: [bandit, rat]        # roaming foes; also who ambushes travellers on the way in
@@ -214,6 +216,36 @@ not already in a starting kit, and every node can be reached from every seat. Th
 (residue per match, the conversion rate, the respec price) are placeholders, kept together at the
 top of `rpg/orrery.go`.
 
+## facilities.yaml
+
+Facilities are the academy's buildings. The academy itself opens when a scene sets the flag
+`academy_founded` (for now the done scene of the first main quest does). A facility is available
+once its `requires` conditions hold (the same conditions as everywhere else), and then each of its
+levels is bought with gold, in order. A level's perks add to the levels below it.
+
+```yaml
+- id: treasury
+  name: Treasury
+  desc: More gold from every duel.   # shown under the name
+  requires: [quest:toll]             # optional; available once these hold
+  levels:
+    - { cost: 150, gold_pct: 10 }    # cost is gold, and every level needs one
+    - { cost: 300, gold_pct: 10 }
+```
+
+A level's perks: `gold_pct` and `xp_pct` (more from every duel), `hp`, `start_mana` (of every color
+at the start of a duel), `skull_damage` (per skull match), `armor` (blocks skull damage),
+`henchmen` (more henchmen can be hired) and `chapter_pct` (completed chapters pay more). Facilities
+give no stats: those come from the Orrery.
+
+Loading checks that ids are unique, every facility has a level, every level has a cost, and the
+conditions are valid. Henchmen, chapters and dues are tuned with the placeholder numbers at the
+top of `rpg/academy.go`: henchmen are hired and trained with gold and hold one item the hero
+owns; a henchman posted to an open site completes a chapter after a number of the hero's wins
+at that site (recalling one loses its progress), which sets that site's holder to the academy and leaves a report of gold and residue in
+the site's `residue` color (locations.yaml);
+each later win at a held site adds dues to the ledger. Nothing moves while the game is closed.
+
 ## puzzles/*.yaml
 
 A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
@@ -224,7 +256,7 @@ reports how each was cleared. Puzzles are prototypes: no story scene uses one ye
 id: vault
 name: The Society Vault
 objective: Clear the three tumbler pins.   # shown to the player
-moves: 5                     # swaps allowed; running out loses
+moves: 5                     # moves allowed, swaps and tool uses alike; running out loses
 refill: none                 # none (cleared cells stay empty), queue, or seed
 queue: rbyg                  # refill: queue, colors dropped in order, then nothing
 seed: 0                      # drives anything random, so the board always plays the same
@@ -240,7 +272,8 @@ fail:                        # optional: any of these holding after a move loses
   - { cleared: [bell] }
 tools:                       # rites used on the board, a few times a puzzle instead of for mana
   - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave] }   # clear one gem
-  - { id: lockpick, name: Lockpick, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }
+  - { id: lockpick, name: Lockpick, kind: paint, from: p, to: r, uses: 1, rites: [transmute] }   # repaint one gem
+  - { id: dye, name: Dye, kind: convert, from: p, to: r, uses: 1, rites: [transmute] }          # repaint every gem of a color
 routes:                      # the first route whose conditions hold when the goal does is taken
   - id: force
     name: Forced the lock
@@ -256,12 +289,12 @@ alike, hold when all of their parts do:
 - `order: [a, b]` these marks are cleared, each in a later cascade step than the one before.
 - `blasted: true` a mark was cleared by a bomb, a bolt or a Force; `false`, none was.
 - `tool: true` or `false` a tool was used, or not.
-- `max_match`, `min_match` the largest match, and `max_moves` the swaps made.
+- `max_match`, `min_match` the largest match, and `max_moves` the moves made (a tool use counts as one).
 
 If the goal holds but no route does (the vault's pins matched out of order, say), the puzzle is
 lost as jammed. A lost puzzle can be tried again at no cost.
 
-Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` or `tool id x,y`.
+Every route needs a stored `solution`: moves written `swap x,y x,y`, `tool id` (a convert) or `tool id x,y` (a Force or a paint, at that gem).
 Loading the story replays each one and reports a problem if it no longer finishes the puzzle by
 its route, so `go test ./rpg` catches a board edit that breaks a route.
 
@@ -269,7 +302,7 @@ To see every way a board can end, run the brute-force solver:
 `SOLVE=vault SOLVE_DEPTH=4 go test ./rpg -run TestSolvePuzzle -v`. It tries every swap and tool
 use up to that many moves and prints, for each route and each kind of loss (jammed, stuck), how
 many sequences end there and the shortest one. Use it to check that every route is reachable and
-none leaks into another; depth 4 on the vault takes about 15 seconds.
+none leaks into another; depth 4 on the vault takes about 15 seconds, depth 5 a few minutes.
 
 In a dev build, `JEWEL_PUZZLE=vault ./start.sh` opens the puzzle once a hero is loaded, and
 `JEWEL_PUZZLE_ROUTE=quiet` as well plays that route's stored solution by itself.
@@ -372,6 +405,7 @@ when a scene ends.
 | `accept_quest: id` | start a quest |
 | `unlock: id` | open a location on the map |
 | `travel: id` | move the hero there |
+| `set_holder: { at: id, holder: crown }` | say who holds a location; `holder: academy` is the player's own, and an empty holder means no one. Sites the academy holds pay dues |
 | `end: true` | mark the story beaten |
 
 ### Flow
@@ -444,7 +478,8 @@ backgrounds fill the window and crop to keep their shape.
 These parts aren't story files yet, and changing them means editing Go:
 
 - classes and their spells: `rpg/hero.go`, `rpg/spells.go`
-- items, the shop and citadel buildings: `rpg/hero.go`
+- items and the shop: `rpg/hero.go`
+- henchmen, chapters and dues: `rpg/academy.go`
 - duel rules and balance numbers: `rpg/duel.go`
 - the scene player: `core/scene-view.go`; the loader and the checks: `rpg/story.go`
 

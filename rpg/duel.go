@@ -51,7 +51,7 @@ func newCombatant(name string, level int, stats [NUM_STATS]int, hp, startMana in
 // HeroHP is a hero's HP before Morale and gear.
 func HeroHP(level int) int { return 50 + 10*level }
 
-// NewHeroCombatant applies gear and buildings to the hero's stats.
+// NewHeroCombatant applies gear, facilities and the Orrery to the hero's stats.
 func NewHeroCombatant(h *Hero) *Combatant {
 	b := h.TotalBonus()
 	stats := h.Stats
