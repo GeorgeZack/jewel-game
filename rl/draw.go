@@ -104,9 +104,13 @@ func addVert(p pv, c Color, alpha float32) uint32 {
 	return uint32(len(verts) - 1)
 }
 
+// Vertex colors are premultiplied here (see premul). Ebitengine assumes straight alpha unless told,
+// and would multiply by alpha a second time, which turns a faint white into a faint black.
+var premultiplied = &ebiten.DrawTrianglesOptions{ColorScaleMode: ebiten.ColorScaleModePremultipliedAlpha}
+
 func flush() {
 	if len(idx) > 0 && screen != nil {
-		screen.DrawTriangles32(verts, idx, atlas, nil)
+		screen.DrawTriangles32(verts, idx, atlas, premultiplied)
 	}
 	verts, idx = verts[:0], idx[:0]
 }
