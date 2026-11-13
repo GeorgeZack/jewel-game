@@ -42,3 +42,10 @@
   levels:
     - { cost: 300, skull_damage: 1, chapter_pct: 25 }
     - { cost: 700, armor: 1, chapter_pct: 25 }
+
+- id: observatory
+  name: Observatory
+  desc: A brass copy of the Orrery; respec it for free.
+  requires: [quest:barrow_lord]
+  levels:
+    - { cost: 350, free_respec: true }
