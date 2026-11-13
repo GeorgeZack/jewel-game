@@ -2,6 +2,8 @@
 # Four regions of fifteen nodes on four rings (4 is the outermost). Costs are placeholders.
 # A node without a name shows its rite name. Large nodes carry a perk: a rule for the hero's duels.
 # Neighbouring regions join on the outer and the inner ring.
+# Aether is a fifth region of twelve on ring 0, the core: it has no seat, each region's ring 1
+# links into it, and it stays locked until the story sets aether_unlocked.
 
 # Fire: the Warrior's seat
 - { id: ember, name: Ember, color: fire, ring: 4, angle: 330, cost: 12, stats: { fire: 4, battle: 2 }, links: [anvil, hamstring_node] }
@@ -17,7 +19,7 @@
 - { id: kindling, name: Kindling, color: fire, ring: 2, angle: 338, cost: 10, perk: { kind: strike, size: 3, amount: 2 }, links: [crucible] }
 - { id: pyre_oath, name: Pyre Oath, color: fire, ring: 2, angle: 0, cost: 10, perk: { kind: forsake, amount: 4 }, links: [crucible, meteor_node] }
 - { id: powder_keg, name: Powder Keg, color: fire, ring: 2, angle: 22, cost: 10, perk: { kind: seed, special: bomb, amount: 2 }, links: [meteor_node] }
-- { id: crucible, name: Crucible, color: fire, ring: 1, angle: 345, cost: 26, stats: { fire: 8, battle: 4 }, links: [meteor_node] }
+- { id: crucible, name: Crucible, color: fire, ring: 1, angle: 345, cost: 26, stats: { fire: 8, battle: 4 }, links: [meteor_node, ashen_rift] }
 - { id: meteor_node, color: fire, ring: 1, angle: 15, cost: 34, rite: meteor, links: [abyss] }
 
 # Water: the Knight's seat
@@ -34,7 +36,7 @@
 - { id: tidewell, name: Tidewell, color: water, ring: 2, angle: 68, cost: 10, perk: { kind: mend, size: 4, amount: 6, trade: true }, links: [abyss] }
 - { id: still_pool, name: Still Pool, color: water, ring: 2, angle: 90, cost: 10, perk: { kind: wild_four, amount: 2 }, links: [abyss, judgement_node] }
 - { id: undertow, name: Undertow, color: water, ring: 2, angle: 112, cost: 10, perk: { kind: overflow, to: earth, amount: 8 }, links: [judgement_node] }
-- { id: abyss, name: Abyss, color: water, ring: 1, angle: 75, cost: 26, stats: { water: 8, morale: 4 }, links: [judgement_node] }
+- { id: abyss, name: Abyss, color: water, ring: 1, angle: 75, cost: 26, stats: { water: 8, morale: 4 }, links: [judgement_node, drowned_rift] }
 - { id: judgement_node, color: water, ring: 1, angle: 105, cost: 34, rite: judgement, links: [heartwood] }
 
 # Earth: the Druid's seat
@@ -51,7 +53,7 @@
 - { id: rootgrasp, name: Rootgrasp, color: earth, ring: 2, angle: 158, cost: 10, perk: { kind: skull_paint, amount: 2 }, links: [heartwood] }
 - { id: seedbed, name: Seedbed, color: earth, ring: 2, angle: 180, cost: 10, perk: { kind: seed, special: wild, amount: 2 }, links: [heartwood, earthquake_node] }
 - { id: standing_stone, name: Standing Stone, color: earth, ring: 2, angle: 202, cost: 10, perk: { kind: overflow, to: water, amount: 6 }, links: [earthquake_node] }
-- { id: heartwood, name: Heartwood, color: earth, ring: 1, angle: 165, cost: 26, stats: { earth: 8, morale: 4 }, links: [earthquake_node] }
+- { id: heartwood, name: Heartwood, color: earth, ring: 1, angle: 165, cost: 26, stats: { earth: 8, morale: 4 }, links: [earthquake_node, buried_rift] }
 - { id: earthquake_node, color: earth, ring: 1, angle: 195, cost: 34, rite: earthquake, links: [stormcrown] }
 
 # Air: the Wizard's seat
@@ -68,5 +70,19 @@
 - { id: thunderhead, name: Thunderhead, color: air, ring: 2, angle: 248, cost: 10, perk: { kind: wild_four, amount: 3 }, links: [stormcrown] }
 - { id: static, name: Static, color: air, ring: 2, angle: 270, cost: 10, perk: { kind: strike, size: 4, amount: 12, trade: true }, links: [stormcrown, execute_node] }
 - { id: eye_of_the_storm, name: Eye of the Storm, color: air, ring: 2, angle: 292, cost: 10, perk: { kind: forsake, amount: 3 }, links: [execute_node] }
-- { id: stormcrown, name: Stormcrown, color: air, ring: 1, angle: 255, cost: 26, stats: { air: 8, cunning: 4 }, links: [execute_node] }
+- { id: stormcrown, name: Stormcrown, color: air, ring: 1, angle: 255, cost: 26, stats: { air: 8, cunning: 4 }, links: [execute_node, wind_rift] }
 - { id: execute_node, color: air, ring: 1, angle: 285, cost: 34, rite: execute, links: [crucible] }
+
+# Aether: the forbidden core. No seat; its perks are strong and cost you something.
+- { id: ashen_rift, name: Ashen Rift, color: aether, ring: 0, angle: 0, cost: 16, stats: { aether: 3, fire: 2 }, links: [void_bolt_node] }
+- { id: void_bolt_node, color: aether, ring: 0, angle: 30, cost: 22, rite: void_bolt, links: [void_lance] }
+- { id: void_lance, name: Void Lance, color: aether, ring: 0, angle: 60, cost: 14, perk: { kind: strike, size: 3, amount: 6, backlash: 2 }, links: [drowned_rift] }
+- { id: drowned_rift, name: Drowned Rift, color: aether, ring: 0, angle: 90, cost: 16, stats: { aether: 3, water: 2 }, links: [unmake_node] }
+- { id: unmake_node, color: aether, ring: 0, angle: 120, cost: 24, rite: unmake, links: [hunger] }
+- { id: hunger, name: Hunger, color: aether, ring: 0, angle: 150, cost: 14, perk: { kind: hunger, size: 3, amount: 3, to: earth }, links: [buried_rift] }
+- { id: buried_rift, name: Buried Rift, color: aether, ring: 0, angle: 180, cost: 16, stats: { aether: 3, earth: 2 }, links: [eclipse_node] }
+- { id: eclipse_node, color: aether, ring: 0, angle: 210, cost: 26, rite: eclipse, links: [blood_price] }
+- { id: blood_price, name: Blood Price, color: aether, ring: 0, angle: 240, cost: 14, perk: { kind: blood_price, amount: 2 }, links: [wind_rift] }
+- { id: wind_rift, name: Rift of Winds, color: aether, ring: 0, angle: 270, cost: 16, stats: { aether: 3, air: 2 }, links: [oblivion_node] }
+- { id: oblivion_node, color: aether, ring: 0, angle: 300, cost: 30, rite: oblivion, links: [null_heart] }
+- { id: null_heart, name: Null Heart, color: aether, ring: 0, angle: 330, cost: 18, stats: { aether: 6 }, links: [ashen_rift] }

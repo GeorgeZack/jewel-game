@@ -27,7 +27,7 @@ func TestFoeCardReachesTheBoard(t *testing.T) {
 	}
 
 	v.startDuel("goblin", 1, rpg.Story.Start)
-	if got, want := v.TM.Board.Settings, rpg.BoardSettings(nil); got != want || got.Width != 8 || got.Height != 8 {
+	if got, want := v.TM.Board.Settings, rpg.BoardSettings(nil, false); got != want || got.Width != 8 || got.Height != 8 {
 		t.Fatalf("a foe with no card should get the standard 8x8 duel, got %+v", got)
 	}
 }

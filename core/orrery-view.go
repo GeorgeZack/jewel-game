@@ -30,10 +30,10 @@ func residueLabel(i int) string {
 	return rpg.ManaLabel(i)
 }
 
-// orreryPoint places a node on the disc: rings evenly out from the middle, leaving the middle
-// empty so the innermost ring has room, and angles clockwise from the top.
+// orreryPoint places a node on the disc: rings evenly out from the middle, ring 0 (Aether's core)
+// included, leaving the middle empty so the innermost ring has room, and angles clockwise from the top.
 func orreryPoint(c rl.Vector2, radius float32, rings int, n *rpg.OrreryNode) rl.Vector2 {
-	rad := radius * float32(n.Ring+1) / float32(rings+1)
+	rad := radius * float32(n.Ring+2) / float32(rings+2)
 	a := n.Angle * math.Pi / 180
 	return rl.Vector2{X: c.X + rad*float32(math.Sin(a)), Y: c.Y - rad*float32(math.Cos(a))}
 }
@@ -41,13 +41,20 @@ func orreryPoint(c rl.Vector2, radius float32, rings int, n *rpg.OrreryNode) rl.
 // ORRERY_ZOOM is how far the phone zooms in on one region, so its nodes are big enough to tap.
 const ORRERY_ZOOM = 1.6
 
-// orreryRegions is each region with a seat, in the Orrery's order, as mana indices.
+// ORRERY_CORE_ZOOM is the phone's zoom on Aether's core, whose ring is the tightest.
+const ORRERY_CORE_ZOOM = 2.2
+
+// orreryRegions is each region with a seat, in the Orrery's order, as mana indices, and then
+// Aether's core, which has none.
 func orreryRegions() []int {
 	var out []int
 	for i := range rpg.Orrery {
 		if n := &rpg.Orrery[i]; n.Seat != "" && !slices.Contains(out, n.Mana) {
 			out = append(out, n.Mana)
 		}
+	}
+	if slices.ContainsFunc(rpg.Orrery, func(n rpg.OrreryNode) bool { return n.Mana == rpg.Aether }) {
+		out = append(out, rpg.Aether)
 	}
 	return out
 }
@@ -142,9 +149,13 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 	focus := c
 	if regions := orreryRegions(); narrow() && v.orreryZoom > 0 && v.orreryZoom <= len(regions) {
 		zoom = ORRERY_ZOOM
-		seat := rpg.Orrery[slices.IndexFunc(rpg.Orrery, func(n rpg.OrreryNode) bool { return n.Seat != "" && n.Mana == regions[v.orreryZoom-1] })]
-		a := seat.Angle * math.Pi / 180
-		focus = rl.Vector2{X: c.X + 0.68*radius*float32(math.Sin(a)), Y: c.Y - 0.68*radius*float32(math.Cos(a))}
+		// a seated region zooms on its seat's side; Aether's core on the middle
+		if i := slices.IndexFunc(rpg.Orrery, func(n rpg.OrreryNode) bool { return n.Seat != "" && n.Mana == regions[v.orreryZoom-1] }); i >= 0 {
+			a := rpg.Orrery[i].Angle * math.Pi / 180
+			focus = rl.Vector2{X: c.X + 0.68*radius*float32(math.Sin(a)), Y: c.Y - 0.68*radius*float32(math.Cos(a))}
+		} else {
+			zoom = ORRERY_CORE_ZOOM
+		}
 	}
 	at := func(n *rpg.OrreryNode) rl.Vector2 {
 		p := orreryPoint(c, radius, rings, n)
@@ -155,8 +166,8 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 	rl.DrawRectangleRounded(area, 0.04, 8, rl.Fade(rl.Black, 0.3))
 	if zoom == 1 {
 		rl.DrawCircleV(c, radius+2*nodeR, rl.Fade(rl.Black, 0.25))
-		for ring := 1; ring <= rings; ring++ {
-			rad := radius * float32(ring+1) / float32(rings+1)
+		for ring := 0; ring <= rings; ring++ {
+			rad := radius * float32(ring+2) / float32(rings+2)
 			rl.DrawRing(c, rad-1, rad+1, 0, 360, 96, rl.Fade(ui.Accent, 0.2))
 		}
 	}
@@ -195,6 +206,10 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 		// every state keeps the region's color: owned is solid with a white rim, buyable a dark
 		// region-tinted face with a pulsing rim, locked a dim face with a thin rim
 		mc := residueColor(n.Mana)
+		if h.Locked(n) {
+			// a region the story hasn't opened: there to see, greyed out
+			mc = rl.Fade(colorlessColor, 0.45)
+		}
 		rim, face := rl.Fade(mc, 0.55), rl.ColorBrightness(mc, -0.8)
 		rimW := float32(1)
 		costCol := ui.DimText
@@ -217,7 +232,7 @@ func (v *QuestView) drawOrreryDisc(area rl.Rectangle) {
 		}
 		shape(nr+rimW, rim)
 		shape(nr, face)
-		if !h.Owns(n.ID) && n.Seat == "" {
+		if !h.Owns(n.ID) && n.Seat == "" && !h.Locked(n) {
 			size := max(12, min(ui.MinText, nr*1.2))
 			ui.TextCentered(text.Tf("ui.node_cost", "%d", n.Cost), p.X, p.Y-size/2, size, costCol)
 		}
@@ -249,8 +264,9 @@ func nodeKind(n *rpg.OrreryNode) string {
 func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 	col.Heading(text.T("ui.residue", "Residue"))
 	row := col.Next(26)
-	cells := ui.Row(row, rpg.NUM_RESIDUE, 6)
-	for i, cell := range cells {
+	pools := append(h.Mana(), rpg.Colorless)
+	for n, cell := range ui.Row(row, len(pools), 6) {
+		i := pools[n]
 		rl.DrawCircleV(rl.Vector2{X: cell.X + 9, Y: cell.Y + 12}, 8, residueColor(i))
 		ui.TextFit(text.Tf("ui.residue_pool", "%d", h.Residue[i]), cell.X+22, cell.Y+2, 20, cell.Width-22, ui.TextColor)
 	}
@@ -272,6 +288,8 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 			col.Line(text.Tf("ui.node_rite_level", "Castable from level %d", s.Level), 16, hpColor)
 		}
 		switch {
+		case h.Locked(n):
+			col.Line(text.T("ui.node_locked", "Locked. This region opens later in the story."), 16, ui.DimText)
 		case n.Seat != "":
 			col.Line(text.Tf("ui.node_seat", "The %s's seat", rpg.ClassByName(n.Seat).Label()), 16, ui.DimText)
 		case h.Owns(n.ID):
@@ -289,7 +307,9 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 
 	col.Heading(text.T("ui.convert", "Convert"))
 	col.Paragraph(text.Tf("ui.convert_help", "%d of a color becomes %d colorless.", rpg.CONVERT_STEP, rpg.CONVERT_STEP*rpg.CONVERT_PCT/100), 15, ui.DimText)
-	for i, cell := range ui.Row(col.Next(38), rpg.NUM_MANA, 6) {
+	mana := h.Mana()
+	for n, cell := range ui.Row(col.Next(38), len(mana), 6) {
+		i := mana[n]
 		if ui.ButtonIf(cell, rpg.ManaLabel(i), h.Residue[i] >= rpg.CONVERT_STEP) && h.Convert(i) {
 			v.save()
 		}

@@ -74,6 +74,7 @@ type Gem struct {
 type Settings struct {
 	Width, Height	int
 	NumColors		int
+	Missing			uint32	// bit c set: color c never arrives on the board
 	MaxLocks		int		// simultaneous locks allowed, -1 = unlimited
 	FreeSwap		bool	// swaps don't need to make a match
 	DiagonalSwap	bool
@@ -216,7 +217,7 @@ func (b *Board) randomGem() *Gem {
 			special = Prism
 		}
 	}
-	color := b.rng.Intn(b.Settings.NumColors)
+	color := b.randomColor()
 	if b.Settings.Duel && color == b.Settings.BombColor && b.rng.Float64() < b.Settings.BombRate {
 		special = Bomb
 	}
@@ -239,10 +240,11 @@ func (b *Board) fill() {
 
 // safeColor picks a color that doesn't complete a run with the two gems left or above.
 func (b *Board) safeColor(x, y int) int {
-	n := b.Settings.NumColors
+	colors := b.palette()
+	n := len(colors)
 	start := b.rng.Intn(n)
 	for i := 0; i < n; i++ {
-		c := (start + i) % n
+		c := colors[(start + i) % n]
 		if x >= 2 && b.colorAt(x-1, y) == c && b.colorAt(x-2, y) == c {
 			continue
 		}
@@ -251,7 +253,26 @@ func (b *Board) safeColor(x, y int) int {
 		}
 		return c
 	}
-	return start
+	return colors[start]
+}
+
+// palette is the colors that arrive on the board.
+func (b *Board) palette() []int {
+	var out []int
+	for c := range b.Settings.NumColors {
+		if b.Settings.Missing&(1<<c) == 0 {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func (b *Board) randomColor() int {
+	if b.Settings.Missing == 0 {
+		return b.rng.Intn(b.Settings.NumColors)
+	}
+	c := b.palette()
+	return c[b.rng.Intn(len(c))]
 }
 
 func (b *Board) colorAt(x, y int) int {
@@ -395,7 +416,7 @@ func (b *Board) Paint(p Point, color int, special Special) {
 	if special == Prism {
 		g.Color = -1
 	} else if g.Color < 0 {
-		g.Color = b.rng.Intn(b.Settings.NumColors)
+		g.Color = b.randomColor()
 	}
 }
 

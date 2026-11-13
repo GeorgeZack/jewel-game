@@ -1,9 +1,42 @@
 # Rule cards: a different board, or different payouts, for a duel. See docs/story.md.
-# No foe uses a card yet. Try one in a dev build with JEWEL_CARD=<id> ./start.sh.
+# A foe names its card in foes.yaml; try any card in a dev build with JEWEL_CARD=<id> ./start.sh.
+# Every number is a placeholder.
 
 - id: standard
   name: Standard duel
+  desc: The usual board, with gems falling down.
 
 - id: sideways
   name: Sideways
   gravity: left
+  desc: Gems fall to the left, and new ones arrive from the right.
+
+- id: great_hall
+  name: Great Hall
+  width: 10
+  height: 10
+  desc: The largest board, ten by ten.
+
+# Boss cards: each changes one rule. Early bosses get the gentler ones.
+
+- id: barrow_hush
+  name: Barrow Hush
+  skull_pct: -25
+  mana_pct: 50
+  desc: Skulls hit a quarter softer and mana matches pay half again, so spells carry this fight.
+
+- id: war_drums
+  name: War Drums
+  overcharge: true
+  desc: Overcharged board, so a +5 skull blasts a five by five square.
+
+- id: updraft
+  name: Updraft
+  gravity: up
+  desc: Gems fall upward, and new ones arrive from below.
+
+- id: hollow_halls
+  name: Hollow Halls
+  width: 10
+  height: 8
+  desc: A wide ten by eight board, where moves are plenty and cascades run long.
