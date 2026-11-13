@@ -1,0 +1,8 @@
+# The fixture's Grimoire, for rpg/meta_test.go. Numbers chosen to be easy to check.
+stage_two_returns: 3
+pay: { boss: 10, route: 5, lock: 15, class: 20, ending: 40, repeat_pct: 20 }
+entries:
+  - { id: purse, name: Purse, desc: Gold., cost: 10, gold: 100 }
+  - { id: marked, name: Marked, desc: A flag., cost: 10, flags: [marked], residue: { colorless: 5 } }
+  - { id: take_more, name: Take, desc: More., cost: 10, stage: 2, lean: take, gold: 50 }
+  - { id: resist_them, name: Resist, desc: Less., cost: 10, stage: 2, lean: resist, residue: { fire: 3 } }

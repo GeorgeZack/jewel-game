@@ -149,6 +149,12 @@ type Hero struct {
 	Companions	[]string		`json:",omitempty"`	// companions in the hero's company
 	Favour		map[string]int	`json:",omitempty"`	// companion → favour, whether in the company or not
 	Companion	string			`json:",omitempty"`	// the one who comes into fights
+	Gifts		[]string		`json:",omitempty"`	// Orrery nodes the Grimoire gave; a respec keeps them
+
+	// meta currency this run (meta.go): firsts paid, and what the current act has earned and not banked
+	MetaEarned		[]string	`json:",omitempty"`	// first-time keys paid this run, so each pays once a run
+	MetaPending		[]string	`json:",omitempty"`	// the ones earned since the last bank
+	MetaUnbanked	int			`json:",omitempty"`
 }
 
 func NewHero(class string) *Hero {

@@ -20,7 +20,10 @@ type StoryInfo struct {
 	MapName		string	`yaml:"map_name"`
 	Start		string	`yaml:"start"`		// location a new hero starts in
 	Blurb		string	`yaml:"blurb"`		// shown beside the class picker
-	Opening		string	`yaml:"opening"`	// scene played when a hero is created
+	Opening		string	`yaml:"opening"`	// scene played when a hero is created; read as first_event if that is unset
+	FirstEvent	string	`yaml:"first_event"`	// scene every run starts at, after the class choice; a return restarts here
+	Tutorial	string	`yaml:"tutorial"`	// scene played once per profile, before the first event
+	ReturnScene	string	`yaml:"return_scene"`	// the entities' scene, played at the start of a run after a return
 	FinalQuest	string	`yaml:"final_quest"`	// finishing it marks the story beaten
 	Acts		[]Act	`yaml:"acts"`		// title cards for act 1, 2, ...; optional
 	Endings		[]Ending	`yaml:"endings"`	// the endings an ending step can record on the profile
@@ -46,6 +49,7 @@ type Foe struct {
 	Color		[3]uint8		`yaml:"color,flow"`
 	Image		string			`yaml:"image"`	// optional picture in assets/story/foes
 	HPPct		int				`yaml:"hp_pct"`
+	Boss		bool			`yaml:"boss"`	// its first defeat pays meta currency (grimoire.yaml)
 	Spells		[]string		`yaml:"spells,flow"`
 	Card		string			`yaml:"card"`	// rule card the foe fights on, default the standard duel
 	RawStats	map[string]int	`yaml:"stats,flow"`
@@ -271,6 +275,7 @@ type storyData struct {
 	puzzles		[]Puzzle
 	societies	[]Society
 	companions	[]Companion
+	grimoire	GrimoireBook
 }
 
 // LoadStory reads the story from dir and makes it current. A file that can't be read or parsed is
@@ -306,6 +311,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		{ "facilities.yaml", &s.facilities, false },
 		{ "societies.yaml", &s.societies, false },
 		{ "companions.yaml", &s.companions, false },
+		{ "grimoire.yaml", &s.grimoire, false },
 	} {
 		if err := parse(f.name, f.out, f.required); err != nil {
 			return nil, err
@@ -369,7 +375,7 @@ func LoadStory(fs Files, dir string) (problems []string, err error) {
 		return nil, fmt.Errorf("the story needs at least one foe and one location")
 	}
 	Story, Foes, Locations, Quests, Characters, Scenes, RuleCards, Orrery, Puzzles, Facilities = s.info, s.foes, s.locations, s.quests, s.characters, s.scenes, s.cards, s.orrery, s.puzzles, s.facilities
-	Societies, Companions = s.societies, s.companions
+	Societies, Companions, Grimoire = s.societies, s.companions, s.grimoire
 	if LocationByID(Story.Start) == nil {
 		problems = append(problems, fmt.Sprintf("story.yaml: start location %q doesn't exist, using %q", Story.Start, Locations[0].ID))
 		Story.Start = Locations[0].ID
@@ -416,6 +422,9 @@ func Validate() []string {
 		}
 	}
 	scene("story.yaml opening", Story.Opening)
+	scene("story.yaml first_event", Story.FirstEvent)
+	scene("story.yaml tutorial", Story.Tutorial)
+	scene("story.yaml return_scene", Story.ReturnScene)
 	if Story.FinalQuest != "" && QuestByID(Story.FinalQuest) == nil {
 		bad("story.yaml: unknown final_quest %q", Story.FinalQuest)
 	}
@@ -426,6 +435,7 @@ func Validate() []string {
 	p = append(p, checkFacilities()...)
 	p = append(p, checkSocieties()...)
 	p = append(p, checkCompanions()...)
+	p = append(p, checkGrimoire()...)
 	for i, e := range Story.Endings {
 		if e.ID == "" || slices.ContainsFunc(Story.Endings[:i], func(o Ending) bool { return o.ID == e.ID }) {
 			bad("story.yaml: ending %d needs an id of its own", i+1)
@@ -534,7 +544,7 @@ func checkSteps(where string, steps []Step) []string {
 		}
 	}
 	for i, s := range steps {
-		if s.Who != "" && s.Who != "hero" && CharacterByID(s.Who) == nil {
+		if s.Who != "" && s.Who != "hero" && s.Who != ENTITIES && CharacterByID(s.Who) == nil {
 			bad("step %d: unknown character %q (add it to characters.yaml)", i+1, s.Who)
 		}
 		ref(s.Goto)
@@ -639,6 +649,8 @@ func checkSteps(where string, steps []Step) []string {
 //   companion:ID        in the hero's company     favour:ID>=N  a companion's favour
 //   returns:N  runs started over through the return, at least N (the profile)
 //   ending:ID  the profile has seen that ending
+//   lean:take  the profile's meta lean: take, resist or none (the profile)
+//   tutorial:done  the profile has returned at least once, so its tutorial run is behind it
 // Numbers take a comparison in front, as in "act:<3" or "returns:=0"; without one, at least.
 func checkCond(c string) string {
 	kind, arg, ok := strings.Cut(strings.TrimPrefix(c, "!"), ":")
@@ -708,6 +720,14 @@ func checkCond(c string) string {
 	case "ending":
 		if EndingByID(arg) == nil {
 			return fmt.Sprintf("condition %q: unknown ending (add it to endings in story.yaml)", c)
+		}
+	case "lean":
+		if arg != LEAN_TAKE && arg != LEAN_RESIST && arg != "none" {
+			return fmt.Sprintf("condition %q: lean is take, resist or none", c)
+		}
+	case "tutorial":
+		if arg != "done" {
+			return fmt.Sprintf("condition %q: should be tutorial:done", c)
 		}
 	case "flag":
 	default:
@@ -821,6 +841,10 @@ func (h *Hero) meets(c string) bool {
 		ok = num(CurrentProfile.Returns)
 	case "ending":
 		ok = slices.Contains(CurrentProfile.Endings, arg)
+	case "lean":
+		ok = CurrentProfile.LeanName() == arg
+	case "tutorial":
+		ok = CurrentProfile.TutorialDone
 	}
 	return ok != neg
 }

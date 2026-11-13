@@ -78,6 +78,9 @@ func (h *Hero) QuestsHere(loc string) []*Quest {
 
 // RecordKill advances quests hunting a foe at a location, paying out any it completes.
 func (h *Hero) RecordKill(foe, loc string) (finished []*Quest) {
+	if f := FoeByID(foe); f != nil && f.Boss {
+		h.earn("boss:"+foe, Grimoire.Pay.Boss)
+	}
 	for i := range Quests {
 		q := &Quests[i]
 		if _, ok := h.Active[q.ID]; !ok || q.Foe != foe || q.At != loc {
@@ -94,6 +97,7 @@ func (h *Hero) RecordKill(foe, loc string) (finished []*Quest) {
 		h.GiveItem(q.Item)
 		if q.ID == Story.FinalQuest {
 			h.Finished = true
+			h.finish("")
 		}
 		finished = append(finished, q)
 	}
@@ -114,20 +118,25 @@ func ProfilePath() string {
 // bare Hero; LoadRun migrates them. Version 1 is from before the academy, with buildings and mounts.
 // Version 2 is from the 24-node prototype Orrery. Version 3 is from before Aether, with four mana
 // colors in every stat and residue array. Version 4 is from before acts, standing and companions:
-// it loads as is, in the first act.
-const SAVE_VERSION = 5
+// it loads as is, in the first act. Version 5 is from before the meta currency and the Grimoire's
+// gifts: it loads as is, having earned nothing.
+const SAVE_VERSION = 6
 
-// PROFILE_VERSION is written into every profile save.
-const PROFILE_VERSION = 1
+// PROFILE_VERSION is written into every profile save. Version 1 is from before the meta currency:
+// the endings it saw are paid for once as it loads (fromBeforeMeta).
+const PROFILE_VERSION = 2
 
 // Profile is what outlasts a run. It is saved apart from the run, so deleting a hero keeps it.
-// Ending steps add to Endings; the return (milestone 7) is to count Returns. Conditions read it
-// through CurrentProfile.
+// Ending steps add to Endings; a return counts Returns. Conditions read it through CurrentProfile.
 type Profile struct {
 	Grimoire	[]string		`json:",omitempty"`	// entry IDs bought
 	Endings		[]string		`json:",omitempty"`	// endings seen
 	Returns		int								// runs started over through the return
-	TutorialDone	bool
+	TutorialDone	bool							// a return has been made, so the first run's tutorial is behind it
+	Meta		int								// meta currency banked and not spent
+	Firsts		map[string]int	`json:",omitempty"`	// first-time key ("boss:hollow_king") → runs that banked it
+	Lean		int				`json:",omitempty"`	// stage 2 entries bought: +1 each that takes, -1 each that resists
+	Bound		[]string		`json:",omitempty"`	// stage 3, binding (not built yet): companions bound to the Grimoire
 }
 
 type runFile struct {
@@ -248,16 +257,43 @@ func LoadRun(path string) (*Hero, error) {
 // LoadProfile returns an empty profile and no error when there is none yet.
 func LoadProfile(path string) (Profile, error) {
 	var f profileFile
+	old := false
 	err := readOrBackUp(path, func(data []byte) error {
-		if _, err := saveVersion(data, PROFILE_VERSION); err != nil {
+		version, err := saveVersion(data, PROFILE_VERSION)
+		if err != nil {
 			return err
 		}
-		return json.Unmarshal(data, &f)
+		if err := json.Unmarshal(data, &f); err != nil {
+			return err
+		}
+		if version < PROFILE_VERSION {
+			backUp(path, data)
+			old = version < 2
+		}
+		return nil
 	})
 	if err != nil {
 		return Profile{}, err
 	}
+	if old {
+		f.Profile.fromBeforeMeta()
+	}
 	return f.Profile, nil
+}
+
+// fromBeforeMeta converts a profile saved before the meta currency: each ending it had seen is
+// paid for now, as a first time, so a player who finished before the Grimoire isn't behind.
+func (p *Profile) fromBeforeMeta() {
+	for _, id := range p.Endings {
+		key := "ending:" + id
+		if p.Firsts[key] == 0 {
+			if p.Firsts == nil {
+				p.Firsts = map[string]int{}
+			}
+			p.Firsts[key] = 1
+			p.Meta += Grimoire.Pay.Ending
+		}
+	}
 }
 
 // DeleteRun forgets the run in progress. The profile is in its own save and is not touched.
