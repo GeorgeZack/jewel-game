@@ -42,7 +42,49 @@ func NodeAbout(n *OrreryNode) string {
 	if s := SpellByID(n.Rite); s != nil {
 		parts = append(parts, text.Tf("ui.node_rite", "Rite: %s. %s", s.Label(), s.About()))
 	}
+	if n.Perk != nil {
+		parts = append(parts, PerkAbout(n.Perk))
+	}
 	return strings.Join(parts, ", ")
+}
+
+// PerkLabel is the name of a perk: its node's.
+func PerkLabel(p *Perk) string {
+	if n := NodeByID(p.Node); n != nil {
+		return NodeLabel(n)
+	}
+	return p.Kind
+}
+
+// PerkAbout is the one sentence that says what a perk does.
+func PerkAbout(p *Perk) string {
+	color := ManaLabel(max(p.Color, 0))
+	switch p.Kind {
+	case PerkStrike:
+		if p.Trade {
+			return text.Tf("rule.strike_trade", "A match of %d or more %s deals %d damage instead of giving an extra turn.", p.Size, color, p.Amount)
+		}
+		return text.Tf("rule.strike", "A match of %d or more %s also deals %d damage.", p.Size, color, p.Amount)
+	case PerkMend:
+		if p.Trade {
+			return text.Tf("rule.mend_trade", "A match of %d or more %s heals you %d instead of giving an extra turn.", p.Size, color, p.Amount)
+		}
+		return text.Tf("rule.mend", "A match of %d or more %s also heals you %d.", p.Size, color, p.Amount)
+	case PerkWildFour:
+		return text.Tf("rule.wild_four", "A match of four %s plants a x%d Wild instead of giving an extra turn.", color, p.Amount)
+	case PerkSkullPaint:
+		return text.Tf("rule.skull_paint", "Each skull match turns %d gems beside it into %s.", p.Amount, color)
+	case PerkOverflow:
+		return text.Tf("rule.overflow", "Your %s mana holds %d less, and what goes past it spills into %s.", color, p.Amount, ManaLabel(max(p.ToMana, 0)))
+	case PerkForsake:
+		return text.Tf("rule.forsake", "Skull matches deal %d more, but %s matches give you no mana.", p.Amount, color)
+	case PerkSeed:
+		if p.Special == "wild" {
+			return text.Tf("rule.seed_wild", "Duels start with %d x%d Wilds on the board, for either side to take.", p.Amount, SEED_WILD_MULT)
+		}
+		return text.Tf("rule.seed_bomb", "Duels start with %d +5 skulls on the board, for either side to take.", p.Amount)
+	}
+	return ""
 }
 
 func StatLabel(i int) string { return text.T("stat."+slug(StatNames[i])+".name", StatNames[i]) }
@@ -91,6 +133,9 @@ func LevelAbout(l FacilityLevel) string {
 		if p.n != 0 {
 			parts = append(parts, text.Tf("perk."+p.key, p.en, p.n))
 		}
+	}
+	if l.FreeRespec {
+		parts = append(parts, text.T("perk.free_respec", "free Orrery respec"))
 	}
 	return strings.Join(parts, ", ")
 }

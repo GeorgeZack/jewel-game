@@ -112,7 +112,8 @@ func ProfilePath() string {
 
 // SAVE_VERSION is written into every run save. Saves from before versioning have none and hold a
 // bare Hero; LoadRun migrates them. Version 1 is from before the academy, with buildings and mounts.
-const SAVE_VERSION = 2
+// Version 2 is from the 24-node prototype Orrery.
+const SAVE_VERSION = 3
 
 // PROFILE_VERSION is written into every profile save.
 const PROFILE_VERSION = 1
@@ -189,7 +190,7 @@ func saveVersion(data []byte, newest int) (int, error) {
 func LoadRun(path string) (*Hero, error) {
 	var h *Hero
 	var buildings []string
-	old := false
+	old, smallOrrery := false, false
 	err := readOrBackUp(path, func(data []byte) error {
 		version, err := saveVersion(data, SAVE_VERSION)
 		if err != nil {
@@ -213,10 +214,13 @@ func LoadRun(path string) (*Hero, error) {
 		}
 		if version < SAVE_VERSION {
 			// an older run: it is converted below, so keep the original
+			backUp(path, data)
+			smallOrrery = true
+		}
+		if version < 2 {
 			var b struct{ Buildings []string }
 			json.Unmarshal(run, &b)
 			buildings, old = b.Buildings, true
-			backUp(path, data)
 		}
 		return nil
 	})
@@ -227,6 +231,9 @@ func LoadRun(path string) (*Hero, error) {
 		h.fixUp()
 		if old {
 			h.fromBeforeAcademy(buildings)
+		}
+		if smallOrrery {
+			h.fromSmallOrrery()
 		}
 	}
 	return h, nil

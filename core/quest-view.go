@@ -109,6 +109,9 @@ type QuestView struct {
 	modalScroll ui.Scroll
 	modalKey    string
 	orrerySel   string // the Orrery node being looked at
+	orreryZoom  int    // phone: 0 shows the whole Orrery, 1+ zooms on region orreryZoom-1
+	perkAt      map[string]float64 // perk node → when it last worked in this duel, for the duel's perk list
+	perkShown   string             // the perk in the duel's list whose description is open
 	puzzleTool  string // a Force waiting for its gem
 	puzzleShown int    // dev: moves of a stored solution replayed so far
 	devPuzzled  bool
@@ -290,8 +293,14 @@ func (v *QuestView) startDuel(foeID string, level int, at string) {
 	v.TM.Reset(rpg.BoardSettings(card))
 	d := rpg.NewDuel(rpg.NewHeroCombatant(v.Hero), rpg.NewFoeCombatant(foe, level), time.Now().UnixNano())
 	d.Card = card
-	d.Board = v.TM.Board
+	d.SetBoard(v.TM.Board)
 	d.OnHit = v.onHit
+	v.perkAt = map[string]float64{}
+	d.OnPerk = func(p *rpg.Perk) {
+		v.perkAt[p.Node] = v.time
+		at := v.portraits[rpg.Player]
+		v.effects.Popup(rpg.PerkLabel(p), rl.Vector2{X: at.X, Y: at.Y - 40}, 20, residueColor(p.Color))
+	}
 	d.OnHeal = func(side, n int) {
 		at := v.portraits[side]
 		if at.X == 0 && at.Y == 0 {
@@ -709,6 +718,38 @@ func (v *QuestView) drawStoryStatus(col *ui.Column) {
 	}
 }
 
+// drawPerks lists a side's Orrery perks, each in its region's color, lit for a moment when it
+// works. Selecting one shows what it does.
+func (v *QuestView) drawPerks(col *ui.Column, c *rpg.Combatant) {
+	if len(c.Perks) == 0 {
+		return
+	}
+	col.Heading(text.T("ui.perks", "Perks"))
+	for _, p := range c.Perks {
+		r := col.Next(22)
+		lit := v.time-v.perkAt[p.Node] < 1.2 && v.perkAt[p.Node] > 0
+		if lit {
+			rl.DrawRectangleRec(r, rl.Fade(residueColor(p.Color), 0.3))
+		}
+		rl.DrawCircleV(rl.Vector2{X: r.X + 8, Y: r.Y + 11}, 6, residueColor(p.Color))
+		tc := ui.TextColor
+		if lit {
+			tc = ui.Accent
+		}
+		ui.TextFit(rpg.PerkLabel(p), r.X+20, r.Y+2, 17, r.Width-20, tc)
+		if ui.Clicked(r) {
+			if v.perkShown == p.Node {
+				v.perkShown = ""
+			} else {
+				v.perkShown = p.Node
+			}
+		}
+		if v.perkShown == p.Node {
+			col.Paragraph(rpg.PerkAbout(p), 14, ui.DimText)
+		}
+	}
+}
+
 // drawSide draws one combatant: portrait, bars, status and spells.
 func (v *QuestView) drawSide(col *ui.Column, side int) {
 	d := v.Duel
@@ -763,6 +804,7 @@ func (v *QuestView) drawSide(col *ui.Column, side int) {
 	if status != "" {
 		col.Paragraph(status, 15, ui.Accent)
 	}
+	v.drawPerks(col, c)
 
 	col.Heading(text.T("ui.spells", "Spells"))
 	for i, s := range c.Spells {

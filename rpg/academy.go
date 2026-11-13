@@ -47,6 +47,7 @@ type FacilityLevel struct {
 	Armor		int		`yaml:"armor"`
 	Henchmen	int		`yaml:"henchmen"`	// more henchmen allowed
 	ChapterPct	int		`yaml:"chapter_pct"`	// more paid by every completed chapter, in percent
+	FreeRespec	bool	`yaml:"free_respec"`	// an Orrery respec costs no gold
 }
 
 var Facilities []Facility
@@ -153,6 +154,7 @@ func (h *Hero) facilityPerks() (sum FacilityLevel) {
 			sum.Armor += l.Armor
 			sum.Henchmen += l.Henchmen
 			sum.ChapterPct += l.ChapterPct
+			sum.FreeRespec = sum.FreeRespec || l.FreeRespec
 		}
 	}
 	return sum

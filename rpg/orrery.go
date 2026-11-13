@@ -20,9 +20,10 @@ const (
 	RESIDUE_CHAIN	= 1		// more per mana match for each cascade step after the first
 	CONVERT_STEP	= 10	// coloured residue taken by one conversion
 	CONVERT_PCT		= 30	// colorless residue given per 100 coloured
-	RESPEC_GOLD		= 100	// gold to refund every node and go back to the seat
+	RESPEC_GOLD		= 100	// gold to refund every node and go back to the seat, unless a facility makes it free
 	KIT_LEVEL		= 4		// a class knows its own rites up to this level without the Orrery
 	OLD_RUN_RESIDUE	= 6		// colorless residue per level for a run saved before the Orrery
+	WIN_RESIDUE		= 10		// a won duel's bounty, in the color of the hero's seat
 )
 
 // OrreryNode is one body on the Orrery: orrery.yaml. Buying it gives its stats, its rite, or both.
@@ -37,6 +38,7 @@ type OrreryNode struct {
 	Seat		string			`yaml:"seat"`	// the class that starts here, owning it for free
 	Rite		string			`yaml:"rite"`	// spell ID
 	RawStats	map[string]int	`yaml:"stats"`
+	Perk		*Perk			`yaml:"perk"`	// a large node's rule: perks.go
 
 	Stats		[NUM_STATS]int	`yaml:"-"`
 	Mana		int				`yaml:"-"`	// Color as a mana index, -1 if unknown
@@ -82,6 +84,9 @@ func linkOrrery(nodes []OrreryNode) (problems []string) {
 		problems = append(problems, prefix("orrery node "+n.ID+" stats", bad)...)
 		n.Mana = manaByName(n.Color)
 		n.Near = nil
+		if p := n.Perk; p != nil {
+			p.Node, p.Color, p.ToMana = n.ID, n.Mana, manaByName(p.To)
+		}
 	}
 	for i := range nodes {
 		for _, id := range nodes[i].Links {
@@ -154,6 +159,11 @@ func checkOrrery() []string {
 			}
 		} else if n.Cost <= 0 {
 			bad("%s: cost %d should be more than 0", where, n.Cost)
+		}
+		if n.Perk != nil {
+			for _, msg := range checkPerk(n.Perk) {
+				bad("%s: %s", where, msg)
+			}
 		}
 		if n.Rite != "" {
 			s := SpellByID(n.Rite)
@@ -236,10 +246,25 @@ func (h *Hero) Convert(color int) bool {
 // Respec refunds the residue every bought node took, into the pools that paid it, for gold, and
 // puts the hero back on the seat. Rites that go with the nodes are unequipped.
 func (h *Hero) Respec() bool {
-	if h.Gold < RESPEC_GOLD || len(h.Nodes) <= 1 {
+	cost := h.RespecCost()
+	if h.Gold < cost || len(h.Nodes) <= 1 {
 		return false
 	}
-	h.Gold -= RESPEC_GOLD
+	h.Gold -= cost
+	h.refundNodes()
+	return true
+}
+
+// RespecCost is the gold a respec takes: none once a facility makes it free.
+func (h *Hero) RespecCost() int {
+	if h.facilityPerks().FreeRespec {
+		return 0
+	}
+	return RESPEC_GOLD
+}
+
+// refundNodes gives back the residue every bought node took and puts the hero back on the seat.
+func (h *Hero) refundNodes() {
 	for i, n := range h.Spent {
 		h.Residue[i] += n
 	}
@@ -251,7 +276,14 @@ func (h *Hero) Respec() bool {
 		return s == nil || !h.Knows(s)
 	})
 	h.learnSpells()
-	return true
+}
+
+// fromSmallOrrery converts a run saved on the 24-node prototype Orrery: its layout and costs are
+// gone, so every node it bought is refunded to the pools that paid for it, as a free respec.
+func (h *Hero) fromSmallOrrery() {
+	if len(h.Nodes) > 1 || h.Spent != [NUM_RESIDUE]int{} {
+		h.refundNodes()
+	}
 }
 
 // Knows reports whether a hero can cast a rite: it is in their class's kit or on a node they own,
