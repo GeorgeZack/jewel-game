@@ -15,6 +15,7 @@ const MAX_CARD_SIZE = 10
 type RuleCard struct {
 	ID				string	`yaml:"id"`
 	Name			string	`yaml:"name"`
+	Desc			string	`yaml:"desc"`	// the rule in one sentence, shown when the duel starts
 	Width			int		`yaml:"width"`
 	Height			int		`yaml:"height"`
 	Gravity			string	`yaml:"gravity"`	// down, left, up or right
@@ -49,16 +50,28 @@ func gravityByName(name string) (board.Direction, bool) {
 	return board.Down, name == ""
 }
 
+// Placeholder board sizes: the standard duel's, and the larger one Aether arrives with so that
+// matches stay about as common with eight colors as with seven.
+const (
+	DUEL_SIZE			= 8
+	AETHER_DUEL_SIZE	= 9
+)
+
 // BoardSettings is the board a duel is played on: the standard duel, changed by the card if any.
-func BoardSettings(c *RuleCard) board.Settings {
+// Without Aether the gem never arrives; with it the board is AETHER_DUEL_SIZE unless the card says.
+func BoardSettings(c *RuleCard, aether bool) board.Settings {
 	s := board.Settings{
-		Width:		8,
-		Height:		8,
+		Width:		DUEL_SIZE,
+		Height:		DUEL_SIZE,
 		NumColors:	NUM_GEMS,
+		Missing:	1 << Aether,
 		Duel:		true,
 		WildColors:	NUM_MANA,
 		BombColor:	Skull,
 		BombRate:	BIG_SKULL_RATE,
+	}
+	if aether {
+		s.Width, s.Height, s.Missing = AETHER_DUEL_SIZE, AETHER_DUEL_SIZE, 0
 	}
 	if c == nil {
 		return s
@@ -96,6 +109,9 @@ func checkCards() []string {
 			if n != 0 && (n < 4 || n > MAX_CARD_SIZE) {
 				bad("%s: board size %d should be 4 to %d", where, n, MAX_CARD_SIZE)
 			}
+		}
+		if c.Name == "" || c.Desc == "" {
+			bad("%s: needs a name and a desc, the rule in one sentence", where)
 		}
 		if _, ok := gravityByName(c.Gravity); !ok {
 			bad("%s: unknown gravity %q (down, left, up or right)", where, c.Gravity)

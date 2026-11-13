@@ -90,7 +90,11 @@ func NewFoeCombatant(f *Foe, level int) *Combatant {
 }
 
 func (c *Combatant) TotalMana() int {
-	return c.Mana[0] + c.Mana[1] + c.Mana[2] + c.Mana[3]
+	n := 0
+	for _, m := range c.Mana {
+		n += m
+	}
+	return n
 }
 
 // AddEffect refreshes an effect of the same kind rather than stacking it.
@@ -155,6 +159,14 @@ func (d *Duel) Side(c *Combatant) int {
 
 func (d *Duel) Over() bool { return d.Winner >= 0 }
 
+// AetherOn reports whether Aether can arrive on this duel's board, which BoardSettings decides.
+func (d *Duel) AetherOn() bool {
+	return d.Board != nil && d.Board.Settings.Missing&(1<<Aether) == 0
+}
+
+// Mana is the mana colors this duel is played with.
+func (d *Duel) Mana() []int { return ManaInPlay(d.AetherOn()) }
+
 // Damage hits a combatant. Shields reduce every hit; at least 1 always lands.
 func (d *Duel) Damage(c *Combatant, n int) int {
 	if n <= 0 || d.Over() {
@@ -168,6 +180,19 @@ func (d *Duel) Damage(c *Combatant, n int) int {
 	if c.HP == 0 {
 		d.Winner = 1 - d.Side(c)
 		d.logf("log.falls", "%s falls!", c.Name)
+	}
+	return n
+}
+
+// Backlash is what a forbidden rule costs its own side: HP lost past any shield, but never the last.
+func (d *Duel) Backlash(c *Combatant, n int) int {
+	n = min(n, c.HP-1)
+	if n <= 0 || d.Over() {
+		return 0
+	}
+	c.HP -= n
+	if d.OnHit != nil {
+		d.OnHit(d.Side(c), n)
 	}
 	return n
 }
@@ -226,14 +251,14 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 	fired := map[*Perk]bool{}
 	for _, m := range res.Matches {
 		traded := false
-		if m.Color < NUM_MANA {
+		if IsMana(m.Color) {
 			traded = d.matchPerks(me, foe, m, fired)
 		}
 		if m.Size >= 4 && !d.wildFour(me, m, fired) && !traded {
 			g.Extra = true
 		}
 		switch {
-		case m.Color < NUM_MANA:
+		case IsMana(m.Color):
 			if me.Foe == nil {
 				n := MatchResidue(m.Size, res.Chain)
 				me.Residue[m.Color] += n
@@ -308,7 +333,7 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 // wildFour handles a hero's wild_four perk for a run of four: it plants the Wild and reports that
 // the run gives no extra turn.
 func (d *Duel) wildFour(me *Combatant, m board.Match, fired map[*Perk]bool) bool {
-	if m.Size != 4 || m.Color >= NUM_MANA {
+	if m.Size != 4 || !IsMana(m.Color) {
 		return false
 	}
 	for _, p := range me.perksOf(PerkWildFour) {
@@ -337,9 +362,17 @@ func (d *Duel) matchPerks(me, foe *Combatant, m board.Match, fired map[*Perk]boo
 			d.Damage(foe, p.Amount)
 		case PerkMend:
 			d.Heal(me, p.Amount)
+		case PerkHunger:
+			n := min(p.Amount, me.Mana[p.ToMana], me.MaxMana[m.Color]-me.Mana[m.Color])
+			if n <= 0 {
+				continue
+			}
+			me.Mana[p.ToMana] -= n
+			me.Mana[m.Color] += n
 		default:
 			continue
 		}
+		d.Backlash(me, p.Backlash)
 		d.perkFired(fired, p)
 		traded = traded || p.Trade
 	}
@@ -352,7 +385,7 @@ func (c *Combatant) CanCast(s *Spell) bool {
 		return false
 	}
 	for i, n := range s.Cost {
-		if c.Mana[i] < n {
+		if short := n - c.Mana[i]; short > 0 && !(i == Aether && c.bloodPrice() > 0 && short*c.bloodPrice() < c.HP) {
 			return false
 		}
 	}
@@ -367,7 +400,13 @@ func (d *Duel) Cast(s *Spell) bool {
 		return false
 	}
 	for i, n := range s.Cost {
-		me.Mana[i] -= n
+		paid := min(n, me.Mana[i])
+		me.Mana[i] -= paid
+		if n > paid {
+			// only Aether can be short, and only with a blood price perk: CanCast saw to it
+			d.Backlash(me, (n-paid)*me.bloodPrice())
+			d.perkFired(map[*Perk]bool{}, me.perksOf(PerkBloodPrice)[0])
+		}
 	}
 	if s.Cooldown > 0 {
 		me.Cooldowns[s.ID] = s.Cooldown

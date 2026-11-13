@@ -32,7 +32,7 @@ type Ctx struct {
 
 func (c Ctx) mastery(i, per int) int { return c.Me.Stats[i] / per }
 
-// Spell costs mana of up to four colors. Casting ends the turn unless Free is set.
+// Spell costs mana of up to NUM_MANA colors. Casting ends the turn unless Free is set.
 type Spell struct {
 	ID, Name	string
 	Class		string		// empty: monsters only
@@ -45,7 +45,18 @@ type Spell struct {
 	Worth		func(c Ctx) bool	// optional AI check for whether casting is useful now
 }
 
-func cost(fire, water, air, earth int) [NUM_MANA]int { return [NUM_MANA]int{ fire, water, air, earth } }
+// cost is a spell's price in Fire, Water, Air, Earth and Aether order; colors left off cost nothing.
+func cost(mana ...int) (c [NUM_MANA]int) {
+	copy(c[:], mana)
+	return c
+}
+
+// AETHER_RITES is the Class of the Aether rites: they belong to no class, so none knows them
+// without the Orrery.
+const AETHER_RITES = "Aether"
+
+// OBLIVION_BACKLASH is the HP Oblivion costs its caster. A placeholder.
+const OBLIVION_BACKLASH = 8
 
 func hurt(c Ctx, n int)		{ c.D.Damage(c.Foe, n) }
 func wounded(c Ctx) bool	{ return c.Me.HP*3 < c.Me.MaxHP*2 }
@@ -155,6 +166,25 @@ var Spells = []Spell{
 			c.Board.Force(c.Board.Square(c.Board.RandomCells(1)[0], 2))
 		} },
 
+	// Aether: on the Orrery's Aether region, for any class that reaches it
+	{ ID: "void_bolt", Name: "Void Bolt", Class: AETHER_RITES, Level: 6, Cost: cost(0, 0, 0, 0, 8), Cooldown: 2,
+		Desc: "Deal 8 + Aether/2 damage.",
+		Cast: func(c Ctx) { hurt(c, 8+c.mastery(Aether, 2)) } },
+	{ ID: "unmake", Name: "Unmake", Class: AETHER_RITES, Level: 8, Cost: cost(0, 0, 0, 0, 12), Cooldown: 5,
+		Desc: "Turn all gold and stars into skulls.",
+		Cast: func(c Ctx) { c.Board.Convert(Gold, Skull); c.Board.Convert(Star, Skull) } },
+	{ ID: "eclipse", Name: "Eclipse", Class: AETHER_RITES, Level: 10, Cost: cost(0, 6, 0, 0, 10), Cooldown: 7,
+		Desc: "Silence the foe for 2 turns and burn 5 of each of its mana.",
+		Cast: func(c Ctx) {
+			c.Foe.AddEffect(Effect{ Silence, 2, 0 })
+			for i := range c.Foe.Mana {
+				c.Foe.Mana[i] = max(0, c.Foe.Mana[i]-5)
+			}
+		} },
+	{ ID: "oblivion", Name: "Oblivion", Class: AETHER_RITES, Level: 13, Cost: cost(6, 0, 0, 0, 16), Cooldown: 6,
+		Desc: "Deal 25 + Aether damage. You lose 8 HP.", Worth: func(c Ctx) bool { return c.Me.HP > 24 },
+		Cast: func(c Ctx) { hurt(c, 25+c.Me.Stats[Aether]); c.D.Backlash(c.Me, OBLIVION_BACKLASH) } },
+
 	// Monsters
 	{ ID: "bite", Name: "Bite", Level: 1, Cost: cost(0, 0, 0, 5), Cooldown: 3, Desc: "Deal 4 damage.",
 		Cast: func(c Ctx) { hurt(c, 4) } },
@@ -176,6 +206,15 @@ var Spells = []Spell{
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Stun, 1, 0 }) } },
 	{ ID: "frenzy", Name: "Frenzy", Level: 1, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true, Desc: "Free. Skull matches deal +3 for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Might, 4, 3 }) } },
+	{ ID: "hollow_hymn", Name: "Hollow Hymn", Level: 1, Cost: cost(0, 4, 0, 0, 8), Cooldown: 5, Desc: "Deal 6 and burn 4 of each foe mana.",
+		Cast: func(c Ctx) {
+			hurt(c, 6)
+			for i := range c.Foe.Mana {
+				c.Foe.Mana[i] = max(0, c.Foe.Mana[i]-4)
+			}
+		} },
+	{ ID: "void_lash", Name: "Void Lash", Level: 1, Cost: cost(0, 0, 0, 0, 10), Cooldown: 4, Desc: "Deal 10 + Aether/2 damage.",
+		Cast: func(c Ctx) { hurt(c, 10+c.mastery(Aether, 2)) } },
 	{ ID: "dark_pact", Name: "Dark Pact", Level: 1, Cost: cost(5, 5, 5, 5), Cooldown: 5, Desc: "Turn all gold into skulls.",
 		Cast: func(c Ctx) { c.Board.Convert(Gold, Skull) } },
 }

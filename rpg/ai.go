@@ -82,5 +82,5 @@ func usefulMatch(me *Combatant, m board.Match) bool {
 	if m.Color == Skull {
 		return true
 	}
-	return m.Color < NUM_MANA && me.Mana[m.Color] < me.MaxMana[m.Color]
+	return IsMana(m.Color) && me.Mana[m.Color] < me.MaxMana[m.Color]
 }

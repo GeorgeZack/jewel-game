@@ -17,9 +17,11 @@ const (
 	PerkOverflow	= "overflow"	// the color's max is Amount lower, and mana past it spills into To
 	PerkForsake		= "forsake"		// skull matches deal Amount more, and the color's matches pay no mana
 	PerkSeed		= "seed"		// the duel starts with Amount Wilds or skull Bombs (Special) on the board
+	PerkHunger		= "hunger"		// a match of Size or more moves Amount of your To mana into the color
+	PerkBloodPrice	= "blood_price"	// a rite short of Aether may pay Amount HP for each Aether missing
 )
 
-var PerkKinds = []string{ PerkStrike, PerkMend, PerkWildFour, PerkSkullPaint, PerkOverflow, PerkForsake, PerkSeed }
+var PerkKinds = []string{ PerkStrike, PerkMend, PerkWildFour, PerkSkullPaint, PerkOverflow, PerkForsake, PerkSeed, PerkHunger, PerkBloodPrice }
 
 // SEED_WILD_MULT is the multiplier of a Wild a seed perk plants.
 const SEED_WILD_MULT = 2
@@ -32,6 +34,7 @@ type Perk struct {
 	To		string	`yaml:"to"`		// overflow: the color that takes the spill
 	Special	string	`yaml:"special"`	// seed: wild or bomb
 	Trade	bool	`yaml:"trade"`	// strike, mend: works only on a run of four or more, which then gives no extra turn
+	Backlash	int	`yaml:"backlash"`	// strike, mend, hunger: HP it costs you each time it works
 
 	Node	string	`yaml:"-"`	// the node's ID, for its name
 	Color	int		`yaml:"-"`
@@ -60,6 +63,17 @@ func checkPerk(p *Perk) (bad []string) {
 		if p.Amount < 1 || p.Amount > 4 {
 			wrong("skull_paint amount %d should be 1 to 4", p.Amount)
 		}
+	case PerkHunger:
+		if p.ToMana < 0 || p.ToMana == p.Color {
+			wrong("hunger to %q should be another color", p.To)
+		}
+		if p.Size < 3 || p.Size > 5 || p.Amount <= 0 {
+			wrong("hunger needs a size of 3 to 5 and an amount")
+		}
+	case PerkBloodPrice:
+		if p.Color != Aether || p.Amount <= 0 {
+			wrong("blood_price needs an amount, on an Aether node")
+		}
 	case PerkOverflow:
 		if p.ToMana < 0 || p.ToMana == p.Color {
 			wrong("overflow to %q should be another color", p.To)
@@ -81,7 +95,18 @@ func checkPerk(p *Perk) (bad []string) {
 	default:
 		wrong("unknown perk kind %q", p.Kind)
 	}
+	if p.Backlash < 0 || (p.Backlash > 0 && p.Kind != PerkStrike && p.Kind != PerkMend && p.Kind != PerkHunger) {
+		wrong("backlash %d: only strike, mend and hunger take one, of 0 or more", p.Backlash)
+	}
 	return bad
+}
+
+// bloodPrice is the HP a side pays for each Aether a rite is short: 0 without the perk.
+func (c *Combatant) bloodPrice() int {
+	for _, p := range c.perksOf(PerkBloodPrice) {
+		return p.Amount
+	}
+	return 0
 }
 
 // heroPerks is every perk on the nodes a hero owns.

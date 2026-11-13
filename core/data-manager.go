@@ -124,6 +124,7 @@ func (dm *DataManager) DuelGemTypes() []*entities.GemType {
 	sapphire, sapphireFull := from("Sapphire")
 	crystal, crystalFull := from("Crystal")
 	emerald, emeraldFull := from("Emerald")
+	amethyst, amethystFull := from("Amethyst")
 	skull := piece("Skull", rl.Color{R: 235, G: 230, B: 215, A: 255}, dm.skull, true, dm.skullPlus, "")
 	skull.Idle, skull.IdleFrames, skull.IdleFPS = dm.skullIdle, dm.skullIdleFrames, 5
 	skull.BombIdle, skull.BombIdleFrames, skull.BombIdleFPS = dm.skullPlusIdle, dm.skullPlusIdleFrames, 5
@@ -136,6 +137,8 @@ func (dm *DataManager) DuelGemTypes() []*entities.GemType {
 		rpg.Water: piece("Water", rl.Color{R: 70, G: 130, B: 255, A: 255}, sapphire, sapphireFull, rl.Texture2D{}, "Sapphire"),
 		rpg.Air:   piece("Air", rl.Color{R: 251, G: 242, B: 134, A: 255}, crystal, crystalFull, rl.Texture2D{}, "Crystal"),
 		rpg.Earth: piece("Earth", rl.Color{R: 70, G: 210, B: 90, A: 255}, emerald, emeraldFull, rl.Texture2D{}, "Emerald"),
+		// Aether borrows the puzzle boards' amethyst; it only arrives once the run has it
+		rpg.Aether: piece("Aether", rl.Color{R: 200, G: 80, B: 235, A: 255}, amethyst, amethystFull, rl.Texture2D{}, "Amethyst"),
 		rpg.Skull: skull,
 		rpg.Gold:  gold,
 		rpg.Star:  star,

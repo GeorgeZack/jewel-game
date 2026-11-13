@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func step(cleared []int, matches ...board.Match) *board.StepResult {
 
 func testDuel() *Duel {
 	d := NewDuel(NewHeroCombatant(NewHero("Knight")), NewFoeCombatant(FoeByID("rat"), 1), 1)
-	d.Board = board.NewBoard(BoardSettings(nil), 1)
+	d.Board = board.NewBoard(BoardSettings(nil, false), 1)
 	d.Turn = Player
 	return d
 }
@@ -151,7 +152,7 @@ func TestSpellsAllCastOnARealBoard(t *testing.T) {
 		d := testDuel()
 		me := d.Sides[Player]
 		me.Spells = []*Spell{s}
-		me.Mana = [NUM_MANA]int{50, 50, 50, 50}
+		me.Mana = [NUM_MANA]int{50, 50, 50, 50, 50}
 		if !d.Cast(s) {
 			t.Fatalf("%s did not cast", s.ID)
 		}
@@ -435,7 +436,7 @@ func TestCardsSetTheBoardAndPayouts(t *testing.T) {
 	}
 
 	card := RuleCardByID(FoeByID("rat").Card)
-	b := board.NewBoard(BoardSettings(card), 1)
+	b := board.NewBoard(BoardSettings(card, false), 1)
 	if b.W() != 10 || b.H() != 6 || !b.Settings.Overcharge || !b.Settings.ChaosGravity || b.Settings.Gravity != board.Left {
 		t.Fatalf("card didn't reach the board: %+v", b.Settings)
 	}
@@ -500,6 +501,7 @@ func bestShopGear(h *Hero) {
 // Balance guard: a geared hero played by the AI should usually beat ordinary foes, have a real
 // fight with story bosses, and fights shouldn't drag. Turns count both sides.
 func TestDuelsFinishAndAreFair(t *testing.T) {
+	t.Parallel()	// it only reads the story, so it shares the CPU with the other simulator runs
 	const N = 6
 	foes := []struct {
 		id    string
@@ -518,7 +520,7 @@ func TestDuelsFinishAndAreFair(t *testing.T) {
 				bestShopGear(h)
 				perks = len(heroPerks(h))
 				d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
-				d.SetBoard(board.NewBoard(BoardSettings(nil), int64(seed)))
+				d.SetBoard(board.NewBoard(BoardSettings(nil, false), int64(seed)))
 				turns += playOut(d)
 				if d.Winner == Player {
 					wins++
@@ -562,7 +564,7 @@ func TestWeakFoesLeaveCombos(t *testing.T) {
 	var b *board.Board
 	var combos map[[2]board.Point]bool
 	for seed := int64(1); seed < 400; seed++ {
-		candidate := board.NewBoard(BoardSettings(nil), seed)
+		candidate := board.NewBoard(BoardSettings(nil, false), seed)
 		combo, other := moveKinds(candidate)
 		if len(combo) > 0 && len(other) > 0 {
 			b, combos = candidate, combo
@@ -626,6 +628,10 @@ func nodeWorth(h *Hero, n *OrreryNode, b build) int {
 	if n.Mana == b.regions[0] {
 		w += 1500
 	}
+	// a build headed for Aether's core goes inward
+	if len(b.regions) > 1 && b.regions[1] == Aether {
+		w += (4 - n.Ring) * 600
+	}
 	// a step toward a perk the build wants is worth more than a stat on its own
 	if n.Perk == nil && slices.ContainsFunc(n.Near, func(id string) bool {
 		o := NodeByID(id)
@@ -651,14 +657,15 @@ func (b build) allows(h *Hero, n *OrreryNode) bool {
 // regionOrder is the regions around the Orrery, clockwise from the top.
 var regionOrder = []int{ Fire, Water, Earth, Air }
 
-// greedy buys anywhere, its own region first.
+// greedy buys anywhere, its own region first and Aether's core last, once it opens.
 func greedy(class string) build {
 	own := SeatOf(class).Mana
-	return build{ "greedy", append([]int{ own }, slices.DeleteFunc(slices.Clone(regionOrder), func(c int) bool { return c == own })...), false }
+	others := slices.DeleteFunc(slices.Clone(regionOrder), func(c int) bool { return c == own })
+	return build{ "greedy", append(append([]int{ own }, others...), Aether), false }
 }
 
-// builds are the policies TestBuilds compares for a class: anywhere, deep in its own region, and
-// its own region and the next one clockwise.
+// builds are the policies TestBuilds compares for a class: anywhere, deep in its own region, its
+// own region and the next one clockwise, and its own region and then Aether's core once it opens.
 func builds(class string) []build {
 	own := SeatOf(class).Mana
 	next := regionOrder[(slices.Index(regionOrder, own)+1)%len(regionOrder)]
@@ -666,6 +673,7 @@ func builds(class string) []build {
 		greedy(class),
 		{ "deep", []int{ own }, false },
 		{ "cross:" + strings.ToLower(ManaNames[next]), []int{ own, next }, false },
+		{ "core", []int{ own, Aether }, false },
 	}
 }
 
@@ -773,6 +781,7 @@ func spendLikeAPlayer(h *Hero, site string, b build) (dues int) {
 // table with -v). A lost duel is fought again, keeping what the board paid, as a player would.
 // Economy numbers should come from here.
 func TestProgression(t *testing.T) {
+	t.Parallel()	// it only reads the story, so it shares the CPU with the other simulator runs
 	for _, class := range Classes {
 		h := progress(t, class.Name, greedy(class.Name), true)
 		if h != nil && len(h.Nodes)*2 >= len(Orrery) {
@@ -784,10 +793,26 @@ func TestProgression(t *testing.T) {
 // TestBuilds follows a few buying policies per class through the main quests and prints where
 // each ends, so builds can be compared (see the table with -v).
 func TestBuilds(t *testing.T) {
+	t.Parallel()	// it only reads the story, so it shares the CPU with the other simulator runs
 	t.Logf("%-8s %-12s %3s %5s %4s %5s %5s  %s", "class", "build", "lvl", "duels", "lost", "turns", "nodes", "perks")
+	// every run is its own hero, so they play at once and are reported in order
+	var wg sync.WaitGroup
+	heroes := map[string]*Hero{}
+	var mu sync.Mutex
 	for _, class := range Classes {
 		for _, b := range builds(class.Name) {
-			h := progress(t, class.Name, b, false)
+			wg.Go(func() {
+				h := progress(t, class.Name, b, false)
+				mu.Lock()
+				heroes[class.Name+b.name] = h
+				mu.Unlock()
+			})
+		}
+	}
+	wg.Wait()
+	for _, class := range Classes {
+		for _, b := range builds(class.Name) {
+			h := heroes[class.Name+b.name]
 			if h == nil {
 				continue
 			}
@@ -805,7 +830,10 @@ func TestBuilds(t *testing.T) {
 }
 
 // simTurns is the turns each simulated hero's duels took, both sides counted.
-var simTurns = map[*Hero]int{}
+var (
+	simTurns	= map[*Hero]int{}
+	simMu		sync.Mutex
+)
 
 // progress plays one hero of a class through the main quests, buying by a build, and returns them,
 // or nil when they got stuck (which fails the test).
@@ -816,7 +844,7 @@ func progress(t *testing.T, class string, b build, verbose bool) *Hero {
 	var earned [NUM_MANA]int
 	dues := 0
 	if verbose {
-		t.Logf("%-8s %-14s %3s %5s %4s %5s %4s %4s %4s %4s %5s %4s %4s %4s", class, "quest", "lvl", "duels", "lost", "gold", "fire", "watr", "air", "erth", "nodes", "dues", "hm", "fac")
+		t.Logf("%-8s %-14s %3s %5s %4s %5s %4s %4s %4s %4s %4s %5s %4s %4s %4s", class, "quest", "lvl", "duels", "lost", "gold", "fire", "watr", "air", "erth", "aeth", "nodes", "dues", "hm", "fac")
 	}
 	for i := range Quests {
 		q := &Quests[i]
@@ -833,11 +861,15 @@ func progress(t *testing.T, class string, b build, verbose bool) *Hero {
 			seed++
 			duels++
 			d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(q.Foe), q.FoeLevel), seed)
-			d.SetBoard(board.NewBoard(BoardSettings(card), seed))
+			d.SetBoard(board.NewBoard(BoardSettings(card, h.AetherOn()), seed))
 			d.Card = card
-			simTurns[h] += playOut(d)
+			n := playOut(d)
+			simMu.Lock()
+			simTurns[h] += n
+			simMu.Unlock()
 			if d.Winner < 0 {
-				t.Fatalf("%s vs %s never finished", class, q.Foe)
+				t.Errorf("%s vs %s never finished", class, q.Foe)
+				return nil
 			}
 			r := d.Settle(h)
 			for c, n := range r.Residue {
@@ -866,8 +898,8 @@ func progress(t *testing.T, class string, b build, verbose bool) *Hero {
 			levels += n
 		}
 		if verbose {
-			t.Logf("%-8s %-14s %3d %5d %4d %5d %4d %4d %4d %4d %5d %4d %4d %4d", class, q.ID, h.Level, duels, lost, h.Gold,
-				earned[Fire], earned[Water], earned[Air], earned[Earth], len(h.Nodes), dues, ranks, levels)
+			t.Logf("%-8s %-14s %3d %5d %4d %5d %4d %4d %4d %4d %4d %5d %4d %4d %4d", class, q.ID, h.Level, duels, lost, h.Gold,
+				earned[Fire], earned[Water], earned[Air], earned[Earth], earned[Aether], len(h.Nodes), dues, ranks, levels)
 		}
 		if !slices.Contains(h.Done, q.ID) {
 			t.Errorf("%s (%s) is stuck on %s at level %d", class, b.name, q.ID, h.Level)
