@@ -18,7 +18,8 @@ not reliable, the design changes before more is built on it.
       epilogue variant (5.7, before 11), early-return cost and first-time payouts (5.8, before 7).
 - [ ] **Decision needed:** names for the player's society, the rival college, the entities and
       the meta currency. The two main societies have working names (5.7).
-- [ ] **Decision needed:** returns needed before meta stage 2; whether foes scale with returns.
+- [x] Decided 13 Nov 2026: returns are unlimited, meta stage 2 opens after at least three, and
+      foes do not scale with returns.
 
 Decided: no sound in the first release, and Steam is on hold. The release is the browser build.
 
