@@ -118,6 +118,7 @@ ui:
   orrery_owned: "%d of %d nodes owned"
   perks: Perks
   card_name: "Card: %s"
+  card_name_tap: "Card: %s  (tap for its rule)"
   convert: Convert
   convert_help: "%d of a color becomes %d colorless."
   respec: Respec
