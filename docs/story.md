@@ -190,7 +190,8 @@ The Orrery is the upgrade grid. Its nodes sit on rings and are joined by links; 
 color's region and costs that color's **residue**. A hero earns residue on their own turns in a
 duel: a match of four, a match of five or more, and matches later in a cascade leave residue of
 their color (a plain three on the first step leaves none). It is kept after a lost duel, like
-the gold and XP the board paid. Colorless residue, made from colored residue at a loss with the
+the gold and XP the board paid. A won duel also pays a bounty of residue in the color of the
+hero's seat (`WIN_RESIDUE`), so a class that wins fast still grows. Colorless residue, made from colored residue at a loss with the
 Convert buttons, pays for any node; when a color's pool is short, colorless makes up the rest.
 
 Each class starts owning its **seat** and can buy any node linked to one it owns. A node gives
@@ -200,7 +201,7 @@ spell's level. Respec refunds the residue each bought node took, to the pools th
 (free once a facility with `free_respec` is built).
 
 The shipped grid has four regions of fifteen nodes on four rings (ring 4 outermost): a seat and
-four cheap stat nodes outside, three rites and stat nodes on ring 3, two or three large perk nodes
+four cheap stat nodes outside, three rites and stat nodes on ring 3, three large perk nodes
 on ring 2, and a strong stat node and a level 13 rite on ring 1. Neighbouring regions join on the
 outer and the inner ring.
 
@@ -220,7 +221,7 @@ outer and the inner ring.
   color: fire
   ring: 2
   angle: 338
-  cost: 22
+  cost: 10
   perk: { kind: strike, size: 3, amount: 2 }   # a large node: a rule for the hero's duels
 ```
 
@@ -229,11 +230,11 @@ in its node's region color (below, "the color"). The kinds and their parameters:
 
 | kind | parameters | what it does |
 |---|---|---|
-| `strike` | `size` (3-5), `amount` | a match of `size` or more of the color also deals `amount` damage |
-| `mend` | `size` (3-5), `amount` | a match of `size` or more of the color also heals `amount` |
+| `strike` | `size` (3-5), `amount`, `trade` | a match of `size` or more of the color also deals `amount` damage; with `trade: true` (size 4 or more) it deals it instead of the extra turn |
+| `mend` | `size` (3-5), `amount`, `trade` | a match of `size` or more of the color also heals `amount`; `trade` as for strike |
 | `wild_four` | `amount` (2-3) | a match of exactly four of the color plants an x`amount` Wild on the board, and gives no extra turn |
 | `skull_paint` | `amount` (1-4) | each skull match turns up to `amount` gems beside the skulls into the color |
-| `overflow` | `to` (another color) | mana of the color past its max goes into `to` instead of being lost |
+| `overflow` | `to` (another color), `amount` (0-10) | the color's max mana is `amount` lower, and mana past it goes into `to` instead of being lost |
 | `forsake` | `amount` | skull matches deal `amount` more per match, and matches of the color give no mana |
 | `seed` | `special` (wild or bomb), `amount` (1-4) | the duel starts with `amount` x2 Wilds or +5 skulls on the board; the foe can take them too |
 

@@ -58,7 +58,7 @@ func heroMove(d *Duel) (a, c board.Point, ok bool) {
 
 // matchWorth is what one run is worth to the simulated hero.
 func matchWorth(me *Combatant, m board.Match) int {
-	v := m.Size
+	v, traded := m.Size, false
 	switch {
 	case m.Color == Skull:
 		v = 3*m.Size + 6*m.Bombs
@@ -80,18 +80,19 @@ func matchWorth(me *Combatant, m board.Match) int {
 			if p.Color == m.Color && m.Size >= p.Size {
 				switch {
 				case p.Kind == PerkStrike:
-					v += 3 * p.Amount
-				case p.Kind == PerkMend && me.HP < me.MaxHP:
 					v += 2 * p.Amount
+				case p.Kind == PerkMend && me.HP < me.MaxHP:
+					v += min(2*p.Amount, me.MaxHP-me.HP)
 				}
+				traded = traded || (p.Trade && (p.Kind == PerkStrike || p.Kind == PerkMend))
 			}
 		}
 	}
-	if m.Size >= 4 {
+	if m.Size >= 4 && !traded {
 		if m.Size == 4 && m.Color < NUM_MANA && me.HasPerk(PerkWildFour, m.Color) {
-			v += 8
+			v += 10
 		} else {
-			v += 12
+			v += 20
 		}
 	}
 	return v + 4*m.Wilds
@@ -176,9 +177,12 @@ func TestPerkStrikeAndMend(t *testing.T) {
 	d = perkDuel(t, m.ID)
 	me = d.Sides[Player]
 	me.HP -= 10
-	d.ApplyStep(step(gems(m.Perk.Color, m.Perk.Size), run(m.Perk.Color, m.Perk.Size)))
+	g := d.ApplyStep(step(gems(m.Perk.Color, m.Perk.Size), run(m.Perk.Color, m.Perk.Size)))
 	if me.HP != me.MaxHP-10+m.Perk.Amount || !logged(d, NodeLabel(m)) {
 		t.Fatalf("%s: HP %d of %d", m.ID, me.HP, me.MaxHP)
+	}
+	if m.Perk.Trade == g.Extra {
+		t.Fatalf("%s (trade %v) gave extra turn %v", m.ID, m.Perk.Trade, g.Extra)
 	}
 }
 
@@ -232,6 +236,9 @@ func TestPerkOverflowSpills(t *testing.T) {
 	p := n.Perk
 	d := perkDuel(t, n.ID)
 	me := d.Sides[Player]
+	if plain := perkDuel(t, "").Sides[Player]; me.MaxMana[p.Color] != plain.MaxMana[p.Color]-p.Amount {
+		t.Fatalf("%s: max %s %d, without it %d", n.ID, ManaNames[p.Color], me.MaxMana[p.Color], plain.MaxMana[p.Color])
+	}
 	me.Mana[p.Color] = me.MaxMana[p.Color] - 4
 	d.ApplyStep(step(gems(p.Color, 3), run(p.Color, 3)))
 	if logged(d, NodeLabel(n)) {
@@ -400,67 +407,134 @@ func fairHero(class string, level int) *Hero {
 	return h
 }
 
-// TestPerksStayFair gives each perk node alone to a level-appropriate hero of every class and
-// fights a few bosses: every duel must finish, and the win rate must stay within PERK_BAND points
-// of the same heroes without it (see the table with -v).
-func TestPerksStayFair(t *testing.T) {
-	const N = 6
-	const PERK_BAND = 25	// percentage points a perk may move the win rate
-	// the heroes are a little under the boss, so the fights are close enough to move
-	bosses := []struct {
-		id			string
-		level, hero	int
-	}{{"barrow_lord", 6, 4}, {"orc", 9, 6}, {"high_priest", 12, 9}, {"hollow_king", 16, 12}}
-	rate := func(node string) (per []int, all int) {
-		wins, total := 0, 0
-		for _, f := range bosses {
-			w := 0
-			for _, class := range Classes {
-				for seed := range N {
+// fairBoss is a fairness matchup: a boss at its level against heroes of a lower level, picked so
+// a hero without perks wins about half the time.
+type fairBoss struct {
+	id			string
+	level, hero	int
+}
+
+// fullSim reports whether JEWEL_FULL_SIM asks for the slower, fuller simulator runs.
+func fullSim() bool { return os.Getenv("JEWEL_FULL_SIM") != "" }
+
+// fairRate fights every class with the given perk nodes against each boss, seeds duels per class,
+// all at once. It returns the win rate per boss and overall, in percent, and the average turns.
+func fairRate(t *testing.T, bosses []fairBoss, seeds int, nodes []string) (per []int, all, turns int) {
+	type result struct{ boss, won, turns int; done bool }
+	out := make(chan result)
+	jobs := 0
+	for bi, f := range bosses {
+		for _, class := range Classes {
+			for seed := range seeds {
+				jobs++
+				go func() {
 					h := fairHero(class.Name, f.hero)
-					if node != "" {
-						h.Nodes = append(h.Nodes, node)
-					}
+					h.Nodes = append(h.Nodes, nodes...)
 					d := NewDuel(NewHeroCombatant(h), NewFoeCombatant(FoeByID(f.id), f.level), int64(seed))
 					d.SetBoard(board.NewBoard(BoardSettings(nil), int64(seed)))
-					playOut(d)
-					if d.Winner < 0 {
-						t.Fatalf("%s vs %s with %q never finished", class.Name, f.id, node)
-					}
+					n := playOut(d)
+					w := 0
 					if d.Winner == Player {
-						w++
+						w = 1
 					}
-				}
+					out <- result{bi, w, n, d.Winner >= 0}
+				}()
 			}
-			n := N * len(Classes)
-			per = append(per, 100*w/n)
-			wins, total = wins+w, total+n
 		}
-		return per, 100 * wins / total
 	}
-	head := fmt.Sprintf("%-18s", "perk")
+	wins := make([]int, len(bosses))
+	total, won := 0, 0
+	for range jobs {
+		r := <-out
+		if !r.done {
+			t.Errorf("a duel against %s with %v never finished", bosses[r.boss].id, nodes)
+		}
+		wins[r.boss] += r.won
+		won += r.won
+		turns += r.turns
+	}
+	n := seeds * len(Classes)
+	for _, w := range wins {
+		per = append(per, 100*w/n)
+	}
+	total = n * len(bosses)
+	return per, 100 * won / total, turns / total
+}
+
+// fairPairs are perks that plausibly combine, checked together as well as alone.
+var fairPairs = [][]string{ {"tidewell", "still_pool"}, {"kindling", "pyre_oath"}, {"thunderhead", "static"}, {"rootgrasp", "seedbed"} }
+
+// TestPerksStayFair gives each perk node alone, and a few pairs, to heroes of every class a few
+// levels under a boss, matched so they win about half the time without perks. Every duel must
+// finish, no row may drag past MAX_TURNS, and the win rate must stay within band points of
+// the heroes without perks (see the table with -v). JEWEL_FULL_SIM=1 runs more bosses and seeds.
+func TestPerksStayFair(t *testing.T) {
+	const MAX_TURNS = 160	// average turns, both sides counted, as TestDuelsFinishAndAreFair
+	// the quick run is a smoke test with few duels, so its band is wider
+	band := 35	// percentage points a perk, or a pair, may move the win rate
+	bosses := []fairBoss{{"orc", 9, 3}, {"hollow_king", 16, 11}}
+	seeds := 2
+	if fullSim() {
+		band = 20
+		bosses = []fairBoss{{"barrow_lord", 6, 3}, {"orc", 9, 3}, {"high_priest", 12, 6}, {"hollow_king", 16, 11}}
+		seeds = 12
+	}
+	head := fmt.Sprintf("%-24s", "perk")
 	for _, f := range bosses {
-		head += fmt.Sprintf(" %12s", f.id)
+		head += fmt.Sprintf(" %12s", fmt.Sprintf("%s %d/%d", f.id, f.hero, f.level))
 	}
-	t.Logf("%s %5s", head, "all")
-	row := func(name string, per []int, all int) {
-		line := fmt.Sprintf("%-18s", name)
+	t.Logf("%s %5s %5s", head, "all", "turns")
+	row := func(name string, per []int, all, turns int) {
+		line := fmt.Sprintf("%-24s", name)
 		for _, p := range per {
 			line += fmt.Sprintf(" %11d%%", p)
 		}
-		t.Logf("%s %4d%%", line, all)
+		t.Logf("%s %4d%% %5d", line, all, turns)
 	}
-	basePer, base := rate("")
-	row("(none)", basePer, base)
+	basePer, base, baseTurns := fairRate(t, bosses, seeds, nil)
+	row("(none)", basePer, base, baseTurns)
+	if base < 30 || base > 70 {
+		t.Errorf("the baseline wins %d%%; the matchups should be near 50%% to separate perks", base)
+	}
+	var sets [][]string
 	for i := range Orrery {
-		n := &Orrery[i]
-		if n.Perk == nil {
-			continue
+		if Orrery[i].Perk != nil {
+			sets = append(sets, []string{ Orrery[i].ID })
 		}
-		per, all := rate(n.ID)
-		row(n.ID, per, all)
-		if all < base-PERK_BAND || all > base+PERK_BAND {
-			t.Errorf("%s moves the win rate from %d%% to %d%%", n.ID, base, all)
+	}
+	sets = append(sets, fairPairs...)
+	for _, nodes := range sets {
+		per, all, turns := fairRate(t, bosses, seeds, nodes)
+		name := strings.Join(nodes, "+")
+		row(name, per, all, turns)
+		if all < base-band || all > base+band {
+			t.Errorf("%s moves the win rate from %d%% to %d%%", name, base, all)
 		}
+		if turns > MAX_TURNS {
+			t.Errorf("%s drags: %d turns", name, turns)
+		}
+	}
+}
+
+// A trade strike pays its damage instead of the extra turn; a three doesn't trigger it.
+func TestPerkStrikeTrade(t *testing.T) {
+	var n *OrreryNode
+	for i := range Orrery {
+		if p := Orrery[i].Perk; p != nil && p.Kind == PerkStrike && p.Trade {
+			n = &Orrery[i]
+		}
+	}
+	if n == nil {
+		t.Skip("no trade strike on the Orrery")
+	}
+	c := n.Perk.Color
+	d := perkDuel(t, n.ID)
+	foe := d.Sides[Enemy]
+	hp := foe.HP
+	if g := d.ApplyStep(step(gems(c, 3), run(c, 3))); g.Extra || foe.HP != hp {
+		t.Fatalf("%s fired on a three", n.ID)
+	}
+	if g := d.ApplyStep(step(gems(c, 4), run(c, 4))); g.Extra || foe.HP != hp-n.Perk.Amount {
+		t.Fatalf("%s four: extra %v, foe HP %d -> %d", n.ID, g.Extra, hp, foe.HP)
 	}
 }

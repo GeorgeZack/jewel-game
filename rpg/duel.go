@@ -68,6 +68,10 @@ func NewHeroCombatant(h *Hero) *Combatant {
 	c := newCombatant(ClassByName(h.Class).Label(), h.Level, stats, HeroHP(h.Level)+b.HP, b.StartMana, spells)
 	c.SkullDamage, c.Armor, c.GoldPct, c.XPPct = b.SkullDamage, b.Armor, b.GoldPct, b.XPPct
 	c.Perks = heroPerks(h)
+	for _, p := range c.perksOf(PerkOverflow) {
+		c.MaxMana[p.Color] -= p.Amount
+		c.Mana[p.Color] = min(c.Mana[p.Color], c.MaxMana[p.Color])
+	}
 	return c
 }
 
@@ -221,11 +225,12 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 	skullMatches := 0
 	fired := map[*Perk]bool{}
 	for _, m := range res.Matches {
-		if m.Size >= 4 && !d.wildFour(me, m, fired) {
-			g.Extra = true
-		}
+		traded := false
 		if m.Color < NUM_MANA {
-			d.matchPerks(me, foe, m, fired)
+			traded = d.matchPerks(me, foe, m, fired)
+		}
+		if m.Size >= 4 && !d.wildFour(me, m, fired) && !traded {
+			g.Extra = true
 		}
 		switch {
 		case m.Color < NUM_MANA:
@@ -320,8 +325,9 @@ func (d *Duel) wildFour(me *Combatant, m board.Match, fired map[*Perk]bool) bool
 	return false
 }
 
-// matchPerks runs a hero's strike and mend perks for one mana run.
-func (d *Duel) matchPerks(me, foe *Combatant, m board.Match, fired map[*Perk]bool) {
+// matchPerks runs a hero's strike and mend perks for one mana run, and reports whether a trade
+// perk took the run's extra turn.
+func (d *Duel) matchPerks(me, foe *Combatant, m board.Match, fired map[*Perk]bool) (traded bool) {
 	for _, p := range me.Perks {
 		if p.Color != m.Color || m.Size < p.Size {
 			continue
@@ -329,13 +335,15 @@ func (d *Duel) matchPerks(me, foe *Combatant, m board.Match, fired map[*Perk]boo
 		switch p.Kind {
 		case PerkStrike:
 			d.Damage(foe, p.Amount)
-			d.perkFired(fired, p)
 		case PerkMend:
-			if d.Heal(me, p.Amount) > 0 {
-				d.perkFired(fired, p)
-			}
+			d.Heal(me, p.Amount)
+		default:
+			continue
 		}
+		d.perkFired(fired, p)
+		traded = traded || p.Trade
 	}
+	return traded
 }
 
 // CanCast reports whether a side could cast a spell now, ignoring whose turn it is.
@@ -453,6 +461,10 @@ func (d *Duel) Settle(h *Hero) Reward {
 	me, foe := d.Sides[Player], d.Sides[Enemy]
 	r := Reward{ Won: d.Winner == Player, Gold: me.Gold, XP: me.XP, Residue: me.Residue }
 	if r.Won {
+		// a bounty in the seat's color, so a hero who wins fast isn't starved of their own region
+		if seat := SeatOf(h.Class); seat != nil && seat.Mana >= 0 {
+			r.Residue[seat.Mana] += WIN_RESIDUE
+		}
 		h.Wins++
 		r.Gold += foe.Level * 8 * (100 + me.GoldPct + 2*me.Stats[Cunning]) / 100
 		r.XP += foe.Level * 12 * (100 + me.XPPct + 2*me.Stats[Cunning]) / 100

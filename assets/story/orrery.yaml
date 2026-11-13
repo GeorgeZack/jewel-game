@@ -4,69 +4,69 @@
 # Neighbouring regions join on the outer and the inner ring.
 
 # Fire: the Warrior's seat
-- { id: ember, name: Ember, color: fire, ring: 4, angle: 330, cost: 8, stats: { fire: 4, battle: 2 }, links: [anvil, hamstring_node] }
-- { id: anvil, name: Anvil, color: fire, ring: 4, angle: 345, cost: 8, stats: { battle: 4 }, links: [fire_seat, bellows] }
+- { id: ember, name: Ember, color: fire, ring: 4, angle: 330, cost: 12, stats: { fire: 4, battle: 2 }, links: [anvil, hamstring_node] }
+- { id: anvil, name: Anvil, color: fire, ring: 4, angle: 345, cost: 12, stats: { battle: 4 }, links: [fire_seat, bellows] }
 - { id: fire_seat, name: Forge Seat, color: fire, ring: 4, angle: 0, seat: Warrior, links: [cinder, muster_node] }
-- { id: cinder, name: Cinder, color: fire, ring: 4, angle: 15, cost: 8, stats: { fire: 4 }, links: [brand, quench] }
-- { id: brand, name: Brand, color: fire, ring: 4, angle: 30, cost: 8, stats: { battle: 2, morale: 2 }, links: [slag, brine] }
-- { id: hamstring_node, color: fire, ring: 3, angle: 330, cost: 14, rite: hamstring, links: [bellows, kindling] }
-- { id: bellows, name: Bellows, color: fire, ring: 3, angle: 345, cost: 12, stats: { fire: 6 }, links: [muster_node, kindling] }
-- { id: muster_node, color: fire, ring: 3, angle: 0, cost: 20, rite: muster, links: [quench, pyre_oath] }
-- { id: quench, name: Quench, color: fire, ring: 3, angle: 15, cost: 12, stats: { battle: 5 }, links: [slag, powder_keg] }
-- { id: slag, name: Slag, color: fire, ring: 3, angle: 30, cost: 12, stats: { fire: 3, battle: 3 }, links: [powder_keg] }
-- { id: kindling, name: Kindling, color: fire, ring: 2, angle: 338, cost: 22, perk: { kind: strike, size: 3, amount: 2 }, links: [crucible] }
-- { id: pyre_oath, name: Pyre Oath, color: fire, ring: 2, angle: 0, cost: 22, perk: { kind: forsake, amount: 4 }, links: [crucible, meteor_node] }
-- { id: powder_keg, name: Powder Keg, color: fire, ring: 2, angle: 22, cost: 22, perk: { kind: seed, special: bomb, amount: 2 }, links: [meteor_node] }
-- { id: crucible, name: Crucible, color: fire, ring: 1, angle: 345, cost: 18, stats: { fire: 8, battle: 4 }, links: [meteor_node] }
-- { id: meteor_node, color: fire, ring: 1, angle: 15, cost: 28, rite: meteor, links: [abyss] }
+- { id: cinder, name: Cinder, color: fire, ring: 4, angle: 15, cost: 12, stats: { fire: 4 }, links: [brand, quench] }
+- { id: brand, name: Brand, color: fire, ring: 4, angle: 30, cost: 12, stats: { battle: 2, morale: 2 }, links: [slag, brine] }
+- { id: hamstring_node, color: fire, ring: 3, angle: 330, cost: 18, rite: hamstring, links: [bellows, kindling] }
+- { id: bellows, name: Bellows, color: fire, ring: 3, angle: 345, cost: 18, stats: { fire: 6 }, links: [muster_node, kindling] }
+- { id: muster_node, color: fire, ring: 3, angle: 0, cost: 24, rite: muster, links: [quench, pyre_oath] }
+- { id: quench, name: Quench, color: fire, ring: 3, angle: 15, cost: 18, stats: { battle: 5 }, links: [slag, powder_keg] }
+- { id: slag, name: Slag, color: fire, ring: 3, angle: 30, cost: 18, stats: { fire: 3, battle: 3 }, links: [powder_keg] }
+- { id: kindling, name: Kindling, color: fire, ring: 2, angle: 338, cost: 10, perk: { kind: strike, size: 3, amount: 2 }, links: [crucible] }
+- { id: pyre_oath, name: Pyre Oath, color: fire, ring: 2, angle: 0, cost: 10, perk: { kind: forsake, amount: 4 }, links: [crucible, meteor_node] }
+- { id: powder_keg, name: Powder Keg, color: fire, ring: 2, angle: 22, cost: 10, perk: { kind: seed, special: bomb, amount: 2 }, links: [meteor_node] }
+- { id: crucible, name: Crucible, color: fire, ring: 1, angle: 345, cost: 26, stats: { fire: 8, battle: 4 }, links: [meteor_node] }
+- { id: meteor_node, color: fire, ring: 1, angle: 15, cost: 34, rite: meteor, links: [abyss] }
 
 # Water: the Knight's seat
-- { id: brine, name: Brine, color: water, ring: 4, angle: 60, cost: 8, stats: { water: 4, morale: 2 }, links: [well, shield_bash_node] }
-- { id: well, name: Wellspring, color: water, ring: 4, angle: 75, cost: 8, stats: { morale: 4 }, links: [water_seat, current] }
+- { id: brine, name: Brine, color: water, ring: 4, angle: 60, cost: 12, stats: { water: 4, morale: 2 }, links: [well, shield_bash_node] }
+- { id: well, name: Wellspring, color: water, ring: 4, angle: 75, cost: 12, stats: { morale: 4 }, links: [water_seat, current] }
 - { id: water_seat, name: Tide Seat, color: water, ring: 4, angle: 90, seat: Knight, links: [shoal, hush_node] }
-- { id: shoal, name: Shoal, color: water, ring: 4, angle: 105, cost: 8, stats: { water: 4 }, links: [mist, harbor] }
-- { id: mist, name: Mist, color: water, ring: 4, angle: 120, cost: 8, stats: { water: 2, morale: 2 }, links: [eddy, loam] }
-- { id: shield_bash_node, color: water, ring: 3, angle: 60, cost: 14, rite: shield_bash, links: [current, tidewell] }
-- { id: current, name: Current, color: water, ring: 3, angle: 75, cost: 12, stats: { water: 6 }, links: [hush_node, tidewell] }
-- { id: hush_node, color: water, ring: 3, angle: 90, cost: 20, rite: hush, links: [harbor, still_pool] }
-- { id: harbor, name: Harbor, color: water, ring: 3, angle: 105, cost: 12, stats: { morale: 5 }, links: [eddy, undertow] }
-- { id: eddy, name: Eddy, color: water, ring: 3, angle: 120, cost: 12, stats: { water: 3, morale: 3 }, links: [undertow] }
-- { id: tidewell, name: Tidewell, color: water, ring: 2, angle: 68, cost: 22, perk: { kind: mend, size: 4, amount: 6 }, links: [abyss] }
-- { id: still_pool, name: Still Pool, color: water, ring: 2, angle: 90, cost: 22, perk: { kind: wild_four, amount: 2 }, links: [abyss, judgement_node] }
-- { id: undertow, name: Undertow, color: water, ring: 2, angle: 112, cost: 22, perk: { kind: overflow, to: earth }, links: [judgement_node] }
-- { id: abyss, name: Abyss, color: water, ring: 1, angle: 75, cost: 18, stats: { water: 8, morale: 4 }, links: [judgement_node] }
-- { id: judgement_node, color: water, ring: 1, angle: 105, cost: 28, rite: judgement, links: [heartwood] }
+- { id: shoal, name: Shoal, color: water, ring: 4, angle: 105, cost: 12, stats: { water: 4 }, links: [mist, harbor] }
+- { id: mist, name: Mist, color: water, ring: 4, angle: 120, cost: 12, stats: { water: 2, morale: 2 }, links: [eddy, loam] }
+- { id: shield_bash_node, color: water, ring: 3, angle: 60, cost: 18, rite: shield_bash, links: [current, tidewell] }
+- { id: current, name: Current, color: water, ring: 3, angle: 75, cost: 18, stats: { water: 6 }, links: [hush_node, tidewell] }
+- { id: hush_node, color: water, ring: 3, angle: 90, cost: 24, rite: hush, links: [harbor, still_pool] }
+- { id: harbor, name: Harbor, color: water, ring: 3, angle: 105, cost: 18, stats: { morale: 5 }, links: [eddy, undertow] }
+- { id: eddy, name: Eddy, color: water, ring: 3, angle: 120, cost: 18, stats: { water: 3, morale: 3 }, links: [undertow] }
+- { id: tidewell, name: Tidewell, color: water, ring: 2, angle: 68, cost: 10, perk: { kind: mend, size: 4, amount: 6, trade: true }, links: [abyss] }
+- { id: still_pool, name: Still Pool, color: water, ring: 2, angle: 90, cost: 10, perk: { kind: wild_four, amount: 2 }, links: [abyss, judgement_node] }
+- { id: undertow, name: Undertow, color: water, ring: 2, angle: 112, cost: 10, perk: { kind: overflow, to: earth, amount: 8 }, links: [judgement_node] }
+- { id: abyss, name: Abyss, color: water, ring: 1, angle: 75, cost: 26, stats: { water: 8, morale: 4 }, links: [judgement_node] }
+- { id: judgement_node, color: water, ring: 1, angle: 105, cost: 34, rite: judgement, links: [heartwood] }
 
 # Earth: the Druid's seat
-- { id: loam, name: Loam, color: earth, ring: 4, angle: 150, cost: 8, stats: { earth: 4, morale: 2 }, links: [root, entangle_node] }
-- { id: root, name: Deep Root, color: earth, ring: 4, angle: 165, cost: 8, stats: { earth: 2, battle: 2 }, links: [earth_seat, burrow] }
+- { id: loam, name: Loam, color: earth, ring: 4, angle: 150, cost: 12, stats: { earth: 4, morale: 2 }, links: [root, entangle_node] }
+- { id: root, name: Deep Root, color: earth, ring: 4, angle: 165, cost: 12, stats: { earth: 2, battle: 2 }, links: [earth_seat, burrow] }
 - { id: earth_seat, name: Grove Seat, color: earth, ring: 4, angle: 180, seat: Druid, links: [moss, whirlwind_node] }
-- { id: moss, name: Moss, color: earth, ring: 4, angle: 195, cost: 8, stats: { earth: 4 }, links: [bedrock, thicket] }
-- { id: bedrock, name: Bedrock, color: earth, ring: 4, angle: 210, cost: 8, stats: { morale: 3, battle: 1 }, links: [clay, gust] }
-- { id: entangle_node, color: earth, ring: 3, angle: 150, cost: 14, rite: entangle, links: [burrow, rootgrasp] }
-- { id: burrow, name: Burrow, color: earth, ring: 3, angle: 165, cost: 12, stats: { earth: 6 }, links: [whirlwind_node, rootgrasp] }
-- { id: whirlwind_node, color: earth, ring: 3, angle: 180, cost: 20, rite: whirlwind, links: [thicket, seedbed] }
-- { id: thicket, name: Thicket, color: earth, ring: 3, angle: 195, cost: 12, stats: { battle: 3, morale: 2 }, links: [clay, standing_stone] }
-- { id: clay, name: Clay, color: earth, ring: 3, angle: 210, cost: 12, stats: { earth: 3, morale: 3 }, links: [standing_stone] }
-- { id: rootgrasp, name: Rootgrasp, color: earth, ring: 2, angle: 158, cost: 22, perk: { kind: skull_paint, amount: 2 }, links: [heartwood] }
-- { id: seedbed, name: Seedbed, color: earth, ring: 2, angle: 180, cost: 22, perk: { kind: seed, special: wild, amount: 2 }, links: [heartwood, earthquake_node] }
-- { id: standing_stone, name: Standing Stone, color: earth, ring: 2, angle: 202, cost: 12, stats: { earth: 5, morale: 3 }, links: [earthquake_node] }
-- { id: heartwood, name: Heartwood, color: earth, ring: 1, angle: 165, cost: 18, stats: { earth: 8, morale: 4 }, links: [earthquake_node] }
-- { id: earthquake_node, color: earth, ring: 1, angle: 195, cost: 28, rite: earthquake, links: [stormcrown] }
+- { id: moss, name: Moss, color: earth, ring: 4, angle: 195, cost: 12, stats: { earth: 4 }, links: [bedrock, thicket] }
+- { id: bedrock, name: Bedrock, color: earth, ring: 4, angle: 210, cost: 12, stats: { morale: 3, battle: 1 }, links: [clay, gust] }
+- { id: entangle_node, color: earth, ring: 3, angle: 150, cost: 18, rite: entangle, links: [burrow, rootgrasp] }
+- { id: burrow, name: Burrow, color: earth, ring: 3, angle: 165, cost: 18, stats: { earth: 6 }, links: [whirlwind_node, rootgrasp] }
+- { id: whirlwind_node, color: earth, ring: 3, angle: 180, cost: 24, rite: whirlwind, links: [thicket, seedbed] }
+- { id: thicket, name: Thicket, color: earth, ring: 3, angle: 195, cost: 18, stats: { battle: 3, morale: 2 }, links: [clay, standing_stone] }
+- { id: clay, name: Clay, color: earth, ring: 3, angle: 210, cost: 18, stats: { earth: 3, morale: 3 }, links: [standing_stone] }
+- { id: rootgrasp, name: Rootgrasp, color: earth, ring: 2, angle: 158, cost: 10, perk: { kind: skull_paint, amount: 2 }, links: [heartwood] }
+- { id: seedbed, name: Seedbed, color: earth, ring: 2, angle: 180, cost: 10, perk: { kind: seed, special: wild, amount: 2 }, links: [heartwood, earthquake_node] }
+- { id: standing_stone, name: Standing Stone, color: earth, ring: 2, angle: 202, cost: 10, perk: { kind: overflow, to: water, amount: 6 }, links: [earthquake_node] }
+- { id: heartwood, name: Heartwood, color: earth, ring: 1, angle: 165, cost: 26, stats: { earth: 8, morale: 4 }, links: [earthquake_node] }
+- { id: earthquake_node, color: earth, ring: 1, angle: 195, cost: 34, rite: earthquake, links: [stormcrown] }
 
 # Air: the Wizard's seat
-- { id: gust, name: Gust, color: air, ring: 4, angle: 240, cost: 8, stats: { air: 4, cunning: 2 }, links: [zephyr, chain_lightning_node] }
-- { id: zephyr, name: Zephyr, color: air, ring: 4, angle: 255, cost: 8, stats: { cunning: 4 }, links: [air_seat, squall] }
+- { id: gust, name: Gust, color: air, ring: 4, angle: 240, cost: 12, stats: { air: 4, cunning: 2 }, links: [zephyr, chain_lightning_node] }
+- { id: zephyr, name: Zephyr, color: air, ring: 4, angle: 255, cost: 12, stats: { cunning: 4 }, links: [air_seat, squall] }
 - { id: air_seat, name: Gale Seat, color: air, ring: 4, angle: 270, seat: Wizard, links: [breeze, wild_seed_node] }
-- { id: breeze, name: Breeze, color: air, ring: 4, angle: 285, cost: 8, stats: { air: 4 }, links: [draft, kite] }
-- { id: draft, name: Draft, color: air, ring: 4, angle: 300, cost: 8, stats: { air: 2, cunning: 2 }, links: [vane, ember] }
-- { id: chain_lightning_node, color: air, ring: 3, angle: 240, cost: 14, rite: chain_lightning, links: [squall, thunderhead] }
-- { id: squall, name: Squall, color: air, ring: 3, angle: 255, cost: 12, stats: { air: 6 }, links: [wild_seed_node, thunderhead] }
-- { id: wild_seed_node, color: air, ring: 3, angle: 270, cost: 20, rite: wild_seed, links: [kite, static] }
-- { id: kite, name: Kite, color: air, ring: 3, angle: 285, cost: 12, stats: { cunning: 5 }, links: [vane, eye_of_the_storm] }
-- { id: vane, name: Vane, color: air, ring: 3, angle: 300, cost: 12, stats: { air: 3, cunning: 3 }, links: [eye_of_the_storm] }
-- { id: thunderhead, name: Thunderhead, color: air, ring: 2, angle: 248, cost: 22, perk: { kind: wild_four, amount: 3 }, links: [stormcrown] }
-- { id: static, name: Static, color: air, ring: 2, angle: 270, cost: 22, perk: { kind: strike, size: 4, amount: 6 }, links: [stormcrown, execute_node] }
-- { id: eye_of_the_storm, name: Eye of the Storm, color: air, ring: 2, angle: 292, cost: 12, stats: { air: 5, cunning: 3 }, links: [execute_node] }
-- { id: stormcrown, name: Stormcrown, color: air, ring: 1, angle: 255, cost: 18, stats: { air: 8, cunning: 4 }, links: [execute_node] }
-- { id: execute_node, color: air, ring: 1, angle: 285, cost: 28, rite: execute, links: [crucible] }
+- { id: breeze, name: Breeze, color: air, ring: 4, angle: 285, cost: 12, stats: { air: 4 }, links: [draft, kite] }
+- { id: draft, name: Draft, color: air, ring: 4, angle: 300, cost: 12, stats: { air: 2, cunning: 2 }, links: [vane, ember] }
+- { id: chain_lightning_node, color: air, ring: 3, angle: 240, cost: 18, rite: chain_lightning, links: [squall, thunderhead] }
+- { id: squall, name: Squall, color: air, ring: 3, angle: 255, cost: 18, stats: { air: 6 }, links: [wild_seed_node, thunderhead] }
+- { id: wild_seed_node, color: air, ring: 3, angle: 270, cost: 24, rite: wild_seed, links: [kite, static] }
+- { id: kite, name: Kite, color: air, ring: 3, angle: 285, cost: 18, stats: { cunning: 5 }, links: [vane, eye_of_the_storm] }
+- { id: vane, name: Vane, color: air, ring: 3, angle: 300, cost: 18, stats: { air: 3, cunning: 3 }, links: [eye_of_the_storm] }
+- { id: thunderhead, name: Thunderhead, color: air, ring: 2, angle: 248, cost: 10, perk: { kind: wild_four, amount: 3 }, links: [stormcrown] }
+- { id: static, name: Static, color: air, ring: 2, angle: 270, cost: 10, perk: { kind: strike, size: 4, amount: 12, trade: true }, links: [stormcrown, execute_node] }
+- { id: eye_of_the_storm, name: Eye of the Storm, color: air, ring: 2, angle: 292, cost: 10, perk: { kind: forsake, amount: 3 }, links: [execute_node] }
+- { id: stormcrown, name: Stormcrown, color: air, ring: 1, angle: 255, cost: 26, stats: { air: 8, cunning: 4 }, links: [execute_node] }
+- { id: execute_node, color: air, ring: 1, angle: 285, cost: 34, rite: execute, links: [crucible] }
