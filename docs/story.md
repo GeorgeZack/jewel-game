@@ -122,6 +122,7 @@ blurb: >-                    # shown next to the class picker
   x: 0.38                    # position on the map, 0 = left/top, 1 = right/bottom
   y: 0.74
   level: 2                   # level of the roaming foes here
+  residue: water             # color of the residue chapters here pay: fire, water, air or earth
   desc: A toll town grown fat on the river trade.
   roads: [mossgate, barrow]  # roads go both ways: list this one in theirs too
   foes: [bandit, rat]        # roaming foes; also who ambushes travellers on the way in
@@ -241,7 +242,8 @@ Loading checks that ids are unique, every facility has a level, every level has 
 conditions are valid. Henchmen, chapters and dues are tuned with the placeholder numbers at the
 top of `rpg/academy.go`: henchmen are hired and trained with gold and hold one item the hero
 owns; a henchman posted to an open site completes a chapter after a number of the hero's wins
-(anywhere), which sets that site's holder to the academy and leaves a report of gold and residue;
+at that site (recalling one loses its progress), which sets that site's holder to the academy and leaves a report of gold and residue in
+the site's `residue` color (locations.yaml);
 each later win at a held site adds dues to the ledger. Nothing moves while the game is closed.
 
 ## puzzles/*.yaml

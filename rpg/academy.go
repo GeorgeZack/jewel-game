@@ -19,7 +19,7 @@ const (
 	HIRE_GOLD			= 60	// gold to hire a henchman, at rank 1
 	TRAIN_GOLD			= 50	// gold per rank to train a henchman up from that rank
 	MAX_RANK			= 5
-	CHAPTER_WINS		= 2		// hero wins, anywhere, for a posted chapter to complete
+	CHAPTER_WINS		= 2		// hero wins at the posted site for its chapter to complete
 	CHAPTER_GOLD		= 25	// dues a completed chapter pays per point of power
 	CHAPTER_RESIDUE		= 3		// residue of the site's color per point of power
 	GEAR_LEVELS			= 4		// item levels in a henchman's gear slot worth one point of power
@@ -235,11 +235,11 @@ func Power(m *Henchman) int {
 	return p
 }
 
-// SiteColor is the residue color a site's chapters pay.
+// SiteColor is the residue color a site's chapters pay, Fire if the site names none.
 func SiteColor(loc string) int {
-	for i := range Locations {
-		if Locations[i].ID == loc {
-			return i % NUM_MANA
+	if l := LocationByID(loc); l != nil {
+		if c := manaByName(l.Residue); c >= 0 {
+			return c
 		}
 	}
 	return Fire
@@ -255,11 +255,20 @@ func (h *Hero) Post(i int, loc string) bool {
 	return true
 }
 
+// Recall brings a henchman back from a chapter still in progress; its wins so far are lost.
+func (h *Hero) Recall(i int) bool {
+	if i < 0 || i >= len(h.Henchmen) || h.Henchmen[i].Post == "" || h.Henchmen[i].Report != nil {
+		return false
+	}
+	h.Henchmen[i].Post, h.Henchmen[i].Wins = "", 0
+	return true
+}
+
 // Held reports whether the player's society holds a site.
 func (h *Hero) Held(loc string) bool { return h.Holders[loc] == OUR_SOCIETY }
 
 // RecordWin moves the academy along after the hero wins a duel at loc: a held site banks dues in
-// the ledger, and every chapter in progress takes a step. It returns the chapters it completed.
+// the ledger, and every chapter in progress there takes a step. It returns the chapters it completed.
 func (h *Hero) RecordWin(loc string) (done []*Report) {
 	if h.Held(loc) {
 		if h.Dues == nil {
@@ -270,7 +279,7 @@ func (h *Hero) RecordWin(loc string) (done []*Report) {
 	more := h.facilityPerks().ChapterPct
 	for i := range h.Henchmen {
 		m := &h.Henchmen[i]
-		if m.Post == "" || m.Report != nil {
+		if m.Post != loc || m.Report != nil {
 			continue
 		}
 		m.Wins++
