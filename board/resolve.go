@@ -558,7 +558,7 @@ func (b *Board) Shuffle() bool {
 			// the colors themselves are stuck, so reroll them too
 			for _, g := range gems {
 				if g.Special != Prism && g.Special != Wild {
-					g.Color = b.rng.Intn(b.Settings.NumColors)
+					g.Color = b.randomColor()
 				}
 			}
 		}
