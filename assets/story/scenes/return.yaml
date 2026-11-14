@@ -1,0 +1,34 @@
+# The entities' scene at each return (story.yaml: return_scene). It plays at the start of a run
+# after a return, once the class is chosen and before the first event. Placeholders: the entities
+# have no names yet ("entities" is a built-in speaker, named by meta.entities in the language file).
+# returns: counts this return, so the first time this plays it is returns:1.
+
+the_return:
+  - fade_in: 1.0
+  - if: ["returns:=1"]
+    then:
+      - who: entities
+        text: You came back. Most do not, the first time. They are usually still deciding.
+      - who: entities
+        text: The book is open. Write in it what you like. We keep the pen.
+    else:
+      - if: ["returns:<4"]
+        then:
+          - who: entities
+            text: Again. You are getting faster at this. So are we.
+        else:
+          - who: entities
+            text: You have stopped counting. We have not. It costs a little more each time, and you have begun to notice what.
+          - if: ["lean:take"]
+            then:
+              - who: entities
+                text: You keep taking what we offer. Good. It is easier for both of us that way.
+          - if: ["lean:resist"]
+            then:
+              - who: entities
+                text: You have been writing in your own hand. We noticed. We notice most things.
+  - if: [ending:king_falls]
+    then:
+      - who: entities
+        text: The king is whole again, if you were wondering. He always is.
+  - text: Emberfield. Smoke. Someone is hammering on a door, and you already know whose.

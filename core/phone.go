@@ -123,6 +123,7 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 		{ScreenQuests, text.T("ui.quests_short", "Quests"), true},
 		{ScreenShop, text.T("ui.shop", "Shop"), here.Town},
 		{ScreenAcademy, text.T("ui.academy_short", "Academy"), h.AcademyOpen()},
+		{ScreenGrimoire, text.T("meta.grimoire_nav", "Grimoire"), true},
 	}
 	cols := len(items)
 	btnW := (w - 16 - float32(cols-1)*6) / float32(cols)

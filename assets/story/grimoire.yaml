@@ -1,0 +1,84 @@
+# The Grimoire: the book that outlasts a run (DESIGN.md 5.8). See docs/story.md.
+# Every number here is a placeholder for balancing later.
+
+# Stage 2 (the price) opens after this many returns: its entries show from then on.
+stage_two_returns: 3
+
+# Meta currency paid for first times. Each pays once a run: the full amount the first run that
+# banks it, repeat_pct percent of it on later runs. What a run earns is banked when an act ends
+# (an act step) and when the story ends; a return before that forfeits the current act's.
+pay:
+  boss: 10        # a foe with boss: true defeated
+  route: 5        # a puzzle board solved by a route
+  lock: 15        # a society joined at the lock
+  class: 20       # the story finished as a class
+  ending: 40      # an ending reached
+  repeat_pct: 20
+
+# Entries are bought once and change the start of every later run. They buy speed and options,
+# not raw power. Stage 2 entries take more from the entities (lean: take) or resist them
+# (lean: resist); which kind is bought is the profile's lean (the lean: condition).
+entries:
+  - id: school_keys
+    name: The School's Keys
+    desc: The academy on the hill is yours from the first day of the run.
+    cost: 20
+    flags: [academy_founded]
+
+  - id: known_road
+    name: The Known Road
+    desc: Smoke on the Road counts as done. Its fight is skipped and its roads are open, but it pays nothing.
+    cost: 30
+    quests: [goblins]
+    flags: [academy_founded]
+
+  - id: standing_ledger
+    name: A Standing Ledger
+    desc: Start with the Treasury built.
+    cost: 25
+    facilities: { treasury: 1 }
+
+  - id: second_seat
+    name: The Second Seat
+    desc: Start seated at the Gale Seat of the Orrery as well as your own, so the Air region is open to you. A Wizard gains nothing.
+    cost: 35
+    nodes: [air_seat]
+
+  - id: carried_rite
+    name: A Carried Rite
+    desc: Start owning the Hamstring node. Its rite is yours from level 6, whatever your class.
+    cost: 30
+    nodes: [hamstring_node]
+
+  - id: borrowed_purse
+    name: The Borrowed Purse
+    desc: Start with 300 more gold and 30 colorless residue. They lend it freely.
+    stage: 2
+    lean: take
+    cost: 40
+    gold: 300
+    residue: { colorless: 30 }
+
+  - id: borrowed_road
+    name: The Borrowed Road
+    desc: The Toll Road counts as done too. Its fight is skipped and its roads are open, but it pays nothing.
+    stage: 2
+    lean: take
+    cost: 45
+    quests: [toll]
+
+  - id: own_coin
+    name: Your Own Coin
+    desc: Start with 100 more gold, counted out by your own hand.
+    stage: 2
+    lean: resist
+    cost: 30
+    gold: 100
+
+  - id: own_hands
+    name: Your Own Hands
+    desc: Start with 6 residue of each of the four colors, gathered the slow way.
+    stage: 2
+    lean: resist
+    cost: 30
+    residue: { fire: 6, water: 6, air: 6, earth: 6 }

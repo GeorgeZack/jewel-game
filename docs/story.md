@@ -45,6 +45,7 @@ assets/story/
   facilities.yaml   the academy's facilities, built and upgraded with gold (optional)
   societies.yaml    the societies: who holds sites, standing, the lock (optional)
   companions.yaml   named companions who come into fights (optional)
+  grimoire.yaml     the Grimoire and the meta currency: what outlasts a run (optional)
   puzzles/*.yaml    puzzle boards: authored boards with an objective and routes, one per file
   scenes/*.yaml     dialogue and cutscenes; split across as many files as you like
   portraits/        character art
@@ -61,7 +62,8 @@ assets/story/
   location (`at`). Finishing one pays out and opens new locations.
 - **Scenes** are the scripted parts: conversations, choices, title cards, fades and rewards. They
   play when:
-  - a hero is created (`opening` in story.yaml)
+  - a run starts (`first_event` in story.yaml, after the class choice; `tutorial` on the
+    profile's first run and `return_scene` after a return come before it)
   - a quest is offered (`offer_scene`) or finished (`done_scene`)
   - the hero first arrives somewhere (`enter_scene`)
   - the player talks to someone (`people`)
@@ -97,7 +99,10 @@ be quoted, `if: ["!flag:met"]`, because a bare `!` means something else in YAML.
 title: The Hollow King
 map_name: The Marches        # heading on the world map
 start: emberfield            # where new heroes begin
-opening: opening             # scene played when a hero is created
+opening: opening             # scene played when a hero is created (read as first_event if that is unset)
+first_event: opening         # every run starts here, after the class choice; a return restarts here
+tutorial: first_lesson       # optional: played once per profile, on its first run, before the first event
+return_scene: the_return     # optional: the entities' scene, at the start of every run after a return
 final_quest: king            # finishing this marks the story beaten
 blurb: >-                    # shown next to the class picker
   Something in the north has every creature in the land running south.
@@ -107,6 +112,14 @@ acts:                        # optional: title cards for act 1, 2, 3, shown by a
 endings:                     # optional: the endings an ending step can record
   - { id: crown, name: The Crown's Engine }
 ```
+
+**Runs, the first event and the tutorial.** The game is run-based (see [The return](#the-return-and-grimoireyaml)).
+Every run, the first and every one after a return, starts with the class choice and then plays,
+in order: `return_scene` if the profile has returned, `tutorial` if its tutorial run is not
+behind it, and `first_event`. The profile's first run is its tutorial run: it ends at the first
+return, and from then on `tutorial:done` holds. So the tutorial is the `tutorial` scene plus any
+step guarded with `if: ["!tutorial:done"]`, such as a line that explains the map. The Hollow King
+has no tutorial scene; its two hint lines (in `goblins_offer` and `goblins_done`) are guarded.
 
 Every run starts in act 1. An `act:` step moves the story into another act and shows that act's
 title card (or "Act N" when `acts` has none for it). Ending ids are stored on the profile, which
@@ -186,6 +199,9 @@ ones: bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath, d
 that cost Aether, hollow_hymn and void_lash. A foe's Aether stat and spells only matter in a run that
 has Aether (see [Aether](#aether)); without it the foe never gets Aether mana. In the slice the
 Drowned Priest and the Hollow King have both.
+
+`boss: true` marks a boss: its first defeat pays meta currency (grimoire.yaml). The Hollow King
+marks the five main-quest bosses.
 
 `go test ./rpg` also runs a balance check that duels a geared hero against some of the bosses by
 their ids. If you rename or remove those foes, update the list in `TestDuelsFinishAndAreFair`.
@@ -515,6 +531,9 @@ still happens, such as flags, rewards and duels.
 
 ### Dialogue
 
+`who: entities` is built in, like `hero`: the entities behind the return. They have no name yet;
+it is `meta.entities` in the language file.
+
 | Field | Meaning |
 |---|---|
 | `text` | the line; without `who` it's narration |
@@ -571,6 +590,9 @@ when a scene ends.
 | `companion_joins: wren` / `companion_leaves: wren` | change the hero's company |
 | `end: true` | mark the story beaten |
 | `ending: crown` | mark the story beaten this way, and record the ending on the profile |
+
+An `act:` step that changes the act banks the meta currency the act earned; `end:` and `ending:`
+pay for the finish and bank the rest. See [The return](#the-return-and-grimoireyaml).
 
 ### Flow
 
@@ -632,6 +654,8 @@ Used by `requires`, `if` and choices. A list means all of them must hold, and a 
 | `favour:wren>=2` | a companion's favour compared with a number |
 | `returns:1` | the profile has started over through the return at least once; `returns:=0` on the first run |
 | `ending:crown` | the profile has seen that ending, in this run or an earlier one |
+| `tutorial:done` | the profile has returned at least once, so its tutorial run is behind it; `"!tutorial:done"` for tutorial hints |
+| `lean:take` | the profile's meta lean from stage 2 Grimoire entries: `take`, `resist` or `none` |
 
 `level:`, `act:` and `returns:` take a comparison in front of the number; without one they mean
 "at least". Ids in conditions are checked when the story loads.
@@ -644,6 +668,55 @@ route), and the story must end finished. With allegiances in societies.yaml it p
 allegiance, picking the choice that joins it at the lock, and passes over main quests that
 require `allegiance:` of another society: those are the other branch's. `rpg/testdata/branching/`
 is a small campaign with a branch that uses every part of this page; it is the example to copy.
+
+## The return and grimoire.yaml
+
+A profile (the Grimoire, endings seen, the count of returns, the tutorial, the meta currency) is
+saved apart from the run. The **return** ends a run and starts a new one at the class choice:
+the facilities, Orrery, gold, level, map, quests, standing, allegiance and staff all reset; the
+profile stays. It is offered when the story ends and, from the Grimoire screen, at any time.
+Foes do not scale with the number of returns.
+
+**Meta currency** is paid for first times, once a run each: a `boss: true` foe defeated, a puzzle
+board solved by a route, a society joined at the lock, the story finished as a class, and an
+ending reached. The first run to bank one pays in full; later runs pay `repeat_pct` of it. What a
+run earns waits, unbanked, until the act ends (an `act:` step) or the story does; then it is
+banked on the profile and nothing takes it. A return mid-act forfeits the current act's
+unbanked earnings, and of course the ending's.
+
+**The Grimoire** is bought with meta currency, an entry at a time. Each entry changes the start of
+every later run: speed and options, not raw power. Stage 2 (the price) opens after
+`stage_two_returns` returns; its entries either take more from the entities (`lean: take`) or
+resist them (`lean: resist`), and the balance of what is bought is the profile's lean.
+
+```yaml
+stage_two_returns: 3
+pay: { boss: 10, route: 5, lock: 15, class: 20, ending: 40, repeat_pct: 20 }
+entries:
+  - id: known_road
+    name: The Known Road
+    desc: Smoke on the Road counts as done.
+    cost: 30
+    quests: [goblins]          # counted done: the fight is skipped, its places open, no reward
+    flags: [academy_founded]   # flags set at the start
+  - id: second_seat
+    name: The Second Seat
+    desc: Start seated at the Gale Seat as well.
+    cost: 35
+    nodes: [air_seat]          # Orrery nodes owned from the start; a respec keeps them
+  - id: borrowed_purse
+    name: The Borrowed Purse
+    desc: More gold.
+    stage: 2                   # shown from stage 2 only
+    lean: take                 # or resist
+    cost: 40
+    gold: 300
+    residue: { colorless: 30 } # fire, water, air, earth, aether or colorless
+    facilities: { treasury: 1 } # levels built at the start
+```
+
+Entry ids are stored on the profile, so don't rename them. Stages 3 (binding companions) and 4
+(the reckoning) are not built yet; the profile has room for bound companions.
 
 ## Art
 

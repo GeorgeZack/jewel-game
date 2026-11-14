@@ -240,6 +240,7 @@ func (h *Hero) Join(society string) bool {
 		return false
 	}
 	h.Allegiance = society
+	h.earn("lock:"+society, Grimoire.Pay.Lock)
 	h.Companions = slices.DeleteFunc(h.Companions, func(id string) bool {
 		c := CompanionByID(id)
 		return c != nil && c.Society != "" && c.Society != society
@@ -306,6 +307,7 @@ type Applied struct {
 	Act		*Act	// the title card of an act the story just moved into
 	ActN	int
 	Ending	string	// an ending recorded on the profile; save the profile
+	Banked	bool	// an act ended or the story did: meta currency moved to the profile; save it
 }
 
 // Apply makes a scene step's changes to the hero: flags, rewards, quests, places, holders,
@@ -361,6 +363,9 @@ func (h *Hero) Apply(st *Step) (a Applied) {
 		h.CompanionLeaves(st.CompanionLeaves)
 	}
 	if st.Act > 0 && st.Act != h.CurrentAct() {
+		// the act before it is over: what it earned is safe from a return now
+		h.bank()
+		a.Banked = true
 		h.Act = st.Act
 		a.ActN = st.Act
 		a.Act = &Act{ Title: text.Tf("ui.act_title", "Act %d", st.Act) }
@@ -368,11 +373,12 @@ func (h *Hero) Apply(st *Step) (a Applied) {
 			a.Act = &Story.Acts[st.Act-1]
 		}
 	}
-	if st.End {
+	if st.End || st.Ending != "" {
+		h.finish(st.Ending)	// pays each first once a run, so a second end step is harmless
+		a.Banked = true
 		h.Finished = true
 	}
 	if st.Ending != "" {
-		h.Finished = true
 		if !slices.Contains(CurrentProfile.Endings, st.Ending) {
 			CurrentProfile.Endings = append(CurrentProfile.Endings, st.Ending)
 		}
