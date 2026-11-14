@@ -1,0 +1,35 @@
+# The College's reliquary in the necropolis: two red seal-stones (marked left and right) hold
+# its lid. The College reads a reliquary left seal first; the bomb or a Force breaks it open,
+# which the College will not forgive. Clearing the right seal first jams the lid: try again.
+# See docs/story.md for the format.
+id: reliquary
+name: The Sealed Reliquary
+objective: Lift the two seal-stones, the left one first. Breaking them is quicker, and remembered.
+moves: 4
+refill: none
+board:
+  - "g  b  y  g  y  b"
+  - "b  y  g  b  g  y"
+  - "y  g  b  y  b  g"
+  - "r  y  y  b  g  r"
+  - "g  r  b  y* r  g"
+  - "b  r  y  g  r  b"
+marks:
+  left: [1, 5]
+  right: [4, 5]
+goal: { cleared: [left, right] }
+tools:
+  - { id: force, name: Force, kind: force, uses: 1, rites: [smite, cleave, thorns, firebolt] }
+routes:
+  - id: breach
+    name: Broke the seals
+    flag: reliquary_broken
+    standing: { college: -1, crown: 1 }
+    when: { blasted: true }
+    solution: ["swap 2,3 3,3", "swap 0,3 1,3"]
+  - id: read
+    name: Read the seals
+    flag: reliquary_read
+    standing: { college: 1 }
+    when: { order: [left, right] }
+    solution: ["swap 0,3 1,3", "swap 5,3 4,3"]

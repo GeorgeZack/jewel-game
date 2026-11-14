@@ -19,10 +19,10 @@ func TestAcademyIsLockedUntilFounded(t *testing.T) {
 	if h.AcademyOpen() || h.Hire() || h.Build(FacilityByID("quarters")) {
 		t.Fatalf("a new hero used the academy: %+v", h)
 	}
-	// the first main quest's done scene founds it
-	q := QuestByID("goblins")
+	// the founding quest's done scene, at the end of Act 1, founds it
+	q := QuestByID("founding")
 	if q == nil || !setsFlag(Scenes[q.DoneScene], FOUNDING_FLAG) {
-		t.Fatalf("goblins doesn't found the academy")
+		t.Fatalf("the founding quest doesn't found the academy")
 	}
 	h.Flags[FOUNDING_FLAG] = true
 	if !h.AcademyOpen() || !h.Hire() {
@@ -188,7 +188,7 @@ func TestOldRunConvertsToTheAcademy(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "hero.json")
 	old := `{"Version":1,"Run":{"Class":"Knight","Level":3,"Gold":100,"Stats":[2,2,1,3,5,2,6],` +
 		`"Nodes":["water_seat"],"Gear":{"Mount":"pony","Weapon":"rusty_blade"},"Owned":["pony","rusty_blade"],` +
-		`"Spells":[],"Buildings":["treasury","stables"],"Location":"emberfield","Active":{},"Done":["goblins"]}}`
+		`"Spells":[],"Buildings":["treasury","stables"],"Location":"emberfield","Active":{},"Done":["goblins","founding"]}}`
 	os.WriteFile(path, []byte(old), 0o644)
 	h, err := LoadRun(path)
 	if err != nil || h == nil {
@@ -198,7 +198,7 @@ func TestOldRunConvertsToTheAcademy(t *testing.T) {
 		t.Fatalf("not converted: %+v", h)
 	}
 	if !h.AcademyOpen() || len(h.Facilities) != 0 {
-		t.Fatalf("goblins was done, so the academy should be founded and empty: %+v", h)
+		t.Fatalf("founding was done, so the academy should be founded and empty: %+v", h)
 	}
 	if kept, _ := os.ReadFile(path + ".bak"); string(kept) != old {
 		t.Fatalf("not backed up: %q", kept)

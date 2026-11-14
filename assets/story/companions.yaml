@@ -1,0 +1,20 @@
+# Companions: named characters who travel with the adept; one comes into a fight and brings one
+# thing. See docs/story.md. Each leans to a society and joins in Act 1, on that society's quest.
+# Rites, passives and cooldowns are placeholders for balancing.
+- id: hart
+  name: Clemency Hart
+  desc: A Royal Society assayer, lent to you by Dr Tallis. She writes everything down.
+  society: crown
+  rite: bulwark
+  cooldown: 9
+- id: jory
+  name: Jory Fitch
+  desc: A mudlark who runs errands for the Independents and knows every drain in the city.
+  society: free
+  passive: { kind: skull_paint, color: fire, amount: 2 }
+- id: marlow
+  name: Ines Marlow
+  desc: The College's archivist. Reads dead languages, and some living ones nobody should.
+  society: college
+  rite: mana_siphon
+  cooldown: 8

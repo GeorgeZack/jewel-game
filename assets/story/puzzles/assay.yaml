@@ -1,0 +1,30 @@
+# The Royal Society's assay: Dr Tallis sets the adept a tray of reagents and two red samples
+# (marked a and b) to clear. A match of four or more clears both at once, which a Fellow notices;
+# two plain matches do the job and no more. See docs/story.md for the format.
+id: assay
+name: The Society's Assay
+objective: Clear both red samples. The Fellows mark the elegance of the work.
+moves: 3
+refill: none
+board:
+  - "b  g  y  b  g  y"
+  - "y  b  g  y  b  g"
+  - "g  r  r  b  r  y"
+  - "r  y  g  r  r  b"
+  - "y  g  b  g  y  r"
+marks:
+  a: [1, 2]
+  b: [4, 2]
+goal: { cleared: [a, b] }
+routes:
+  - id: elegant
+    name: An elegant assay
+    flag: assay_elegant
+    standing: { crown: 1 }
+    when: { min_match: 4 }
+    solution: ["swap 3,2 3,3"]
+  - id: plain
+    name: A plain assay
+    flag: assay_plain
+    when: {}
+    solution: ["swap 0,2 0,3", "swap 4,4 5,4"]

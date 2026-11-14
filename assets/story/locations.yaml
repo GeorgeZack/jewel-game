@@ -1,56 +1,75 @@
+# The map. Act 1 is the city of Aldermoor and the undercroft below it (the first six places);
+# everything from Highwatch on is placeholder for Acts 2 and 3, kept from the Hollow King slice.
+# Ids are kept from the slice so saves still load: emberfield is Saltpetre Row, and so on.
 - id: emberfield
-  name: Emberfield
+  name: Saltpetre Row
   residue: fire
   town: true
   open: true
   x: 0.1
   y: 0.78
   level: 1
-  desc: A farming town under the smoke of its last harvest. Home.
+  desc: Lodging houses, a boxing club and a chemist's, all leaning on each other. Your rooms.
   people:
-    - name: Old Bessa
+    - name: Mrs Bessa
       scene: bessa_talk
     - name: Sergeant Holm
       scene: spar_talk
   roads: [mossgate]
 - id: mossgate
-  name: Mossgate Woods
+  name: The Undercroft Stair
   residue: earth
   open: true
   x: 0.24
   y: 0.62
   level: 1
-  desc: Old trees, new bogle trails.
+  desc: Steps under the Row, down to cellars older than the city. Lights where no lamps are.
   roads: [emberfield, stonebridge, greyfen]
   foes: [rat, goblin, slime]
 - id: stonebridge
-  name: Stonebridge
+  name: The Exchange
   residue: water
   town: true
   x: 0.38
   y: 0.74
   level: 2
-  desc: A toll town grown fat on the river trade.
+  desc: A columned hall where every society in Aldermoor keeps a room, and an eye on the others.
   enter_scene: stonebridge_arrival
+  people:
+    - name: Dr Tallis
+      scene: tallis_talk
+    - name: Silas Merrow
+      scene: merrow_talk
+    - name: Miss Marlow
+      scene: marlow_talk
   roads: [mossgate, barrow, redtusk]
 - id: greyfen
-  name: Greyfen Marsh
+  name: The Fleet Culvert
   residue: water
   x: 0.2
   y: 0.36
   level: 3
-  desc: Black water and worse things under it.
+  desc: A buried river under brick vaults. Things come down it from the old graves.
   roads: [mossgate, barrow]
   foes: [slime, spider, bandit]
 - id: barrow
-  name: The Old Barrow
+  name: St Ebba's Necropolis
   residue: earth
   x: 0.38
   y: 0.44
   level: 5
-  desc: The dead here have stopped staying down.
-  roads: [greyfen, stonebridge, highwatch]
+  desc: Catacombs under a closed cemetery. The dead here have stopped staying down.
+  roads: [greyfen, stonebridge, institute, highwatch]
   foes: [skeleton, ghoul, spider]
+- id: institute
+  name: The Halloran Institute
+  residue: air
+  x: 0.34
+  y: 0.27
+  level: 5
+  desc: A shut college of the sciences, its doors chained since the fire. Something keeps house.
+  roads: [barrow]
+  foes: [skeleton, ghoul]
 - id: highwatch
   name: Highwatch
   residue: air
@@ -58,7 +77,7 @@
   x: 0.56
   y: 0.32
   level: 6
-  desc: The last garrison between the lowlands and the mountains.
+  desc: "Placeholder for Act 2: the last garrison between the city and the mountains."
   people:
     - name: Captain Ise
       scene: ise_talk

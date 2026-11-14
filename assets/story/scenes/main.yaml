@@ -1,66 +1,18 @@
 # Story scenes. Each key is a scene id; its value is a list of steps, played in order.
-
-opening:
-  - fade_in: 1.5
-  - title: The Hollow King
-    subtitle: Emberfield, the last week of harvest
-  - text: You wake to smoke. The town still stands, but someone is hammering on your door.
-  - who: mayor
-    mood: worried
-    text: You're awake. Good. The Harlan farm burned last night, and there were bogle tracks all around it.
-  - who: hero
-    text: Bogles? This far south?
-  - who: mayor
-    text: That's what worries me. Come and find me in the square. I'll have work for you.
-  - set_flag: met_mayor
-
-# Plays instead of the plain offer box for "Smoke on the Road" (quests.yaml: offer_scene).
-goblins_offer:
-  - who: mayor
-    text: The tracks lead into Mossgate Woods. Drive them out before they come for the town.
-  - who: mayor
-    text: Two raiding parties, by the look of it. The town will pay forty gold.
-    choices:
-      - text: I'll go.
-        do:
-          - accept_quest: goblins
-          - who: mayor
-            text: Mossgate is north along the road. Click it on the map.
-            if: ["!tutorial:done"]   # a hint for the profile's first run only
-      - text: Not yet.
-        do:
-          - who: mayor
-            mood: worried
-            text: Don't take long.
-
-# Founds the academy (a placeholder until the founding quest is written). Plays after
-# "Smoke on the Road" (quests.yaml: done_scene).
-goblins_done:
-  - who: mayor
-    text: The old school on the hill has stood empty for years. Take it. You'll need people, and somewhere to keep them.
-  - set_flag: academy_founded
-  - text: The academy is yours. Open it from the menu.
-    if: ["!tutorial:done"]
+# Act 1 is in act1.yaml. The scenes here are placeholder for Acts 2 and 3, kept from the
+# Hollow King slice until those acts are written.
 
 # Brings Aether into the run (a placeholder until its story is written). Plays after "The Lake
 # Archive" (quests.yaml: done_scene), so the last third of the slice is fought with it.
 archive_done:
   - text: The last page of the monks' copy is not written in ink. It is a colour, and it was not there a moment ago.
   - set_flag: aether_unlocked
-  - text: "Aether, the forbidden colour, now falls on every board, and boards grow to hold it. The Orrery's core has opened."
-
-stonebridge_arrival:
-  - who: tollkeeper
-    text: Toll's two silver. Unless you're the one who cleared the woods? Then it's free, and welcome.
-  - who: hero
-    text: The road was full of people heading south.
-  - who: tollkeeper
-    text: Half the marsh villages, and more every day. Nobody will say what they're running from.
+  - text: "{aether}, the forbidden reagent, now falls on every board, and boards grow to hold it. The Orrery's core has opened."
 
 # The final quest's done_scene. "ending:" marks the story as beaten, and records the ending on the profile.
 king_done:
   - fade_out: 1.0
   - title: The End
-    subtitle: Your hero can keep playing; the roads are still full of monsters.
+    subtitle: Your adept can keep playing; the undercroft is still full of the dead.
   - ending: king_falls
   - fade_in: 1.0

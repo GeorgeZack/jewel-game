@@ -1,5 +1,11 @@
+# Quests. The main quests are listed in the order they are meant to be played (the tests play
+# them in this order). Act 1 runs from goblins to founding; from warchief on is placeholder for
+# Acts 2 and 3, kept from the Hollow King slice. Ids are kept from the slice so saves still load.
+
+# Act 1: Aldermoor. Every society courts the adept: the Royal Society (toll), the Independents
+# (ledger) and the College (reading). The founding quest sets the first lean and opens the academy.
 - id: goblins
-  title: Smoke on the Road
+  title: Lights Below
   main: true
   giver: emberfield
   at: mossgate
@@ -11,10 +17,10 @@
   opens: [stonebridge, greyfen]
   offer_scene: goblins_offer
   done_scene: goblins_done
-  intro: Bogles burned the Harlan farm last night. They've never come this far south. Drive them out of Mossgate before they try the town.
-  outro: The bogles weren't raiding. They were running, from something in the north.
+  intro: Bogles have come up the Undercroft Stair into the Row's cellars. Drive two of them back down.
+  outro: The bogles weren't raiding. They were running, from something deeper.
 - id: toll
-  title: The Toll Road
+  title: A Fellow's Errand
   main: true
   giver: stonebridge
   requires: [quest:goblins]
@@ -25,13 +31,42 @@
   gold: 70
   xp: 80
   opens: [barrow]
-  intro: Refugees say the marsh road is closed by resurrection men, digging up what the marsh buried. The mayor wants it open, and pays. Find them in Greyfen.
-  outro: 'A dying resurrection man tells you what they fled: the dead of the Old Barrow have started to walk.'
-- id: barrow_lord
-  title: What Walks the Barrow
+  done_scene: toll_done
+  intro: Dr Tallis of the Royal Society wants the resurrection men out of the Fleet Culvert. They are selling his anatomists the wrong dead.
+  outro: The last resurrection man names his buyer before he runs. It is not the Royal Society.
+- id: ledger
+  title: Merrow's Ledger
+  main: true
+  giver: stonebridge
+  requires: [quest:goblins]
+  at: greyfen
+  foe: spider
+  level: 3
+  count: 2
+  gold: 90
+  xp: 110
+  done_scene: ledger_done
+  intro: Silas Merrow of the Independents wants a ledger the Royal Society took from him. Its strongroom is on the Culvert, behind the shroud spinners' nests.
+  outro: The nests are cleared, and the strongroom door is in front of you.
+- id: reading
+  title: The Sealed Reading
   main: true
   giver: stonebridge
   requires: [quest:toll]
+  at: barrow
+  foe: skeleton
+  level: 4
+  count: 2
+  gold: 120
+  xp: 150
+  done_scene: reading_done
+  intro: Miss Marlow of the College needs a reliquary in St Ebba's catacombs read before anyone else finds it. Ossuary sentinels stand in the way.
+  outro: The sentinels fall apart. The reliquary waits behind them, still sealed.
+- id: barrow_lord
+  title: What Walks the Necropolis
+  main: true
+  giver: stonebridge
+  requires: [quest:toll, quest:ledger, quest:reading]
   at: barrow
   foe: barrow_lord
   level: 5
@@ -39,14 +74,33 @@
   gold: 160
   xp: 200
   item: barrow_mail
+  opens: [institute]
+  done_scene: barrow_done
+  intro: Every society agrees on one thing. Whatever walks the Necropolis has a crown, and it is waking the dead below the city. Put it back.
+  outro: Before it crumbles, the Lord points north. 'He is hollow, and he is coming. We only went ahead.' Its mail is still good.
+- id: founding
+  title: The Founding
+  main: true
+  giver: stonebridge
+  requires: [quest:barrow_lord]
+  at: institute
+  foe: ghoul
+  level: 5
+  count: 2
+  gold: 200
+  xp: 250
   opens: [highwatch, redtusk]
-  intro: Whatever woke the barrow has a name, and a crown. Put the Barrow Lord back in the ground.
-  outro: Before it crumbles, the Lord bows to the north-east. 'He is hollow, and he is coming. We only went ahead.' Its mail is still good.
+  offer_scene: founding_offer
+  done_scene: founding_done
+  intro: The Halloran Institute stands empty, and whoever clears it can claim it. Drive out the ghouls that keep house there.
+  outro: The last ghoul goes into the furnace. The Institute is quiet, and the keys are yours.
+
+# Acts 2 and 3: placeholder, kept from the Hollow King slice until those acts are written.
 - id: warchief
   title: Spears at Highwatch
   main: true
   giver: highwatch
-  requires: [quest:barrow_lord]
+  requires: [quest:founding]
   at: redtusk
   foe: warchief
   level: 8
@@ -114,7 +168,7 @@
   gold: 2000
   xp: 2500
   intro: Everything has been walking toward this room. Go and finish it.
-  outro: The King's crown rolls across the floor and stops. Outside, for the first time in a generation, it rains on the Waste. You did it, and Emberfield will never believe it.
+  outro: The King's crown rolls across the floor and stops. Outside, for the first time in a generation, it rains on the Waste. You did it, and Aldermoor will never believe it.
 - id: rats
   title: Cellar Trouble
   giver: emberfield
@@ -124,8 +178,8 @@
   count: 2
   gold: 35
   xp: 40
-  intro: Corpse-candles are drifting up from the woods and into the grain cellars, and nobody will go down for flour. A few coins if you snuff them out.
-  outro: The grain is safe, and the baker is almost grateful.
+  intro: Corpse-candles are drifting up the Stair into the Row's cellars, and nobody will go down for coal. A few coins if you snuff them out.
+  outro: The cellars are dark again, and the landlady is almost grateful.
 - id: spiders
   title: Web Silk
   giver: stonebridge

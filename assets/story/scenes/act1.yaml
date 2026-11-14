@@ -1,0 +1,256 @@
+# Act 1: Aldermoor. The adept arrives alone with a key to a shut Institute, every society in the
+# city courts them, and the founding quest sets the first lean and opens the academy.
+# Order of play: first_lesson (tutorial, once per profile), opening (the first event), then the
+# quests in quests.yaml from goblins to founding. Keep lines under about 200 characters.
+
+# The tutorial: played once per profile, on its first run, before the first event.
+first_lesson:
+  - fade_in: 1.0
+  - title: Alchemy
+    subtitle: The first lesson
+  - text: Every duel is alchemy done against someone. You share one table of reagents, and take turns.
+  - text: Swap two reagents to make a line of three. Lines fill your stores of Sulphur, Mercury, Nitre and Salt.
+  - text: Skulls strike your foe. Four in a line, or a match that sets off another, earns another turn.
+  - text: Full stores pay for rites. Try it on something small.
+  - duel: { foe: rat, level: 1, win: first_lesson_won, lose: first_lesson_lost }
+
+first_lesson_won:
+  - text: Good. The rest is practice, and the city has plenty to practise on.
+
+first_lesson_lost:
+  - text: Even candles bite. Losing a duel costs nothing but the time; you may always try again.
+
+# The first event: every run starts here, after the class choice.
+opening:
+  - fade_in: 1.5
+  - title: Aldermoor
+    subtitle: Saltpetre Row, the last week of October
+  - text: You come off the night train with one bag, one key, and a letter from a man who is dead.
+  - text: "'The Halloran Institute is yours, if you can hold it. Trust no society that offers to help.'"
+  - who: bessa
+    text: You'll be the new lodger. Second floor, and mind the cellar door. Something's been at the coal.
+  - who: hero
+    text: Something?
+  - who: bessa
+    text: Lights, coming up the Stair. Come and find me when you've unpacked.
+  - set_flag: met_bessa
+
+# Plays instead of the plain offer box for "Lights Below" (quests.yaml: offer_scene).
+goblins_offer:
+  - who: bessa
+    text: Bogles, the coal-man says, up from the undercroft. Two of them, at least. Drive them back down.
+  - who: bessa
+    text: I'll take forty off your rent. That's forty gold, near enough.
+    choices:
+      - text: I'll go.
+        do:
+          - accept_quest: goblins
+          - who: bessa
+            text: The Undercroft Stair is through the cellar. Click it on the map.
+            if: ["!tutorial:done"]   # a hint for the profile's first run only
+      - text: Not yet.
+        do:
+          - who: bessa
+            text: Don't leave it long. They'll have the coal, then the cat.
+
+goblins_done:
+  - text: Pinned to your door when you come up is a card, a note and a printed notice.
+  - text: "The card: Dr A. Tallis, Fellow of the Royal Society. The note: Ask for Merrow. The notice: the College, a lecture."
+  - who: bessa
+    text: Word gets about. They'll all be at the Exchange. They always are.
+  - text: The Exchange is open on the map. Societies give work there.
+    if: ["!tutorial:done"]
+
+# Every society courts the adept on first arrival at the Exchange.
+stonebridge_arrival:
+  - who: porter
+    text: The adept with the Halloran key? Three societies asked after you this morning. That's a record.
+  - who: tallis
+    text: Tallis, Royal Society. The Crown pays for answers below the streets, and pays well.
+  - who: merrow
+    mood: amused
+    text: Merrow. Independent. The Royal Society pays in charters and paper. We pay in what they've banned.
+  - who: marlow
+    text: Ines Marlow, for the College. We were old when the Royal Society was a coffee-house. We remember the Institute.
+  - who: hero
+    text: You all know about the Institute.
+  - who: tallis
+    text: Everyone knows. Nobody has been able to hold it. Do some work for us first, and we'll see.
+  - text: Talk to each of them here. Each society has its own errand on offer.
+    if: ["!tutorial:done"]
+
+# The Royal Society's courtship: an assay, and Clemency Hart lent to the adept.
+toll_done:
+  - who: tallis
+    text: Not ours, you say? Then someone is buying the dead for another purpose. Show me what you can do.
+  # each route, and leaving, has a scene of its own, which then goes on to toll_after
+  - puzzle: { id: assay, routes: { elegant: assay_elegant, plain: assay_plain }, lose: assay_left }
+
+toll_after:
+  - who: tallis
+    text: I'll lend you my assayer. Miss Hart, go with them. Write everything down.
+  - who: hart
+    text: Everything, Doctor. Even the parts you won't like.
+  - favour: { hart: 1 }
+  - companion_joins: hart
+  - text: Clemency Hart joins you. Choose who comes into a fight on the adept screen.
+    if: ["!tutorial:done"]
+
+assay_elegant:
+  - who: tallis
+    text: Both in one stroke. The Fellows will hear of it.
+  - goto: toll_after
+
+assay_plain:
+  - who: tallis
+    text: Adequate. The Society runs on adequate.
+  - goto: toll_after
+
+assay_left:
+  - who: tallis
+    text: Another day, then. The tray will keep.
+  - goto: toll_after
+
+# The Independents' courtship: the Royal Society's strongroom, and Jory Fitch.
+ledger_done:
+  - who: merrow
+    text: There it is. The Royal Society's strongroom, and my ledger in it. Open it however you like.
+  - puzzle: { id: vault, routes: { force: vault_forced, lockpick: vault_picked, quiet: vault_slipped }, lose: vault_left }
+
+ledger_after:
+  - who: merrow
+    text: Take Jory. He knows the drains, and he's wasted on me.
+  - who: jory
+    text: Wasted's a strong word. Underpaid.
+  - favour: { jory: 1 }
+  - companion_joins: jory
+
+vault_forced:
+  - text: The strongroom bell goes off down the length of the Culvert. Someone at the Royal Society will read about this.
+  - who: merrow
+    mood: amused
+    text: Loud. But it's open.
+  - goto: ledger_after
+
+vault_picked:
+  - who: merrow
+    text: Neat work. They'll know someone was in. They won't know who.
+  - goto: ledger_after
+
+vault_slipped:
+  - who: merrow
+    text: Not a scratch. The Independents could use hands like yours.
+  - goto: ledger_after
+
+vault_left:
+  - who: merrow
+    text: Leave it, then. A locked door is still a door I know about.
+  - standing: { free: -1 }
+  - goto: ledger_after
+
+# The College's courtship: the reliquary in the catacombs, and Ines Marlow.
+reading_done:
+  - who: marlow
+    text: The reliquary. Left seal first, or the lid jams. Please don't break it. Please.
+  - puzzle: { id: reliquary, routes: { read: reliquary_read, breach: reliquary_broken }, lose: reliquary_left }
+
+reading_after:
+  - who: marlow
+    text: I'm coming with you. The Provost will say I asked his leave. I'll have asked it later.
+  - favour: { marlow: 1 }
+  - companion_joins: marlow
+
+reliquary_read:
+  - who: marlow
+    text: Read whole. Inside, a list of the Institute's founders. Your teacher's name is on it, and so is one more.
+  - goto: reading_after
+
+reliquary_broken:
+  - who: marlow
+    mood: grim
+    text: Broken. The College will hear of it from me, because I won't lie. Tallis will be pleased, which is worse.
+  - goto: reading_after
+
+reliquary_left:
+  - who: marlow
+    text: Then nobody reads it. That's safer than most things in here.
+  - goto: reading_after
+
+barrow_done:
+  - text: Behind the Barrow Lord's tomb a passage runs north, under the cemetery wall, toward the Institute.
+  - who: hero
+    text: The dead were coming from the Institute.
+  - who: tallis
+    text: Then the Institute must be held. By someone.
+  - text: The Halloran Institute is open on the map.
+    if: ["!tutorial:done"]
+
+# The founding quest's offer: who helps the adept claim the Institute sets the first lean.
+founding_offer:
+  - text: All three come to you at the Exchange, at once, which they never do.
+  - who: tallis
+    text: The Royal Society will clear the Institute with you. A charter, a fellowship, our seal on the door.
+  - who: merrow
+    text: Do it with us, and nobody's seal goes on the door. Nobody's but yours.
+  - who: marlow
+    text: The College asks only to read what is there first. And to be asked.
+  - who: hero
+    text: The letter said to trust no society that offers to help.
+    choices:
+      - text: The Royal Society will help me.
+        do:
+          - standing: { crown: 2, free: -1 }
+          - favour: { hart: 1 }
+          - set_flag: lean_crown
+          - accept_quest: founding
+          - who: tallis
+            text: Sensible. We'll have the papers drawn by morning.
+      - text: The Independents will help me.
+        do:
+          - standing: { free: 2, crown: -1 }
+          - favour: { jory: 1 }
+          - set_flag: lean_free
+          - accept_quest: founding
+          - who: merrow
+            mood: amused
+            text: Then the Royal Society can read about it in the papers.
+      - text: The College will help me.
+        do:
+          - standing: { college: 2 }
+          - favour: { marlow: 1 }
+          - set_flag: lean_college
+          - accept_quest: founding
+          - who: marlow
+            text: Then we go in together, and we read before we burn.
+      - text: I'll take it alone.
+        do:
+          - set_flag: lean_alone
+          - accept_quest: founding
+          - who: tallis
+            text: Alone. Well. You know where we are when that stops being brave.
+      - text: Not yet.
+
+# Ends Act 1: the Institute is claimed, the academy opens, and Act 2 begins.
+founding_done:
+  - if: [flag:lean_crown]
+    then:
+      - who: tallis
+        text: The charter is signed. The Institute is a house of the Royal Society, and you are its head. For now.
+  - if: [flag:lean_free]
+    then:
+      - who: merrow
+        text: No charter, no seal. Your door, your rules. We'll be by for favours.
+  - if: [flag:lean_college]
+    then:
+      - who: marlow
+        text: The library is whole. The College will remember who let us in first.
+  - if: [flag:lean_alone]
+    then:
+      - text: Nobody's seal, nobody's help. Every society in Aldermoor will be watching to see how long that lasts.
+  - set_flag: academy_founded
+  - set_holder: { at: institute, holder: academy }
+  - text: The Halloran Institute is yours. Something in the cellar has been waiting for its owner.
+  - act: 2
+  - text: The academy is open. Build, hire agents and spend residue from the menu.
+    if: ["!tutorial:done"]
+  - text: What follows is placeholder, from an earlier draft, until Act 2 is written.

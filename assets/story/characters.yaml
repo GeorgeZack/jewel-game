@@ -1,17 +1,33 @@
-# Everyone who speaks in scenes. "hero" is built in and always means the player.
+# Everyone who speaks in scenes. "hero" is built in and always means the player (the adept).
 # portrait: image name in portraits/ (defaults to the id). Moods look for <portrait>_<mood>.png first.
-- id: mayor
-  name: Mayor Aldren
-  color: [214, 170, 90]
+
+# Act 1: Aldermoor
 - id: bessa
-  name: Old Bessa
+  name: Mrs Bessa
   color: [170, 140, 200]
-- id: ise
-  name: Captain Ise
-  color: [120, 170, 220]
-- id: tollkeeper
-  name: Tollkeeper Brann
-  color: [190, 120, 80]
 - id: sergeant
   name: Sergeant Holm
   color: [150, 160, 120]
+- id: porter
+  name: Brann, the Exchange porter
+  color: [190, 120, 80]
+- id: tallis
+  name: Dr Tallis, FRS
+  color: [214, 170, 90]
+- id: merrow
+  name: Silas Merrow
+  color: [150, 200, 120]
+- id: marlow
+  name: Ines Marlow
+  color: [140, 170, 230]
+- id: hart
+  name: Clemency Hart
+  color: [220, 200, 150]
+- id: jory
+  name: Jory Fitch
+  color: [200, 130, 110]
+
+# Acts 2 and 3: placeholder
+- id: ise
+  name: Captain Ise
+  color: [120, 170, 220]

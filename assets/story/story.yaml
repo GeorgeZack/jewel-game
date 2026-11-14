@@ -1,14 +1,19 @@
 # The story's settings. See docs/story.md for every file in this folder.
+# Act 1 (Aldermoor) is written; Acts 2 and 3 are still the Hollow King slice, as placeholder.
 title: The Hollow King
-map_name: The Marches
-start: emberfield              # location a new hero starts in
-opening: opening               # scene played when a hero is created
+map_name: Aldermoor
+start: emberfield              # location a new adept starts in (Saltpetre Row)
+opening: opening               # scene played when an adept is created
 first_event: opening           # every run starts here, after the class choice; a return restarts here
+tutorial: first_lesson         # once per profile, before the first event; more hints sit under if: ["!tutorial:done"]
 return_scene: the_return       # the entities' scene at the start of a run after a return
-# No tutorial scene: the first run is the tutorial, and its hints are under if: ["!tutorial:done"].
 final_quest: king              # finishing this quest beats the story
+acts:                          # title cards for the act steps
+  - { title: Act I, subtitle: Aldermoor }
+  - { title: Act II, subtitle: The academy }
+  - { title: Act III, subtitle: The Engine }
 endings:                       # recorded on the profile; each pays meta currency the first time (grimoire.yaml)
   - { id: king_falls, name: The Hollow King falls }
 blurb: >-
-  Something in the north has every creature in the land running south.
-  It will take someone to walk the other way.
+  You come to Aldermoor alone, with a key and a letter. Below the streets the dead are
+  waking, and every society in the city wants you to find out why, for them.
