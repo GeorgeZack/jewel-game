@@ -1,8 +1,8 @@
-# The Hollow King
+# The Halloran Engine
 
 A Victorian occult RPG where every fight is a match-3 duel. You walk a map, take quests, and match reagents on a shared board.
 
-The first arc is playable from the opening through eight main quests to the Hollow King. Some of the pixel art is still placeholder ([attributions.md](attributions.md)).
+A work in progress, playable start to finish. You arrive alone in Aldermoor with a key and a dead teacher's letter, three rival societies court you, and the dead below the streets lead down to an Engine. Some of the pixel art is still placeholder ([attributions.md](attributions.md)).
 
 Play it in the browser: https://georgezack.github.io/jewel-game-web/
 

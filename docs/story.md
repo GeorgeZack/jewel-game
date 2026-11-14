@@ -35,7 +35,10 @@ the player reads the Victorian ones from `en.yaml`: the colours `fire`, `water`,
 show as Sulphur, Mercury, Nitre and Salt (with `short` forms for narrow buttons), the stats
 Battle, Cunning and Morale as Force, Wit and Nerve, and the classes Knight, Warrior, Druid and
 Wizard as Exorcist, Pugilist, Herbalist and Theurgist. `stat.aether.name` is a placeholder, and
-any line that says `{aether}` follows it. The font is Noto Mono, which covers
+any line that says `{aether}` follows it. Story text can do the same: a scene line, a choice, or
+a quest's intro and outro that says `{aether}`, `{entities}` or `{currency}` shows the current
+name from `stat.aether.name`, `meta.entities` or `meta.currency`, so those placeholder names stay
+one key each. The font is Noto Mono, which covers
 Latin letters; another script needs a font that has those glyphs.
 
 ```
@@ -123,8 +126,9 @@ Every run, the first and every one after a return, starts with the class choice 
 in order: `return_scene` if the profile has returned, `tutorial` if its tutorial run is not
 behind it, and `first_event`. The profile's first run is its tutorial run: it ends at the first
 return, and from then on `tutorial:done` holds. So the tutorial is the `tutorial` scene plus any
-step guarded with `if: ["!tutorial:done"]`, such as a line that explains the map. The Hollow King
-has no tutorial scene; its two hint lines (in `goblins_offer` and `goblins_done`) are guarded.
+step guarded with `if: ["!tutorial:done"]`, such as a line that explains the map. The shipped
+story's tutorial is `first_lesson` (a few lines and a practice duel against a Corpse-Candle), and
+Act 1's hint lines (the map, the Exchange, companions, the academy) are guarded.
 
 Every run starts in act 1. An `act:` step moves the story into another act and shows that act's
 title card (or "Act N" when `acts` has none for it). Ending ids are stored on the profile, which
@@ -348,7 +352,8 @@ A run saved before Aether existed loads with it off and at zero (the old save is
 ## facilities.yaml
 
 Facilities are the academy's buildings. The academy itself opens when a scene sets the flag
-`academy_founded` (for now the done scene of the first main quest does). A facility is available
+`academy_founded`: in the shipped story, the done scene of the founding quest (`founding_done`),
+which ends Act 1. A facility is available
 once its `requires` conditions hold (the same conditions as everywhere else), and then each of its
 levels is bought with gold, in order. A level's perks add to the levels below it.
 
@@ -427,7 +432,8 @@ scenes decide when someone joins (gate them on favour or standing with `if`).
 
 A puzzle board is an authored board with an objective instead of a foe, and no AI turn. Each file
 in `puzzles/` is one puzzle. Some gems are **marked**; the board follows them as they fall and
-reports how each was cleared. Puzzles are prototypes: no story scene uses one yet.
+reports how each was cleared. Act 1 uses three: `assay` (the Royal Society), `vault` (the
+Independents) and `reliquary` (the College).
 
 ```yaml
 id: vault
@@ -614,7 +620,9 @@ pay for the finish and bank the rest. See [The return](#the-return-and-grimoirey
 
 A puzzle step's routes must be routes of that puzzle, and their scenes must exist. A route it
 doesn't list, and a loss without `lose`, carry on with the next step, so the short form is the
-default for every route.
+default for every route. A route or `lose` scene takes over like a `goto`: the steps after the
+puzzle don't play. To go on with something every route shares, end each route scene with a
+`goto` to it, as Act 1's `toll_done` does with `toll_after`.
 
 ```yaml
 bessa_talk:
@@ -665,7 +673,7 @@ Used by `requires`, `if` and choices. A list means all of them must hold, and a 
 `level:`, `act:` and `returns:` take a comparison in front of the number; without one they mean
 "at least". Ids in conditions are checked when the story loads.
 
-### Branches and the completion check
+#### Branches and the completion check
 
 `go test ./rpg` plays the main quests in the order quests.yaml lists them, as a player would:
 each done scene runs (choices take the first one offered, duels are won, a puzzle takes its first
@@ -673,6 +681,40 @@ route), and the story must end finished. With allegiances in societies.yaml it p
 allegiance, picking the choice that joins it at the lock, and passes over main quests that
 require `allegiance:` of another society: those are the other branch's. `rpg/testdata/branching/`
 is a small campaign with a branch that uses every part of this page; it is the example to copy.
+
+Act 1 has checks of its own, in `rpg/act1_test.go`:
+
+- `TestActOneByEveryClass` plays a fresh profile's first run with an adept of each class, the AI
+  playing: the tutorial and first event, then each Act 1 main quest (up to the one whose done
+  scene has `act: 2`) through its offer scene, with every kill a simulated duel at the quest's
+  level, and its done scene. Every puzzle met must have a route the class can finish with its own
+  tools. It ends with the academy open, a founding lean set and the companions joined. `-v`
+  prints each class's level after each quest.
+- `TestEverySocietyCourtsInActOne`: each society's standing rises somewhere in Act 1, and every
+  companion joins there.
+- `TestShippedStoryReferencesExist`: every id a quest, location or step names exists, and every
+  scene is played from somewhere.
+- `TestStoryTextFitsAPhone`: no scene line, quest text, location description or puzzle objective
+  is over 200 characters, and no choice over 48, so they fit a 420x860 phone window.
+
+## The shipped story
+
+Act 1 is written; Acts 2 and 3 are still the Hollow King slice, marked as placeholder in each
+file. Ids were kept from the slice so saves still load: `emberfield` is Saltpetre Row,
+`mossgate` the Undercroft Stair, `stonebridge` the Exchange, `greyfen` the Fleet Culvert and
+`barrow` St Ebba's Necropolis; `institute` (the Halloran Institute) is new.
+
+| Main quest | Society | What happens |
+|---|---|---|
+| `goblins` Lights Below | none | the landlady's errand; cards from all three societies arrive |
+| `toll` A Fellow's Errand | Royal Society (`crown`) | the `assay` puzzle; Clemency Hart joins |
+| `ledger` Merrow's Ledger | Independents (`free`) | the `vault` puzzle; Jory Fitch joins |
+| `reading` The Sealed Reading | College (`college`) | the `reliquary` puzzle; Ines Marlow joins |
+| `barrow_lord` What Walks the Necropolis | all | the Act 1 boss; opens the Institute |
+| `founding` The Founding | the lean | who helps claim the Institute sets the first lean (standing and a `lean_` flag), founds the academy and starts Act 2 |
+
+The founding offer's choices set `lean_crown`, `lean_free`, `lean_college` or `lean_alone`.
+From `warchief` on, the quests need `quest:founding`.
 
 ## The return and grimoire.yaml
 
