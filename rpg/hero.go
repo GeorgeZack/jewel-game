@@ -56,11 +56,11 @@ const (
 
 var StatNames = [NUM_STATS]string{ "Fire", "Water", "Air", "Earth", "Aether", "Battle", "Cunning", "Morale" }
 var StatHelp = [NUM_STATS]string{
-	"+1 max Fire mana. Every 6 adds +1 Fire per match.",
-	"+1 max Water mana. Every 6 adds +1 Water per match.",
-	"+1 max Air mana. Every 6 adds +1 Air per match.",
-	"+1 max Earth mana. Every 6 adds +1 Earth per match.",
-	"+1 max Aether mana. Every 6 adds +1 Aether per match.",
+	"+1 max Sulphur. Every 6 adds +1 Sulphur per match.",
+	"+1 max Mercury. Every 6 adds +1 Mercury per match.",
+	"+1 max Nitre. Every 6 adds +1 Nitre per match.",
+	"+1 max Salt. Every 6 adds +1 Salt per match.",
+	"+1 max {aether}. Every 6 adds +1 {aether} per match.",
 	"Every 4 adds +1 damage per skull match.",
 	"+2% gold and XP. Decides who moves first.",
 	"+3 max HP. Every 10 blocks 1 skull damage.",
@@ -76,13 +76,13 @@ type Class struct {
 }
 
 var Classes = []Class{
-	{ "Knight", "Holy armor and steady damage. Forgiving, and hard to kill.",
+	{ "Knight", "Salt, bell and absolution. Steady damage; forgiving, and hard to kill.",
 		[NUM_STATS]int{ 2, 2, 1, 3, 0, 5, 2, 6 }, [3]uint8{ 210, 215, 235 } },
-	{ "Warrior", "Rage and big skull hits. Wins by ending fights early.",
+	{ "Warrior", "Temper and heavy skull blows. Wins by ending duels early.",
 		[NUM_STATS]int{ 4, 1, 2, 2, 0, 7, 2, 3 }, [3]uint8{ 225, 90, 70 } },
-	{ "Druid", "Poison, healing and control of the Earth and the board.",
+	{ "Druid", "Poisons, poultices, and a hold on Salt and on the board.",
 		[NUM_STATS]int{ 1, 3, 2, 6, 0, 2, 4, 3 }, [3]uint8{ 95, 190, 100 } },
-	{ "Wizard", "Fragile, with the deepest mana and the strongest spells.",
+	{ "Wizard", "Fragile, with the deepest stores and the strongest rites.",
 		[NUM_STATS]int{ 5, 5, 4, 1, 0, 1, 3, 2 }, [3]uint8{ 110, 130, 240 } },
 }
 
@@ -290,29 +290,29 @@ func allMastery(n int) (s [NUM_STATS]int) {
 }
 
 var Items = []Item{
-	{ "rusty_blade", "Rusty Blade", SlotWeapon, 1, 40, "+1 skull damage", Bonus{ SkullDamage: 1 }, false },
-	{ "oak_staff", "Oak Staff", SlotWeapon, 1, 60, "+2 all masteries", Bonus{ Stats: allMastery(2) }, false },
-	{ "steel_sword", "Steel Sword", SlotWeapon, 4, 220, "+2 skull damage, +1 Battle", Bonus{ SkullDamage: 2, Stats: stat(Battle, 1) }, false },
-	{ "ember_rod", "Ember Rod", SlotWeapon, 5, 280, "+6 Fire, +5 starting mana", Bonus{ Stats: stat(Fire, 6), StartMana: 5 }, false },
-	{ "war_axe", "War Axe", SlotWeapon, 9, 650, "+4 skull damage", Bonus{ SkullDamage: 4 }, false },
-	{ "tide_scepter", "Tide Scepter", SlotWeapon, 10, 700, "+8 Water, +8 Air", Bonus{ Stats: [NUM_STATS]int{ 0, 8, 8 } }, false },
-	{ "kingsbane", "Kingsbane", SlotWeapon, 12, 0, "+6 skull damage, +4 Battle", Bonus{ SkullDamage: 6, Stats: stat(Battle, 4) }, true },
+	{ "rusty_blade", "Rusted Scalpel", SlotWeapon, 1, 40, "+1 skull damage", Bonus{ SkullDamage: 1 }, false },
+	{ "oak_staff", "Blackthorn Cane", SlotWeapon, 1, 60, "+2 all masteries", Bonus{ Stats: allMastery(2) }, false },
+	{ "steel_sword", "Sword-Stick", SlotWeapon, 4, 220, "+2 skull damage, +1 Force", Bonus{ SkullDamage: 2, Stats: stat(Battle, 1) }, false },
+	{ "ember_rod", "Brimstone Rod", SlotWeapon, 5, 280, "+6 Sulphur, +5 starting reagents", Bonus{ Stats: stat(Fire, 6), StartMana: 5 }, false },
+	{ "war_axe", "Bone Saw", SlotWeapon, 9, 650, "+4 skull damage", Bonus{ SkullDamage: 4 }, false },
+	{ "tide_scepter", "Quicksilver Rod", SlotWeapon, 10, 700, "+8 Mercury, +8 Nitre", Bonus{ Stats: [NUM_STATS]int{ 0, 8, 8 } }, false },
+	{ "kingsbane", "Kingsbane", SlotWeapon, 12, 0, "+6 skull damage, +4 Force", Bonus{ SkullDamage: 6, Stats: stat(Battle, 4) }, true },
 
-	{ "leather", "Leather Jerkin", SlotArmor, 1, 50, "+10 HP", Bonus{ HP: 10 }, false },
-	{ "chain", "Chain Shirt", SlotArmor, 4, 240, "+20 HP, blocks 1", Bonus{ HP: 20, Armor: 1 }, false },
-	{ "mage_robe", "Mage Robe", SlotArmor, 5, 260, "+4 all masteries", Bonus{ Stats: allMastery(4) }, false },
-	{ "plate", "Plate Armor", SlotArmor, 9, 700, "+40 HP, blocks 2", Bonus{ HP: 40, Armor: 2 }, false },
-	{ "barrow_mail", "Barrow Mail", SlotArmor, 6, 0, "+30 HP, blocks 2, +3 Morale", Bonus{ HP: 30, Armor: 2, Stats: stat(Morale, 3) }, true },
+	{ "leather", "Oilskin Coat", SlotArmor, 1, 50, "+10 HP", Bonus{ HP: 10 }, false },
+	{ "chain", "Mail Waistcoat", SlotArmor, 4, 240, "+20 HP, blocks 1", Bonus{ HP: 20, Armor: 1 }, false },
+	{ "mage_robe", "Scholar's Gown", SlotArmor, 5, 260, "+4 all masteries", Bonus{ Stats: allMastery(4) }, false },
+	{ "plate", "Steel Corselet", SlotArmor, 9, 700, "+40 HP, blocks 2", Bonus{ HP: 40, Armor: 2 }, false },
+	{ "barrow_mail", "Barrow Coat", SlotArmor, 6, 0, "+30 HP, blocks 2, +3 Nerve", Bonus{ HP: 30, Armor: 2, Stats: stat(Morale, 3) }, true },
 
-	{ "cap", "Padded Cap", SlotHelm, 1, 35, "+5 HP, +1 Morale", Bonus{ HP: 5, Stats: stat(Morale, 1) }, false },
-	{ "circlet", "Silver Circlet", SlotHelm, 3, 150, "+10% XP", Bonus{ XPPct: 10 }, false },
-	{ "great_helm", "Great Helm", SlotHelm, 7, 420, "+25 HP, blocks 1", Bonus{ HP: 25, Armor: 1 }, false },
-	{ "crown", "Sage's Crown", SlotHelm, 10, 720, "+6 all masteries, +15% XP", Bonus{ Stats: allMastery(6), XPPct: 15 }, false },
+	{ "cap", "Felt Bowler", SlotHelm, 1, 35, "+5 HP, +1 Nerve", Bonus{ HP: 5, Stats: stat(Morale, 1) }, false },
+	{ "circlet", "Silver Pince-nez", SlotHelm, 3, 150, "+10% XP", Bonus{ XPPct: 10 }, false },
+	{ "great_helm", "Iron Topper", SlotHelm, 7, 420, "+25 HP, blocks 1", Bonus{ HP: 25, Armor: 1 }, false },
+	{ "crown", "Mortarboard", SlotHelm, 10, 720, "+6 all masteries, +15% XP", Bonus{ Stats: allMastery(6), XPPct: 15 }, false },
 
-	{ "lucky_coin", "Lucky Coin", SlotTrinket, 1, 45, "+15% gold", Bonus{ GoldPct: 15 }, false },
-	{ "mana_charm", "Mana Charm", SlotTrinket, 3, 170, "+4 starting mana", Bonus{ StartMana: 4 }, false },
-	{ "fox_tail", "Fox Tail", SlotTrinket, 6, 380, "+6 Cunning", Bonus{ Stats: stat(Cunning, 6) }, false },
-	{ "heart_stone", "Heartstone", SlotTrinket, 8, 0, "+40 HP, +8 starting mana", Bonus{ HP: 40, StartMana: 8 }, true },
+	{ "lucky_coin", "Lucky Sovereign", SlotTrinket, 1, 45, "+15% gold", Bonus{ GoldPct: 15 }, false },
+	{ "mana_charm", "Reagent Phial", SlotTrinket, 3, 170, "+4 starting reagents", Bonus{ StartMana: 4 }, false },
+	{ "fox_tail", "Hare's Foot", SlotTrinket, 6, 380, "+6 Wit", Bonus{ Stats: stat(Cunning, 6) }, false },
+	{ "heart_stone", "Bezoar", SlotTrinket, 8, 0, "+40 HP, +8 starting reagents", Bonus{ HP: 40, StartMana: 8 }, true },
 }
 
 func ItemByID(id string) *Item {

@@ -306,9 +306,9 @@ func (h *Hero) RecordWin(loc string) (done []*Report) {
 func reportLine(m *Henchman, i int) string {
 	at := LocationByID(m.Post).Name
 	lines := []string{
-		text.Tf("academy.report_1", "Rank %d staff kept the books at %s. The site is ours.", m.Rank, at),
+		text.Tf("academy.report_1", "A rank %d agent kept the books at %s. The site is ours.", m.Rank, at),
 		text.Tf("academy.report_2", "A rank %d chapter at %s took oaths from the locals.", m.Rank, at),
-		text.Tf("academy.report_3", "Our rank %d hand at %s turned a rival's ledger over to us.", m.Rank, at),
+		text.Tf("academy.report_3", "Our rank %d agent at %s turned a rival's ledger over to us.", m.Rank, at),
 	}
 	return lines[(m.Rank+i)%len(lines)]
 }

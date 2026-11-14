@@ -34,19 +34,19 @@ entries:
 
   - id: standing_ledger
     name: A Standing Ledger
-    desc: Start with the Treasury built.
+    desc: Start with the Counting House built.
     cost: 25
     facilities: { treasury: 1 }
 
   - id: second_seat
     name: The Second Seat
-    desc: Start seated at the Gale Seat of the Orrery as well as your own, so the Air region is open to you. A Wizard gains nothing.
+    desc: Start seated at the Aludel Seat of the Orrery as well as your own, so the Nitre region is open to you. A Theurgist gains nothing.
     cost: 35
     nodes: [air_seat]
 
   - id: carried_rite
     name: A Carried Rite
-    desc: Start owning the Hamstring node. Its rite is yours from level 6, whatever your class.
+    desc: Start owning the Hamstring node. Its rite is yours from level 6, whatever your discipline.
     cost: 30
     nodes: [hamstring_node]
 
@@ -77,7 +77,7 @@ entries:
 
   - id: own_hands
     name: Your Own Hands
-    desc: Start with 6 residue of each of the four colors, gathered the slow way.
+    desc: Start with 6 residue of each of the four reagents, gathered the slow way.
     stage: 2
     lean: resist
     cost: 30

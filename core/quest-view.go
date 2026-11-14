@@ -273,7 +273,7 @@ func (v *QuestView) updateTravel(dt float32) {
 		foe := rpg.FoeByID(foes[rand.Intn(len(foes))])
 		v.show(Modal{
 			Title:   text.T("ui.ambush", "Ambush!"),
-			Body:    text.Tf("ui.ambush_body", "A %s jumps you on the road into %s.", foe.Name, here.Name),
+			Body:    text.Tf("ui.ambush_body", "A %s falls on you on the road into %s.", foe.Name, here.Name),
 			Buttons: []ModalButton{{text.T("ui.fight", "Fight"), func() { v.startDuel(foe.ID, roamLevel(here, v.Hero), here.ID, "") }}},
 		})
 	}
@@ -368,7 +368,7 @@ func (v *QuestView) onStep(res *board.StepResult) {
 	})
 	if g.Extra {
 		r := v.TM.Rect()
-		v.TM.Effects.Popup(text.T("ui.extra_turn", "Extra turn!"), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 46, ui.Accent)
+		v.TM.Effects.Popup(text.T("ui.extra_turn", "Extra turn."), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 46, ui.Accent)
 	}
 }
 
@@ -505,7 +505,7 @@ func (v *QuestView) finishDuel() {
 	back := []ModalButton{{text.T("ui.continue", "Continue"), func() { v.Screen = ScreenWorld; v.Duel = nil }}}
 	if r.Won {
 		v.show(Modal{
-			Title: text.T("ui.victory", "Victory!"),
+			Title: text.T("ui.victory", "Victory."),
 			Body:  text.Tf("ui.victory_body", "%s is defeated. You collect %d gold and %d XP.", d.Sides[rpg.Enemy].Name, r.Gold, r.XP) + residue,
 		})
 		for _, rep := range h.RecordWin(v.duelAt) {
@@ -522,13 +522,13 @@ func (v *QuestView) finishDuel() {
 	} else {
 		v.show(Modal{
 			Title: text.T("ui.defeated", "Defeated"),
-			Body:  text.Tf("ui.defeated_body", "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost.", r.Gold, r.XP) + residue,
+			Body:  text.Tf("ui.defeated_body", "You withdraw with %d gold and %d XP from the board. Try again when you are ready; nothing else was lost.", r.Gold, r.XP) + residue,
 		})
 	}
 	if h.Level > levelBefore {
 		v.show(Modal{
-			Title: text.Tf("ui.level_up", "Level %d!", h.Level),
-			Body:  text.T("ui.level_up_body", "Your HP rises. Open Spells to check for new rites, and the Orrery to spend residue."),
+			Title: text.Tf("ui.level_up", "Level %d.", h.Level),
+			Body:  text.T("ui.level_up_body", "Your HP rises. Open Rites to check for new ones, and the Orrery to spend residue."),
 		})
 	}
 	v.modals[len(v.modals)-1].Buttons = back
@@ -644,7 +644,7 @@ func (v *QuestView) DrawLeft(col *ui.Column, r rl.Rectangle) {
 	switch {
 	case v.Hero == nil:
 		col.Heading(text.T("ui.quest_heading", "Quest"))
-		col.Paragraph(text.T("ui.quest_start", "Choose your class to begin. Your hero is saved automatically."), 16, ui.DimText)
+		col.Paragraph(text.T("ui.quest_start", "Choose your discipline to begin. Your adept is saved automatically."), 16, ui.DimText)
 		v.drawStoryStatus(col)
 	case v.InDuel():
 		v.drawSide(col, rpg.Player)
@@ -692,9 +692,9 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 		}
 	}
 	nav(ScreenWorld, text.T("ui.world_map", "World map"), true)
-	nav(ScreenHero, text.T("ui.hero", "Hero"), true)
+	nav(ScreenHero, text.T("ui.hero", "Adept"), true)
 	nav(ScreenOrrery, text.T("ui.orrery_nav", "Orrery"), true)
-	nav(ScreenSpells, text.T("ui.spells", "Spells"), true)
+	nav(ScreenSpells, text.T("ui.spells", "Rites"), true)
 	nav(ScreenQuests, text.Tf("ui.quests_count", "Quests  (%d)", len(h.Active)), true)
 	nav(ScreenShop, text.T("ui.shop_towns", "Shop (in towns)"), here.Town)
 	nav(ScreenAcademy, text.T("ui.academy_nav", "Academy"), h.AcademyOpen())
@@ -705,10 +705,10 @@ func (v *QuestView) drawHeroSummary(col *ui.Column, bottom float32) {
 
 	guide := []string{
 		text.T("ui.duel_1", "You and your foe take turns on one board."),
-		text.T("ui.duel_2", "Colored gems fill your mana, for spells."),
-		text.T("ui.duel_3", "Skulls hurt the foe. +5 skulls hit hard and blast the gems around them."),
+		text.T("ui.duel_2", "Matched reagents fill your stores of them, which pay for rites."),
+		text.T("ui.duel_3", "Skulls hurt the foe. +5 skulls hit hard and blast the reagents around them."),
 		text.T("ui.duel_4", "Gold and stars pay out after the duel."),
-		text.T("ui.duel_5", "Match 4 for an extra turn. Match 5 for a turn and a Wild, which completes any mana match and multiplies it."),
+		text.T("ui.duel_5", "Match 4 for an extra turn. Match 5 for a turn and a Catalyst, which completes any reagent match and multiplies it."),
 	}
 	if col.Y+40+ui.MeasureParagraph(guide[0], 15, col.W) > bottom {
 		return
@@ -843,7 +843,7 @@ func (v *QuestView) drawSide(col *ui.Column, side int) {
 	}
 	v.drawPerks(col, c)
 
-	col.Heading(text.T("ui.spells", "Spells"))
+	col.Heading(text.T("ui.spells", "Rites"))
 	for i, s := range c.Spells {
 		v.drawSpell(col, c, s, i, side)
 	}
@@ -944,14 +944,14 @@ func (v *QuestView) DrawRight(r rl.Rectangle) {
 	}
 	switch {
 	case v.Hero == nil:
-		col.Heading(text.T("ui.new_hero_heading", "A new hero"))
+		col.Heading(text.T("ui.new_hero_heading", "A new adept"))
 		col.Paragraph(rpg.Story.Blurb, 18, ui.TextColor)
 	case v.Screen == ScreenPuzzle:
 		v.drawPuzzleInfo(&col)
 	case v.InDuel():
 		v.drawCard(&col)
 		v.drawSide(&col, rpg.Enemy)
-		col.Heading(text.T("ui.battle_log", "Battle log"))
+		col.Heading(text.T("ui.battle_log", "Duel log"))
 		bottom := r.Y + r.Height - 24
 		for i, line := range v.Duel.Log {
 			if col.Y > bottom {
@@ -1102,8 +1102,8 @@ func (v *QuestView) thankOnce() {
 	h.Flags["thanked"] = true
 	v.save()
 	v.show(Modal{
-		Title:   text.T("ui.thanks_title", "Thanks for playing!"),
-		Body:    text.T("ui.thanks_body", "That's the end of this slice of the game. Your hero can keep exploring, and more is on the way."),
+		Title:   text.T("ui.thanks_title", "Thank you for playing."),
+		Body:    text.T("ui.thanks_body", "That is the end of this slice of the game. Your adept may go on exploring; more is in preparation."),
 		Buttons: []ModalButton{
 			{text.T("ui.keep_playing", "Keep playing"), nil},
 			// the run is over: the return can begin the next one (DESIGN.md 5.8)
