@@ -1,7 +1,8 @@
 # Jewel Game
 
-A fantasy RPG where every fight is a match-3 duel. Pick a hero, travel the world map, take on
-quests, and battle monsters on a shared gem board.
+A Victorian occult RPG where every fight is a match-3 duel. Pick an adept of the alchemists'
+academy, travel the map, take on quests, and duel the things of the undercroft on a shared board
+of reagents.
 
 **Play it in your browser:** https://georgezack.github.io/jewel-game-web/
 
@@ -11,20 +12,20 @@ Diffusion), and some of it is still placeholder. See [attributions.md](attributi
 
 ## How to play
 
-- *Duels:* you and a monster take turns on one 8x8 board. Red, blue, yellow and green gems fill your
-  Fire, Water, Air and Earth mana. Partway through the story a fifth, forbidden element, Aether
+- *Duels:* you and a monster take turns on one 8x8 board. Red, blue, yellow and green reagents fill your
+  stores of Sulphur, Mercury, Nitre and Salt. Partway through the story a fifth, forbidden reagent, Aether
   (purple), joins every board, and boards grow to 9x9 to hold it. Bosses fight on rule cards that
   change one rule: the gravity, the board's size, overcharged blasts, or what matches pay. Skulls damage the foe, and +5 skulls hit harder and blast the gems
   around them. Gold and stars pay out after the duel. Whatever the other side's move sets up, they get to use.
-- *Extra turns and Wilds:* match 4 and you go again. Match 5 and you also get a Wild, which completes
-  any mana match and multiplies it. Running out of moves drains all mana and reshuffles.
-- *Heroes:* Knight, Warrior, Druid or Wizard, each starting with a kit of rites (six can be
-  equipped). Levels give HP; stats (Fire, Water, Air, Earth, Battle, Cunning and Morale, and Aether once it arrives) and more
+- *Extra turns and Catalysts:* match 4 and you go again. Match 5 and you also get a Catalyst, which completes
+  any reagent match and multiplies it. Running out of moves drains half of every store and reshuffles.
+- *Disciplines:* Exorcist, Pugilist, Herbalist or Theurgist, each starting with a kit of rites (six can be
+  prepared). Levels give HP; stats (Sulphur, Mercury, Nitre, Salt, Force, Wit and Nerve, and Aether once it arrives) and more
   rites come from the Orrery, bought with the residue good matches leave behind.
 - *World:* walk the map between towns and wilds, take main and side quests, fight roaming foes and
   road ambushes. Quests open up the map through to the final boss.
-- *Spending gold:* gear in four slots from town shops; then, once the academy is founded, henchmen
-  to hire, train and equip, and facilities to build and upgrade. Henchmen posted to a site run a
+- *Spending gold:* gear in four slots from town shops; then, once the academy is founded, agents
+  to retain, train and equip, and facilities to build and upgrade. Agents posted to a site run a
   chapter there that completes as you win duels, paying gold and residue, and sites you hold pay
   dues on every win.
 - *Story:* dialogue with portraits and choices, title cards, people to talk to in towns, and story
@@ -36,13 +37,13 @@ automatically (in the browser's local storage, or `~/.config/jewel-game/hero.jso
 run goes in `profile.json` beside it).
 
 **Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
-and 5 in a row makes a **Prism** (swap it with a gem to clear that color). Swapping two specials
+and 5 in a row makes a **Prism** (swap it with a reagent to clear that kind). Swapping two specials
 together combines them.
 
 | Input | Action |
 | --- | --- |
-| Left drag, or click two gems | Swap |
-| 1-6 | Cast spells (duels) |
+| Left drag, or click two reagents | Swap |
+| 1-6 | Work rites (duels) |
 | H | Hint |
 | F1 | Debug log |
 | Esc | Deselect / quit |
