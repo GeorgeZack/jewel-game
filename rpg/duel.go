@@ -180,7 +180,7 @@ func (d *Duel) Damage(c *Combatant, n int) int {
 	}
 	if c.HP == 0 {
 		d.Winner = 1 - d.Side(c)
-		d.logf("log.falls", "%s falls!", c.Name)
+		d.logf("log.falls", "%s falls.", c.Name)
 	}
 	return n
 }
@@ -326,7 +326,7 @@ func (d *Duel) ApplyStep(res *board.StepResult) Gain {
 	}
 	if g.Extra && !d.Over() {
 		d.Extra = true
-		d.logf("log.extra_turn", "%s earns an extra turn!", me.Name)
+		d.logf("log.extra_turn", "%s earns an extra turn.", me.Name)
 	}
 	return g
 }
@@ -412,7 +412,7 @@ func (d *Duel) Cast(s *Spell) bool {
 	if s.Cooldown > 0 {
 		me.Cooldowns[s.ID] = s.Cooldown
 	}
-	d.logf("log.casts", "%s casts %s.", me.Name, s.Label())
+	d.logf("log.casts", "%s works %s.", me.Name, s.Label())
 	if s.Free {
 		d.Extra = true
 	}
@@ -438,7 +438,7 @@ func (d *Duel) EndTurn() {
 		if !stunned || d.Over() {
 			return
 		}
-		d.logf("log.stunned", "%s is stunned!", d.Sides[d.Turn].Name)
+		d.logf("log.stunned", "%s is stunned.", d.Sides[d.Turn].Name)
 	}
 }
 
@@ -468,7 +468,7 @@ func (d *Duel) ManaDrain() {
 			c.Mana[i] /= 2
 		}
 	}
-	d.logf("log.mana_drain", "No moves left: half your mana drains away!")
+	d.logf("log.mana_drain", "No moves left: half your reagents drain away.")
 }
 
 // LogLine is one battle-log entry. It is formatted when drawn, so editing

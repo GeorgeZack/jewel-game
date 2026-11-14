@@ -17,7 +17,16 @@ func (c *Class) Label() string { return text.T("class."+slug(c.Name)+".name", c.
 func (c *Class) About() string { return text.T("class."+slug(c.Name)+".desc", c.Desc) }
 
 func (s *Spell) Label() string { return text.T("spell."+s.ID+".name", s.Name) }
-func (s *Spell) About() string { return text.T("spell."+s.ID+".desc", s.Desc) }
+func (s *Spell) About() string { return named(text.T("spell."+s.ID+".desc", s.Desc)) }
+
+// named puts the fifth reagent's name, stat.aether.name, where a string says {aether}, so that
+// placeholder name is one key to rename.
+func named(s string) string {
+	if !strings.Contains(s, "{aether}") {
+		return s
+	}
+	return strings.ReplaceAll(s, "{aether}", StatLabel(Aether))
+}
 
 func (it *Item) Label() string { return text.T("item."+it.ID+".name", it.Name) }
 func (it *Item) About() string { return text.T("item."+it.ID+".desc", it.Desc) }
@@ -72,7 +81,7 @@ func perkRule(p *Perk) string {
 	color := ManaLabel(max(p.Color, 0))
 	switch p.Kind {
 	case PerkHunger:
-		return text.Tf("rule.hunger", "A match of %d or more %s also drains %d of your %s mana into %s.", p.Size, color, p.Amount, ManaLabel(max(p.ToMana, 0)), color)
+		return text.Tf("rule.hunger", "A match of %d or more %s also drains %d of your %s into %s.", p.Size, color, p.Amount, ManaLabel(max(p.ToMana, 0)), color)
 	case PerkBloodPrice:
 		return text.Tf("rule.blood_price", "A rite short of %s may take the rest from your HP, %d HP for each.", color, p.Amount)
 	case PerkStrike:
@@ -86,16 +95,16 @@ func perkRule(p *Perk) string {
 		}
 		return text.Tf("rule.mend", "A match of %d or more %s also heals you %d.", p.Size, color, p.Amount)
 	case PerkWildFour:
-		return text.Tf("rule.wild_four", "A match of four %s plants a x%d Wild instead of giving an extra turn.", color, p.Amount)
+		return text.Tf("rule.wild_four", "A match of four %s plants a x%d Catalyst instead of giving an extra turn.", color, p.Amount)
 	case PerkSkullPaint:
-		return text.Tf("rule.skull_paint", "Each skull match turns %d gems beside it into %s.", p.Amount, color)
+		return text.Tf("rule.skull_paint", "Each skull match turns %d reagents beside it into %s.", p.Amount, color)
 	case PerkOverflow:
-		return text.Tf("rule.overflow", "Your %s mana holds %d less, and what goes past it spills into %s.", color, p.Amount, ManaLabel(max(p.ToMana, 0)))
+		return text.Tf("rule.overflow", "Your %s store holds %d less, and what goes past it spills into %s.", color, p.Amount, ManaLabel(max(p.ToMana, 0)))
 	case PerkForsake:
-		return text.Tf("rule.forsake", "Skull matches deal %d more, but %s matches give you no mana.", p.Amount, color)
+		return text.Tf("rule.forsake", "Skull matches deal %d more, but %s matches fill no store.", p.Amount, color)
 	case PerkSeed:
 		if p.Special == "wild" {
-			return text.Tf("rule.seed_wild", "Duels start with %d x%d Wilds on the board, for either side to take.", p.Amount, SEED_WILD_MULT)
+			return text.Tf("rule.seed_wild", "Duels start with %d x%d Catalysts on the board, for either side to take.", p.Amount, SEED_WILD_MULT)
 		}
 		return text.Tf("rule.seed_bomb", "Duels start with %d +5 skulls on the board, for either side to take.", p.Amount)
 	}
@@ -103,14 +112,14 @@ func perkRule(p *Perk) string {
 }
 
 func StatLabel(i int) string { return text.T("stat."+slug(StatNames[i])+".name", StatNames[i]) }
-func StatAbout(i int) string { return text.T("stat."+slug(StatNames[i])+".help", StatHelp[i]) }
+func StatAbout(i int) string { return named(text.T("stat."+slug(StatNames[i])+".help", StatHelp[i])) }
 
 // StatBonus is what a stat of n is worth right now, including gear.
 func StatBonus(i, n int) string {
 	key := "stat." + slug(StatNames[i]) + ".now"
 	switch i {
 	case Fire, Water, Air, Earth, Aether:
-		return text.Tf(key, "+%d max "+StatNames[i]+" mana, +%d per match", n, n/6)
+		return named(text.Tf(key, "+%d max "+StatLabel(i)+", +%d per match", n, n/6))
 	case Battle:
 		return text.Tf(key, "+%d damage per skull match", n/4)
 	case Cunning:
@@ -122,6 +131,9 @@ func StatBonus(i, n int) string {
 	}
 }
 func ManaLabel(i int) string { return StatLabel(i) }
+
+// ManaShort is a reagent's short name, for narrow buttons; its full name when it has none.
+func ManaShort(i int) string { return text.T("stat."+slug(StatNames[i])+".short", ManaLabel(i)) }
 
 func EffectLabel(k EffectKind) string {
 	return text.T("effect."+slug(EffectNames[k]), EffectNames[k])
@@ -139,10 +151,10 @@ func LevelAbout(l FacilityLevel) string {
 		{ l.GoldPct, "gold_pct", "+%d%% gold" },
 		{ l.XPPct, "xp_pct", "+%d%% XP" },
 		{ l.HP, "hp", "+%d HP" },
-		{ l.StartMana, "start_mana", "+%d starting mana" },
+		{ l.StartMana, "start_mana", "+%d starting reagents" },
 		{ l.SkullDamage, "skull_damage", "+%d skull damage" },
 		{ l.Armor, "armor", "blocks %d" },
-		{ l.Henchmen, "henchmen", "+%d henchmen" },
+		{ l.Henchmen, "henchmen", "+%d agents" },
 		{ l.ChapterPct, "chapter_pct", "+%d%% chapter pay" },
 	} {
 		if p.n != 0 {

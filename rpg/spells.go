@@ -67,79 +67,79 @@ func clearColor(c Ctx, color int) { c.Board.Force(c.Board.CellsOfColor(color)) }
 
 var Spells = []Spell{
 	// Knight
-	{ ID: "smite", Name: "Smite", Class: "Knight", Level: 1, Cost: cost(0, 0, 0, 6), Cooldown: 1,
-		Desc: "Deal 6 + Battle/2 damage.",
+	{ ID: "smite", Name: "Rebuke", Class: "Knight", Level: 1, Cost: cost(0, 0, 0, 6), Cooldown: 1,
+		Desc: "Deal 6 + Force/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 6+c.mastery(Battle, 2)) } },
-	{ ID: "bulwark", Name: "Bulwark", Class: "Knight", Level: 2, Cost: cost(0, 6, 0, 2), Cooldown: 6, Free: true,
+	{ ID: "bulwark", Name: "Salt Circle", Class: "Knight", Level: 2, Cost: cost(0, 6, 0, 2), Cooldown: 6, Free: true,
 		Desc: "Free. Block 3 per hit for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Shield, 4, 3 }) } },
-	{ ID: "lay_hands", Name: "Lay on Hands", Class: "Knight", Level: 4, Cost: cost(0, 10, 4, 0), Cooldown: 4,
-		Desc: "Heal 15 + Morale.", Worth: wounded,
+	{ ID: "lay_hands", Name: "Absolution", Class: "Knight", Level: 4, Cost: cost(0, 10, 4, 0), Cooldown: 4,
+		Desc: "Heal 15 + Nerve.", Worth: wounded,
 		Cast: func(c Ctx) { c.D.Heal(c.Me, 15+c.Me.Stats[Morale]) } },
-	{ ID: "shield_bash", Name: "Shield Bash", Class: "Knight", Level: 6, Cost: cost(4, 0, 0, 10), Cooldown: 7,
+	{ ID: "shield_bash", Name: "Sanctus Bell", Class: "Knight", Level: 6, Cost: cost(4, 0, 0, 10), Cooldown: 7,
 		Desc: "Deal 5 and stun the foe for 1 turn.",
 		Cast: func(c Ctx) { hurt(c, 5); c.Foe.AddEffect(Effect{ Stun, 1, 0 }) } },
-	{ ID: "muster", Name: "Muster", Class: "Knight", Level: 9, Cost: cost(8, 0, 8, 0), Cooldown: 5,
+	{ ID: "muster", Name: "Inhumation", Class: "Knight", Level: 9, Cost: cost(8, 0, 8, 0), Cooldown: 5,
 		Desc: "Destroy all skulls on the board.",
 		Cast: func(c Ctx) { clearColor(c, Skull) } },
-	{ ID: "judgement", Name: "Judgement", Class: "Knight", Level: 13, Cost: cost(10, 0, 10, 10), Cooldown: 6,
-		Desc: "Deal 20 + Battle damage.",
+	{ ID: "judgement", Name: "Anathema", Class: "Knight", Level: 13, Cost: cost(10, 0, 10, 10), Cooldown: 6,
+		Desc: "Deal 20 + Force damage.",
 		Cast: func(c Ctx) { hurt(c, 20+c.Me.Stats[Battle]) } },
 
 	// Warrior
-	{ ID: "cleave", Name: "Cleave", Class: "Warrior", Level: 1, Cost: cost(6, 0, 0, 0), Cooldown: 1,
-		Desc: "Deal 5 + Fire/3 damage.",
+	{ ID: "cleave", Name: "Hot Iron", Class: "Warrior", Level: 1, Cost: cost(6, 0, 0, 0), Cooldown: 1,
+		Desc: "Deal 5 + Sulphur/3 damage.",
 		Cast: func(c Ctx) { hurt(c, 5+c.mastery(Fire, 3)) } },
-	{ ID: "rage", Name: "Rage", Class: "Warrior", Level: 2, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true,
+	{ ID: "rage", Name: "Blood Up", Class: "Warrior", Level: 2, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true,
 		Desc: "Free. Skull matches deal +4 for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Might, 4, 4 }) } },
-	{ ID: "war_cry", Name: "War Cry", Class: "Warrior", Level: 4, Cost: cost(0, 0, 8, 4), Cooldown: 5,
-		Desc: "Turn all Air gems into skulls.",
+	{ ID: "war_cry", Name: "Garrotte", Class: "Warrior", Level: 4, Cost: cost(0, 0, 8, 4), Cooldown: 5,
+		Desc: "Turn all Nitre into skulls.",
 		Cast: func(c Ctx) { c.Board.Convert(Air, Skull) } },
 	{ ID: "hamstring", Name: "Hamstring", Class: "Warrior", Level: 6, Cost: cost(10, 0, 4, 0), Cooldown: 7,
 		Desc: "Deal 4 and stun the foe for 1 turn.",
 		Cast: func(c Ctx) { hurt(c, 4); c.Foe.AddEffect(Effect{ Stun, 1, 0 }) } },
-	{ ID: "whirlwind", Name: "Whirlwind", Class: "Warrior", Level: 9, Cost: cost(10, 0, 8, 0), Cooldown: 5,
+	{ ID: "whirlwind", Name: "Brawl", Class: "Warrior", Level: 9, Cost: cost(10, 0, 8, 0), Cooldown: 5,
 		Desc: "Destroy a random row and column.",
 		Cast: func(c Ctx) {
 			p := c.Board.RandomCells(1)[0]
 			c.Board.Force(c.Board.Rows(p.Y, p.Y))
 			c.Board.Force(c.Board.Cols(p.X, p.X))
 		} },
-	{ ID: "execute", Name: "Execute", Class: "Warrior", Level: 13, Cost: cost(15, 0, 0, 10), Cooldown: 6,
+	{ ID: "execute", Name: "Last Rites", Class: "Warrior", Level: 13, Cost: cost(15, 0, 0, 10), Cooldown: 6,
 		Desc: "Deal 10 + a quarter of what the foe has lost.",
 		Cast: func(c Ctx) { hurt(c, 10+(c.Foe.MaxHP-c.Foe.HP)/4) } },
 
 	// Druid
-	{ ID: "thorns", Name: "Venom Thorns", Class: "Druid", Level: 1, Cost: cost(0, 0, 0, 6), Cooldown: 3,
-		Desc: "Poison: 2 + Earth/6 per turn for 5 turns.",
+	{ ID: "thorns", Name: "Nightshade", Class: "Druid", Level: 1, Cost: cost(0, 0, 0, 6), Cooldown: 3,
+		Desc: "Poison: 2 + Salt/6 per turn for 5 turns.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Poison, 5, 2 + c.mastery(Earth, 6) }) } },
-	{ ID: "renewal", Name: "Renewal", Class: "Druid", Level: 2, Cost: cost(0, 6, 0, 4), Cooldown: 5, Free: true,
-		Desc: "Free. Regen 4 per turn for 5 turns.", Worth: wounded,
+	{ ID: "renewal", Name: "Poultice", Class: "Druid", Level: 2, Cost: cost(0, 6, 0, 4), Cooldown: 5, Free: true,
+		Desc: "Free. Mend 4 per turn for 5 turns.", Worth: wounded,
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Regen, 5, 4 }) } },
-	{ ID: "overgrowth", Name: "Overgrowth", Class: "Druid", Level: 4, Cost: cost(0, 0, 4, 8), Cooldown: 4,
-		Desc: "Turn all Fire gems into Earth gems.",
+	{ ID: "overgrowth", Name: "Smothering", Class: "Druid", Level: 4, Cost: cost(0, 0, 4, 8), Cooldown: 4,
+		Desc: "Turn all Sulphur into Salt.",
 		Cast: func(c Ctx) { c.Board.Convert(Fire, Earth) } },
-	{ ID: "entangle", Name: "Entangle", Class: "Druid", Level: 6, Cost: cost(0, 4, 0, 12), Cooldown: 7,
+	{ ID: "entangle", Name: "Laudanum", Class: "Druid", Level: 6, Cost: cost(0, 4, 0, 12), Cooldown: 7,
 		Desc: "Stun the foe for 2 turns.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Stun, 2, 0 }) } },
-	{ ID: "wild_seed", Name: "Wild Seed", Class: "Druid", Level: 9, Cost: cost(0, 8, 0, 10), Cooldown: 5,
-		Desc: "Plant two x2 Wilds on the board.",
+	{ ID: "wild_seed", Name: "Fairy Ring", Class: "Druid", Level: 9, Cost: cost(0, 8, 0, 10), Cooldown: 5,
+		Desc: "Plant two x2 Catalysts on the board.",
 		Cast: func(c Ctx) {
 			for _, p := range c.Board.RandomCells(2) {
 				c.Board.PlaceWild(p, 2)
 			}
 		} },
-	{ ID: "earthquake", Name: "Earthquake", Class: "Druid", Level: 13, Cost: cost(0, 0, 8, 18), Cooldown: 6,
+	{ ID: "earthquake", Name: "Subsidence", Class: "Druid", Level: 13, Cost: cost(0, 0, 8, 18), Cooldown: 6,
 		Desc: "Destroy the bottom 3 rows.",
 		Cast: func(c Ctx) { h := c.Board.H(); c.Board.Force(c.Board.Rows(h-3, h-1)) } },
 
 	// Wizard
-	{ ID: "firebolt", Name: "Firebolt", Class: "Wizard", Level: 1, Cost: cost(7, 0, 0, 0), Cooldown: 1,
-		Desc: "Deal 5 + Fire/2 damage.",
+	{ ID: "firebolt", Name: "Phosphorus", Class: "Wizard", Level: 1, Cost: cost(7, 0, 0, 0), Cooldown: 1,
+		Desc: "Deal 5 + Sulphur/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 5+c.mastery(Fire, 2)) } },
-	{ ID: "mana_siphon", Name: "Mana Siphon", Class: "Wizard", Level: 2, Cost: cost(0, 5, 0, 0), Cooldown: 4, Free: true,
-		Desc: "Free. Steal up to 4 of each mana.", Worth: foeHasMana,
+	{ ID: "mana_siphon", Name: "Siphon", Class: "Wizard", Level: 2, Cost: cost(0, 5, 0, 0), Cooldown: 4, Free: true,
+		Desc: "Free. Steal up to 4 of each reagent.", Worth: foeHasMana,
 		Cast: func(c Ctx) {
 			for i := range c.Foe.Mana {
 				n := min(4, c.Foe.Mana[i])
@@ -150,31 +150,31 @@ var Spells = []Spell{
 	{ ID: "transmute", Name: "Transmute", Class: "Wizard", Level: 4, Cost: cost(0, 6, 6, 0), Cooldown: 4,
 		Desc: "Turn all skulls into gold.",
 		Cast: func(c Ctx) { c.Board.Convert(Skull, Gold) } },
-	{ ID: "chain_lightning", Name: "Chain Lightning", Class: "Wizard", Level: 6, Cost: cost(0, 0, 14, 0), Cooldown: 5,
-		Desc: "Destroy all Air gems. Deal 2 per Air gem.",
+	{ ID: "chain_lightning", Name: "Galvanic Arc", Class: "Wizard", Level: 6, Cost: cost(0, 0, 14, 0), Cooldown: 5,
+		Desc: "Destroy all Nitre. Deal 2 per Nitre.",
 		Cast: func(c Ctx) {
 			hurt(c, 2*len(c.Board.CellsOfColor(Air)))
 			clearColor(c, Air)
 		} },
-	{ ID: "hush", Name: "Hush", Class: "Wizard", Level: 9, Cost: cost(0, 12, 6, 0), Cooldown: 7,
+	{ ID: "hush", Name: "Seal of Silence", Class: "Wizard", Level: 9, Cost: cost(0, 12, 6, 0), Cooldown: 7,
 		Desc: "Silence the foe for 3 turns.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Silence, 3, 0 }) } },
-	{ ID: "meteor", Name: "Meteor", Class: "Wizard", Level: 13, Cost: cost(22, 0, 8, 0), Cooldown: 6,
-		Desc: "Deal 15 + Fire. Destroy a 5x5 area.",
+	{ ID: "meteor", Name: "Fulmination", Class: "Wizard", Level: 13, Cost: cost(22, 0, 8, 0), Cooldown: 6,
+		Desc: "Deal 15 + Sulphur. Destroy a 5x5 area.",
 		Cast: func(c Ctx) {
 			hurt(c, 15+c.Me.Stats[Fire])
 			c.Board.Force(c.Board.Square(c.Board.RandomCells(1)[0], 2))
 		} },
 
 	// Aether: on the Orrery's Aether region, for any class that reaches it
-	{ ID: "void_bolt", Name: "Void Bolt", Class: AETHER_RITES, Level: 6, Cost: cost(0, 0, 0, 0, 8), Cooldown: 2,
-		Desc: "Deal 8 + Aether/2 damage.",
+	{ ID: "void_bolt", Name: "Pierce the Veil", Class: AETHER_RITES, Level: 6, Cost: cost(0, 0, 0, 0, 8), Cooldown: 2,
+		Desc: "Deal 8 + {aether}/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 8+c.mastery(Aether, 2)) } },
 	{ ID: "unmake", Name: "Unmake", Class: AETHER_RITES, Level: 8, Cost: cost(0, 0, 0, 0, 12), Cooldown: 5,
 		Desc: "Turn all gold and stars into skulls.",
 		Cast: func(c Ctx) { c.Board.Convert(Gold, Skull); c.Board.Convert(Star, Skull) } },
 	{ ID: "eclipse", Name: "Eclipse", Class: AETHER_RITES, Level: 10, Cost: cost(0, 6, 0, 0, 10), Cooldown: 7,
-		Desc: "Silence the foe for 2 turns and burn 5 of each of its mana.",
+		Desc: "Silence the foe for 2 turns and burn 5 of each of its reagents.",
 		Cast: func(c Ctx) {
 			c.Foe.AddEffect(Effect{ Silence, 2, 0 })
 			for i := range c.Foe.Mana {
@@ -182,7 +182,7 @@ var Spells = []Spell{
 			}
 		} },
 	{ ID: "oblivion", Name: "Oblivion", Class: AETHER_RITES, Level: 13, Cost: cost(6, 0, 0, 0, 16), Cooldown: 6,
-		Desc: "Deal 25 + Aether damage. You lose 8 HP.", Worth: func(c Ctx) bool { return c.Me.HP > 24 },
+		Desc: "Deal 25 + {aether} damage. You lose 8 HP.", Worth: func(c Ctx) bool { return c.Me.HP > 24 },
 		Cast: func(c Ctx) { hurt(c, 25+c.Me.Stats[Aether]); c.D.Backlash(c.Me, OBLIVION_BACKLASH) } },
 
 	// Monsters
@@ -190,11 +190,11 @@ var Spells = []Spell{
 		Cast: func(c Ctx) { hurt(c, 4) } },
 	{ ID: "venom", Name: "Miasma", Level: 1, Cost: cost(0, 0, 0, 7), Cooldown: 6, Desc: "Poison: 2 per turn for 4 turns.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Poison, 4, 2 }) } },
-	{ ID: "firebreath", Name: "Balefire", Level: 1, Cost: cost(12, 0, 0, 0), Cooldown: 4, Desc: "Deal 8 + Fire/2 damage.",
+	{ ID: "firebreath", Name: "Balefire", Level: 1, Cost: cost(12, 0, 0, 0), Cooldown: 4, Desc: "Deal 8 + Sulphur/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 8+c.mastery(Fire, 2)) } },
 	{ ID: "drain_life", Name: "Drain Life", Level: 1, Cost: cost(0, 8, 4, 0), Cooldown: 4, Desc: "Deal 8 and heal 8.",
 		Cast: func(c Ctx) { hurt(c, 8); c.D.Heal(c.Me, 8) } },
-	{ ID: "mana_burn", Name: "Mana Burn", Level: 1, Cost: cost(0, 6, 4, 0), Cooldown: 5, Desc: "Burn up to 6 of each foe mana.", Worth: foeHasMana,
+	{ ID: "mana_burn", Name: "Curdle", Level: 1, Cost: cost(0, 6, 4, 0), Cooldown: 5, Desc: "Burn up to 6 of each foe reagent.", Worth: foeHasMana,
 		Cast: func(c Ctx) {
 			for i := range c.Foe.Mana {
 				c.Foe.Mana[i] = max(0, c.Foe.Mana[i]-6)
@@ -206,14 +206,14 @@ var Spells = []Spell{
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Stun, 1, 0 }) } },
 	{ ID: "frenzy", Name: "Bloodlust", Level: 1, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true, Desc: "Free. Skull matches deal +3 for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Might, 4, 3 }) } },
-	{ ID: "hollow_hymn", Name: "Hollow Hymn", Level: 1, Cost: cost(0, 4, 0, 0, 8), Cooldown: 5, Desc: "Deal 6 and burn 4 of each foe mana.",
+	{ ID: "hollow_hymn", Name: "Hollow Hymn", Level: 1, Cost: cost(0, 4, 0, 0, 8), Cooldown: 5, Desc: "Deal 6 and burn 4 of each foe reagent.",
 		Cast: func(c Ctx) {
 			hurt(c, 6)
 			for i := range c.Foe.Mana {
 				c.Foe.Mana[i] = max(0, c.Foe.Mana[i]-4)
 			}
 		} },
-	{ ID: "void_lash", Name: "Void Lash", Level: 1, Cost: cost(0, 0, 0, 0, 10), Cooldown: 4, Desc: "Deal 10 + Aether/2 damage.",
+	{ ID: "void_lash", Name: "Veil Lash", Level: 1, Cost: cost(0, 0, 0, 0, 10), Cooldown: 4, Desc: "Deal 10 + {aether}/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 10+c.mastery(Aether, 2)) } },
 	{ ID: "dark_pact", Name: "Dark Pact", Level: 1, Cost: cost(5, 5, 5, 5), Cooldown: 5, Desc: "Turn all gold into skulls.",
 		Cast: func(c Ctx) { c.Board.Convert(Gold, Skull) } },

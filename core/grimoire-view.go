@@ -109,7 +109,7 @@ func (v *QuestView) drawEntry(col *ui.Column, e *rpg.GrimoireEntry) {
 // that was earned; mid-run it also forfeits the meta currency the current act has not banked.
 func (v *QuestView) confirmReturn() {
 	h := v.Hero
-	body := text.T("meta.return_lose", "The run ends. You lose your level, gold, gear, map, quests, academy and its staff, Orrery, standing, allegiance and companions, and start again at the first event, choosing a class.")
+	body := text.T("meta.return_lose", "The run ends. You lose your level, gold, gear, map, quests, academy and its agents, Orrery, standing, allegiance and companions, and start again at the first event, choosing a discipline.")
 	if n := h.Forfeit(); n > 0 {
 		body += "\n\n" + text.Tf("meta.return_forfeit", "This act is not over: the %[1]d %[2]s it has earned are forfeited.", n, metaName())
 	} else if !h.Finished {

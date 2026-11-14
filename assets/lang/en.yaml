@@ -7,41 +7,41 @@
 # Patterns use Go formatting: %s text, %d number, %[2]s to swap argument order.
 
 ui:
-  title_sub: A match-3 adventure
-  title_confirm: Start over? This deletes your current hero for good.
-  keep_hero: Keep my hero
+  title_sub: Reagents, rites and the undercroft
+  title_confirm: "Start over? This deletes your current adept for good."
+  keep_hero: Keep my adept
   continue_hero: "Continue  (Level %d %s)"
   new_game: New game
   how_to_play: How to play
   title_foot: Vertical slice. Some art is placeholder.
   controls: Controls
-  help_controls: Drag a gem, or tap two gems, to swap them. Tap a spell to cast it. On a keyboard, keys 1-6 cast spells and H shows a hint.
+  help_controls: "Drag a reagent, or tap two reagents, to swap them. Tap a rite to work it. On a keyboard, keys 1-6 work rites and H shows a hint."
   back: Back
-  thanks_title: Thanks for playing!
-  thanks_body: That's the end of this slice of the game. Your hero can keep exploring, and more is on the way.
+  thanks_title: Thank you for playing.
+  thanks_body: "That is the end of this slice of the game. Your adept may go on exploring; more is in preparation."
   window_title: The Hollow King
   fps: "FPS %.0f"
   specials: Specials
   help_bolt: "4 in a row makes a Bolt. It clears its whole row or column."
   help_bomb: "An L or T shape makes a Bomb. It blasts the 3x3 around it."
-  help_prism: "5 in a row makes a Prism. Swap it with any gem to clear that color."
+  help_prism: "5 in a row makes a Prism. Swap it with any reagent to clear that kind."
   combos: Combos
   help_combo_intro: "Swap two specials into each other:"
   help_bolt_bolt: "Bolt + Bolt: a full cross."
   help_bolt_bomb: "Bolt + Bomb: a cross three lines wide."
   help_bomb_bomb: "Bomb + Bomb: a 5x5 blast."
-  help_prism_mix: "Prism + Bolt/Bomb: every gem of that color turns into one and goes off."
+  help_prism_mix: "Prism + Bolt/Bomb: every reagent of that kind turns into one and goes off."
   help_prism_prism: "Prism + Prism: clears the board."
   locks_heading: Locks
-  help_lock_body: "Right-click a gem to lock it. Locked gems hang in place: they don't fall, match, or break, and gems fall past them."
-  help_lock_release: "Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Synchro bonus."
+  help_lock_body: "Right-click a reagent to lock it. Locked reagents hang in place: they don't fall, match, or break, and others fall past them."
+  help_lock_release: Build setups around them, then press Space to release every lock at once. Several specials made in one step earn a Sympathy bonus.
   chain_popup: "Chain x%d!"
-  synchro_popup: "Synchro x%d!"
+  synchro_popup: "Sympathy x%d!"
   special_popup: "%s!"
   released: "Released %d"
   no_locks: No locks left
   locked: Locked
-  no_moves: No moves left - shuffling
+  no_moves: No moves left - reshuffling
   badge_skull: "+5"
   badge_wild: "x%d"
   hp: HP
@@ -54,8 +54,8 @@ ui:
   plus_gold: "+%d gold"
   plus_xp: "+%d XP"
   plus_mana: "+%d %s"
-  extra_turn: Extra turn!
-  choose_class: Choose your class
+  extra_turn: Extra turn.
+  choose_class: Choose your discipline
   stat_line: "%s  %d"
   on_the_road: On the road...
   quest_targets: Quest targets
@@ -76,7 +76,7 @@ ui:
   not_yet: Not yet
   level_class: "Level %d %s"
   stats: Stats
-  hero_orrery: "Stats grow on the Orrery, bought with residue from good matches."
+  hero_orrery: Stats grow on the Orrery, bought with residue from good matches.
   open_orrery: Open the Orrery
   orrery: The Orrery
   puzzle_won: Solved!
@@ -93,12 +93,12 @@ ui:
   tools: Tools
   tool_uses: "%s  (%d)"
   no_tools: You know no rite that helps here.
-  pick_gem: Pick the gem to use it on.
+  pick_gem: Pick the reagent to use it on.
   colorless: Colorless
   node_cost: "%d"
   residue: Residue
   residue_pool: "%d"
-  orrery_help: "Fours, fives and cascades leave residue of their color. Nodes cost their region's color; colorless pays for any."
+  orrery_help: "Fours, fives and cascades leave residue of their reagent. Nodes cost their region's reagent; colorless pays for any."
   node_region: "%s region"
   node_region_kind: "%s  ·  %s region"
   node_kind_seat: Seat
@@ -120,7 +120,7 @@ ui:
   card_name: "Card: %s"
   card_name_tap: "Card: %s  (tap for its rule)"
   convert: Convert
-  convert_help: "%d of a color becomes %d colorless."
+  convert_help: "%d of a reagent becomes %d colorless."
   respec: Respec
   respec_help: "Refund the residue your nodes took and go back to your seat."
   respec_button: "Respec  (%d gold)"
@@ -132,13 +132,13 @@ ui:
   equipped: Equipped
   gear_line: "%s  %s"
   empty_slot: "-"
-  new_hero: New hero...
+  new_hero: New adept...
   start_over: Start over?
-  start_over_body: This deletes your current hero for good. The Grimoire and what it holds are kept.
-  delete_hero: Delete hero
+  start_over_body: This deletes your current adept for good. The Grimoire and what it holds are kept.
+  delete_hero: Delete adept
   keep_playing: Keep playing
-  spellbook: Spellbook
-  spellbook_help: "Equipped %d / %d. Click to swap. Your class's first rites come with levels; the rest are on the Orrery."
+  spellbook: Rites
+  spellbook_help: "Prepared %d / %d. Click to swap. Your discipline's first rites come with levels; the rest are on the Orrery."
   spell_locked: "%s  (level %d)"
   spell_locked_orrery: "%s  (level %d, on the Orrery)"
   quests: Quests
@@ -157,7 +157,7 @@ ui:
   need_level: "Level %d"
   buy: "Buy %d"
   academy: Your Academy
-  academy_help: Gold builds facilities and pays your henchmen. Chapters and dues only move when you win duels.
+  academy_help: Gold builds facilities and pays your agents. Chapters and dues only move when you win duels.
   academy_locked: The academy has not been founded yet.
   facilities: Facilities
   facility_level: "Level %d / %d"
@@ -166,9 +166,9 @@ ui:
   built: Built
   build: "Build %d"
   upgrade: "Upgrade %d"
-  henchmen: "Henchmen  %d / %d"
-  hire: "Hire %d"
-  henchman: "Rank %d henchman"
+  henchmen: "Agents  %d / %d"
+  hire: "Retain %d"
+  henchman: "Rank %d agent"
   henchman_gear: "Gear: %s"
   henchman_free: Free
   henchman_posted: "At %s (%s), %d / %d wins"
@@ -184,10 +184,9 @@ ui:
   claim: Claim
   report_pays: "Pays %d gold, %d %s residue."
   chapters: Chapters and ledger
-  chapters_help: "A posted henchman's chapter completes after %d of your wins at that site, and pays residue in its color. Recalling one loses its progress. Sites you hold pay %d dues on each win there."
+  chapters_help: "A posted agent's chapter completes after %d of your wins at that site, and pays residue in its reagent. Recalling one loses its progress. Sites you hold pay %d dues on each win there."
   ledger_none: No site is held yet.
   ledger_row: "%s: %s, %d dues"
-  holder_ours: your academy
   act_title: "Act %d"
   standing: Standing
   standing_line: "%s  %+d"
@@ -203,21 +202,21 @@ ui:
   chapter_done: Chapter complete
   chapter_done_body: "%s\n\nClaim the report at the academy."
   ambush: Ambush!
-  ambush_body: "A %s jumps you on the road into %s."
+  ambush_body: "A %s falls on you on the road into %s."
   fight: Fight
   continue: Continue
-  victory: Victory!
+  victory: Victory.
   victory_body: "%s is defeated. You collect %d gold and %d XP."
   quest_done: "Quest complete: %s"
   quest_done_body: "%s\n\nReward: %d gold, %d XP."
   quest_done_item: " You also gain %s (%s): equip it in the shop."
   defeated: Defeated
-  defeated_body: "You limp away with %d gold and %d XP from the board. Try again when you're ready, nothing else was lost."
-  level_up: "Level %d!"
-  level_up_body: "Your HP rises. Open Spells to check for new rites, and the Orrery to spend residue."
+  defeated_body: "You withdraw with %d gold and %d XP from the board. Try again when you are ready; nothing else was lost."
+  level_up: "Level %d."
+  level_up_body: Your HP rises. Open Rites to check for new ones, and the Orrery to spend residue.
   level_up_short: "Your HP rises. Spend residue in the Orrery."
   quest_heading: Quest
-  quest_start: Choose your class to begin. Your hero is saved automatically.
+  quest_start: Choose your discipline to begin. Your adept is saved automatically.
   hint_duel: "Hint  [H]"
   flee: "Flee (counts as a loss)"
   wins: "Wins  %d    Losses  %d"
@@ -236,26 +235,26 @@ ui:
   hex_lava: Lava
   hex_sea: Sea
   hex_parchment: Parchment
-  hero: Hero
+  hero: Adept
   orrery_nav: Orrery
-  spells: Spells
+  spells: Rites
   quests_count: "Quests  (%d)"
   shop_towns: "Shop (in towns)"
   academy_nav: Academy
   how_duels: How duels work
   duel_1: You and your foe take turns on one board.
-  duel_2: Colored gems fill your mana, for spells.
-  duel_3: Skulls hurt the foe. +5 skulls hit hard and blast the gems around them.
+  duel_2: Matched reagents fill your stores of them, which pay for rites.
+  duel_3: "Skulls hurt the foe. +5 skulls hit hard and blast the reagents around them."
   duel_4: Gold and stars pay out after the duel.
-  duel_5: Match 4 for an extra turn. Match 5 for a turn and a Wild, which completes any mana match and multiplies it.
+  duel_5: "Match 4 for an extra turn. Match 5 for a turn and a Catalyst, which completes any reagent match and multiplies it."
   story_broken: "Story files didn't load (F1 for details): %s"
   story_problems: "Story has %d problems, see F1"
   level_short: "%s  L%d"
   spell_button: "%d %s"
   cooldown: " (%d)"
   effect: "%s(%d) "
-  new_hero_heading: A new hero
-  battle_log: Battle log
+  new_hero_heading: A new adept
+  battle_log: Duel log
   skip: "Skip  >>"
   cast_popup: "%s!"
 
@@ -268,12 +267,12 @@ log:
   map_image_bad: That file is not a PNG or JPEG the map can show.
   map_image_missing: No file chooser. Save a PNG as assets/maps/background.png, then press Image again.
   moves_first: "%s moves first."
-  falls: "%s falls!"
-  extra_turn: "%s earns an extra turn!"
+  falls: "%s falls."
+  extra_turn: "%s earns an extra turn."
   perk: "%s: %s!"
-  casts: "%s casts %s."
-  stunned: "%s is stunned!"
-  mana_drain: "No moves left: half your mana drains away!"
+  casts: "%s works %s."
+  stunned: "%s is stunned."
+  mana_drain: "No moves left: half your reagents drain away."
   gem_read: "Error reading gem types file %s: %v"
   gem_parse: "Error unmarshaling gem types: %v"
   gem_few: "Need at least 3 gem types in %s, found %d; keeping the old ones"
@@ -314,143 +313,147 @@ special:
   bolt: Bolt
   bomb: Bomb
   prism: Prism
-  wild: Wild
+  wild: Catalyst
 
 slot:
-  weapon: Weapon
-  armor: Armor
-  helm: Helm
-  trinket: Trinket
+  weapon: Hand
+  armor: Coat
+  helm: Hat
+  trinket: Charm
 
 stat:
   fire:
-    name: Fire
-    help: "+1 max Fire mana. Every 6 adds +1 Fire per match."
-    now: "+%d max Fire mana, +%d per match"
+    name: Sulphur
+    short: Sulph.
+    help: "+1 max Sulphur. Every 6 adds +1 Sulphur per match."
+    now: "+%d max Sulphur, +%d per match"
   water:
-    name: Water
-    help: "+1 max Water mana. Every 6 adds +1 Water per match."
-    now: "+%d max Water mana, +%d per match"
+    name: Mercury
+    short: Merc.
+    help: "+1 max Mercury. Every 6 adds +1 Mercury per match."
+    now: "+%d max Mercury, +%d per match"
   air:
-    name: Air
-    help: "+1 max Air mana. Every 6 adds +1 Air per match."
-    now: "+%d max Air mana, +%d per match"
+    name: Nitre
+    short: Nitre
+    help: "+1 max Nitre. Every 6 adds +1 Nitre per match."
+    now: "+%d max Nitre, +%d per match"
   earth:
-    name: Earth
-    help: "+1 max Earth mana. Every 6 adds +1 Earth per match."
-    now: "+%d max Earth mana, +%d per match"
+    name: Salt
+    short: Salt
+    help: "+1 max Salt. Every 6 adds +1 Salt per match."
+    now: "+%d max Salt, +%d per match"
   aether:
-    name: Aether
-    help: "+1 max Aether mana. Every 6 adds +1 Aether per match."
-    now: "+%d max Aether mana, +%d per match"
+    name: Aether    # a placeholder name: rename it here only; {aether} in other lines follows it
+    help: "+1 max {aether}. Every 6 adds +1 {aether} per match."
+    now: "+%d max {aether}, +%d per match"
   battle:
-    name: Battle
+    name: Force
     help: Every 4 adds +1 damage per skull match.
     now: "+%d damage per skull match"
   cunning:
-    name: Cunning
+    name: Wit
     help: "+2% gold and XP. Decides who moves first."
     now: "+%d%% gold and XP"
   morale:
-    name: Morale
+    name: Nerve
     help: "+3 max HP. Every 10 blocks 1 skull damage."
     now: "+%d max HP, blocks %d"
 
 effect:
   stunned: Stunned
   poisoned: Poisoned
-  regen: Regen
-  shielded: Shielded
-  might: Might
+  regen: Mending
+  shielded: Warded
+  might: Roused
   silenced: Silenced
 
 class:
   knight:
-    name: Knight
-    desc: Holy armor and steady damage. Forgiving, and hard to kill.
+    name: Exorcist
+    desc: "Salt, bell and absolution. Steady damage; forgiving, and hard to kill."
   warrior:
-    name: Warrior
-    desc: Rage and big skull hits. Wins by ending fights early.
+    name: Pugilist
+    desc: Temper and heavy skull blows. Wins by ending duels early.
   druid:
-    name: Druid
-    desc: Poison, healing and control of the Earth and the board.
+    name: Herbalist
+    desc: Poisons, poultices, and a hold on Salt and on the board.
   wizard:
-    name: Wizard
-    desc: Fragile, with the deepest mana and the strongest spells.
+    name: Theurgist
+    desc: Fragile, with the deepest stores and the strongest rites.
 
 spell:
   smite:
-    name: Smite
-    desc: Deal 6 + Battle/2 damage.
+    name: Rebuke
+    desc: "Deal 6 + Force/2 damage."
   bulwark:
-    name: Bulwark
+    name: Salt Circle
     desc: Free. Block 3 per hit for 4 turns.
   lay_hands:
-    name: Lay on Hands
-    desc: Heal 15 + Morale.
+    name: Absolution
+    desc: "Heal 15 + Nerve."
   shield_bash:
-    name: Shield Bash
+    name: Sanctus Bell
     desc: Deal 5 and stun the foe for 1 turn.
   muster:
-    name: Muster
+    name: Inhumation
     desc: Destroy all skulls on the board.
   judgement:
-    name: Judgement
-    desc: Deal 20 + Battle damage.
+    name: Anathema
+    desc: "Deal 20 + Force damage."
   cleave:
-    name: Cleave
-    desc: Deal 5 + Fire/3 damage.
+    name: Hot Iron
+    desc: "Deal 5 + Sulphur/3 damage."
   rage:
-    name: Rage
+    name: Blood Up
     desc: Free. Skull matches deal +4 for 4 turns.
   war_cry:
-    name: War Cry
-    desc: Turn all Air gems into skulls.
+    name: Garrotte
+    desc: Turn all Nitre into skulls.
   hamstring:
     name: Hamstring
     desc: Deal 4 and stun the foe for 1 turn.
   whirlwind:
-    name: Whirlwind
+    name: Brawl
     desc: Destroy a random row and column.
   execute:
-    name: Execute
+    name: Last Rites
     desc: Deal 10 + a quarter of what the foe has lost.
   thorns:
-    name: Venom Thorns
-    desc: "Poison: 2 + Earth/6 per turn for 5 turns."
+    name: Nightshade
+    desc: "Poison: 2 + Salt/6 per turn for 5 turns."
   renewal:
-    name: Renewal
-    desc: Free. Regen 4 per turn for 5 turns.
+    name: Poultice
+    desc: "Free. Mend 4 per turn for 5 turns."
   overgrowth:
-    name: Overgrowth
-    desc: Turn all Fire gems into Earth gems.
+    name: Smothering
+    desc: Turn all Sulphur into Salt.
   entangle:
-    name: Entangle
+    name: Laudanum
     desc: Stun the foe for 2 turns.
   wild_seed:
-    name: Wild Seed
-    desc: Plant two x2 Wilds on the board.
+    name: Fairy Ring
+    desc: "Plant two x2 Catalysts on the board."
   earthquake:
-    name: Earthquake
+    name: Subsidence
     desc: Destroy the bottom 3 rows.
   firebolt:
-    name: Firebolt
-    desc: Deal 5 + Fire/2 damage.
+    name: Phosphorus
+    desc: "Deal 5 + Sulphur/2 damage."
   mana_siphon:
-    name: Mana Siphon
-    desc: Free. Steal up to 4 of each mana.
+    name: Siphon
+    desc: "Free. Steal up to 4 of each reagent."
   transmute:
     name: Transmute
     desc: Turn all skulls into gold.
   chain_lightning:
-    name: Chain Lightning
-    desc: Destroy all Air gems. Deal 2 per Air gem.
+    name: Galvanic Arc
+    desc: "Destroy all Nitre. Deal 2 per Nitre."
   hush:
-    name: Hush
+    name: Seal of Silence
     desc: Silence the foe for 3 turns.
   meteor:
-    name: Meteor
-    desc: Deal 15 + Fire. Destroy a 5x5 area.
+    name: Fulmination
+    desc: "Deal 15 + Sulphur. Destroy a 5x5 area."
   bite:
     name: Cold Touch
     desc: Deal 4 damage.
@@ -459,13 +462,13 @@ spell:
     desc: "Poison: 2 per turn for 4 turns."
   firebreath:
     name: Balefire
-    desc: Deal 8 + Fire/2 damage.
+    desc: "Deal 8 + Sulphur/2 damage."
   drain_life:
     name: Drain Life
     desc: Deal 8 and heal 8.
   mana_burn:
-    name: Mana Burn
-    desc: Burn up to 6 of each foe mana.
+    name: Curdle
+    desc: "Burn up to 6 of each foe reagent."
   bone_ward:
     name: Bone Ward
     desc: Free. Block 2 per hit for 4 turns.
@@ -480,115 +483,115 @@ spell:
     desc: Turn all gold into skulls.
   hollow_hymn:
     name: Hollow Hymn
-    desc: Deal 6 and burn 4 of each foe mana.
+    desc: "Deal 6 and burn 4 of each foe reagent."
   void_lash:
-    name: Void Lash
-    desc: Deal 10 + Aether/2 damage.
+    name: Veil Lash
+    desc: "Deal 10 + {aether}/2 damage."
   void_bolt:
-    name: Void Bolt
-    desc: Deal 8 + Aether/2 damage.
+    name: Pierce the Veil
+    desc: "Deal 8 + {aether}/2 damage."
   unmake:
     name: Unmake
     desc: Turn all gold and stars into skulls.
   eclipse:
     name: Eclipse
-    desc: Silence the foe for 2 turns and burn 5 of each of its mana.
+    desc: "Silence the foe for 2 turns and burn 5 of each of its reagents."
   oblivion:
     name: Oblivion
-    desc: Deal 25 + Aether damage. You lose 8 HP.
+    desc: "Deal 25 + {aether} damage. You lose 8 HP."
 
 item:
   rusty_blade:
-    name: Rusty Blade
+    name: Rusted Scalpel
     desc: "+1 skull damage"
   oak_staff:
-    name: Oak Staff
+    name: Blackthorn Cane
     desc: "+2 all masteries"
   steel_sword:
-    name: Steel Sword
-    desc: "+2 skull damage, +1 Battle"
+    name: Sword-Stick
+    desc: "+2 skull damage, +1 Force"
   ember_rod:
-    name: Ember Rod
-    desc: "+6 Fire, +5 starting mana"
+    name: Brimstone Rod
+    desc: "+6 Sulphur, +5 starting reagents"
   war_axe:
-    name: War Axe
+    name: Bone Saw
     desc: "+4 skull damage"
   tide_scepter:
-    name: Tide Scepter
-    desc: "+8 Water, +8 Air"
+    name: Quicksilver Rod
+    desc: "+8 Mercury, +8 Nitre"
   kingsbane:
     name: Kingsbane
-    desc: "+6 skull damage, +4 Battle"
+    desc: "+6 skull damage, +4 Force"
   leather:
-    name: Leather Jerkin
+    name: Oilskin Coat
     desc: "+10 HP"
   chain:
-    name: Chain Shirt
+    name: Mail Waistcoat
     desc: "+20 HP, blocks 1"
   mage_robe:
-    name: Mage Robe
+    name: Scholar's Gown
     desc: "+4 all masteries"
   plate:
-    name: Plate Armor
+    name: Steel Corselet
     desc: "+40 HP, blocks 2"
   barrow_mail:
-    name: Barrow Mail
-    desc: "+30 HP, blocks 2, +3 Morale"
+    name: Barrow Coat
+    desc: "+30 HP, blocks 2, +3 Nerve"
   cap:
-    name: Padded Cap
-    desc: "+5 HP, +1 Morale"
+    name: Felt Bowler
+    desc: "+5 HP, +1 Nerve"
   circlet:
-    name: Silver Circlet
+    name: Silver Pince-nez
     desc: "+10% XP"
   great_helm:
-    name: Great Helm
+    name: Iron Topper
     desc: "+25 HP, blocks 1"
   crown:
-    name: Sage's Crown
+    name: Mortarboard
     desc: "+6 all masteries, +15% XP"
   lucky_coin:
-    name: Lucky Coin
+    name: Lucky Sovereign
     desc: "+15% gold"
   mana_charm:
-    name: Mana Charm
-    desc: "+4 starting mana"
+    name: Reagent Phial
+    desc: "+4 starting reagents"
   fox_tail:
-    name: Fox Tail
-    desc: "+6 Cunning"
+    name: Hare's Foot
+    desc: "+6 Wit"
   heart_stone:
-    name: Heartstone
-    desc: "+40 HP, +8 starting mana"
+    name: Bezoar
+    desc: "+40 HP, +8 starting reagents"
 
 perk:
   gold_pct: "+%d%% gold"
   xp_pct: "+%d%% XP"
   hp: "+%d HP"
-  start_mana: "+%d starting mana"
+  start_mana: "+%d starting reagents"
   skull_damage: "+%d skull damage"
   armor: "blocks %d"
-  henchmen: "+%d henchmen"
+  henchmen: "+%d agents"
   chapter_pct: "+%d%% chapter pay"
   free_respec: free Orrery respec
 
 rule:
   strike: "A match of %d or more %s also deals %d damage."
   mend: "A match of %d or more %s also heals you %d."
-  wild_four: "A match of four %s plants a x%d Wild instead of giving an extra turn."
-  skull_paint: "Each skull match turns %d gems beside it into %s."
-  overflow: "Your %s mana holds %d less, and what goes past it spills into %s."
+  wild_four: "A match of four %s plants a x%d Catalyst instead of giving an extra turn."
+  skull_paint: "Each skull match turns %d reagents beside it into %s."
+  overflow: "Your %s store holds %d less, and what goes past it spills into %s."
   strike_trade: "A match of %d or more %s deals %d damage instead of giving an extra turn."
   mend_trade: "A match of %d or more %s heals you %d instead of giving an extra turn."
-  forsake: "Skull matches deal %d more, but %s matches give you no mana."
-  seed_wild: "Duels start with %d x%d Wilds on the board, for either side to take."
+  forsake: "Skull matches deal %d more, but %s matches fill no store."
+  seed_wild: "Duels start with %d x%d Catalysts on the board, for either side to take."
   seed_bomb: "Duels start with %d +5 skulls on the board, for either side to take."
-  hunger: "A match of %d or more %s also drains %d of your %s mana into %s."
+  hunger: "A match of %d or more %s also drains %d of your %s into %s."
   blood_price: "A rite short of %s may take the rest from your HP, %d HP for each."
   backlash: "Each time, you lose %d HP."
 
 academy:
-  report_1: "Rank %d staff kept the books at %s. The site is ours."
+  report_1: "A rank %d agent kept the books at %s. The site is ours."
   report_2: "A rank %d chapter at %s took oaths from the locals."
-  report_3: "Our rank %d hand at %s turned a rival's ledger over to us."
+  report_3: "Our rank %d agent at %s turned a rival's ledger over to us."
 
 # The return, the meta currency and the Grimoire (DESIGN.md 5.8). The currency and the entities
 # have no names yet: currency and entities are placeholders, one line each, to rename later.
@@ -616,10 +619,16 @@ meta:
   buy: "Write it  (%[1]d %[2]s)"
   bought: "Written in the Grimoire: %s. It starts with your next run."
   return_title: Return?
-  return_lose: The run ends. You lose your level, gold, gear, map, quests, academy and its staff, Orrery, standing, allegiance and companions, and start again at the first event, choosing a class.
+  return_lose: The run ends. You lose your level, gold, gear, map, quests, academy and its agents, Orrery, standing, allegiance and companions, and start again at the first event, choosing a discipline.
   return_forfeit: "This act is not over: the %[1]d %[2]s it has earned are forfeited."
   return_nothing: This act has earned no %s yet, so none is forfeited.
   return_keep: "Kept: %[1]d %[2]s banked, the Grimoire, the endings seen, and the count of returns."
   stay: Stay
   return_go: Return
   forfeited: "Forfeited %[1]d %[2]s."
+
+# The societies (DESIGN.md 5.7). Working names, one line each, to rename later.
+society:
+  ours: your society
+  crown: The Royal Society for the Study of Alchemy and Natural Sciences
+  forbidden: The Society of Independent Alchemists
