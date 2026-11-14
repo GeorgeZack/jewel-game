@@ -7,7 +7,7 @@ bessa_talk:
         text: They say you put the Barrow Lord back in his hole. My grandmother would have liked you.
     else:
       - who: bessa
-        text: Goblins running from something. In seventy years I've never seen a goblin run.
+        text: Bogles running from something. In seventy years I've never seen a bogle run.
       - if: ["!flag:bessa_gift"]
         then:
           - who: bessa
@@ -24,14 +24,14 @@ ise_talk:
         do:
           - who: ise
             mood: grim
-            text: The clans. Behind them, something the clans are more afraid of than us.
+            text: The redcaps. Behind them, something the redcaps are more afraid of than us.
       - text: Goodbye.
 
 # A scene can start a duel. win/lose name the scene to continue with; without them a win
 # carries on with the next step and a loss ends the scene.
 spar_talk:
   - who: sergeant
-    text: Want to practice? I'll set a goblin dummy on you. Nothing gets broken but pride.
+    text: Want to practice? I'll set a bogle dummy on you. Nothing gets broken but pride.
     choices:
       - text: Let's spar.
         do:

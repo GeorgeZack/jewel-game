@@ -1,13 +1,13 @@
 - id: rat
-  name: Giant Rat
-  shape: beast
-  color: [140, 110, 90]
+  name: Corpse-Candle
+  shape: ghost
+  color: [150, 225, 200]
   hp_pct: 75
   stats: {cunning: 2, earth: 2}
   growth: {air: 1, battle: 1, cunning: 1, earth: 2, fire: 1, water: 1}
   spells: [bite]
 - id: slime
-  name: Bog Slime
+  name: Tallow Ooze
   shape: blob
   color: [110, 190, 90]
   hp_pct: 85
@@ -15,7 +15,7 @@
   growth: {air: 1, battle: 1, earth: 2, fire: 1, morale: 1, water: 2}
   spells: [venom]
 - id: goblin
-  name: Goblin
+  name: Bogle
   shape: humanoid
   color: [120, 170, 70]
   hp_pct: 85
@@ -23,7 +23,7 @@
   growth: {air: 1, battle: 2, cunning: 2, earth: 1, fire: 2, water: 1}
   spells: [frenzy]
 - id: wolf
-  name: Dire Wolf
+  name: Barghest
   shape: beast
   color: [150, 150, 165]
   hp_pct: 90
@@ -31,7 +31,7 @@
   growth: {air: 2, battle: 2, cunning: 2, earth: 1, fire: 1, morale: 1, water: 1}
   spells: [bite, roar]
 - id: bandit
-  name: Bandit
+  name: Resurrection Man
   shape: humanoid
   color: [170, 120, 80]
   hp_pct: 100
@@ -39,7 +39,7 @@
   growth: {air: 2, battle: 2, cunning: 2, earth: 1, fire: 1, morale: 1, water: 1}
   spells: [bite, dark_pact]
 - id: spider
-  name: Cave Spider
+  name: Shroud Spinner
   shape: beast
   color: [90, 70, 110]
   hp_pct: 90
@@ -47,7 +47,7 @@
   growth: {air: 1, battle: 1, cunning: 1, earth: 3, fire: 1, morale: 1, water: 1}
   spells: [venom, bite]
 - id: skeleton
-  name: Skeleton
+  name: Ossuary Sentinel
   shape: humanoid
   color: [225, 220, 200]
   hp_pct: 95
@@ -55,7 +55,7 @@
   growth: {air: 1, battle: 2, earth: 2, fire: 1, morale: 1, water: 1}
   spells: [bone_ward, bite]
 - id: ghoul
-  name: Ghoul
+  name: Crypt Ghoul
   shape: humanoid
   color: [120, 150, 130]
   hp_pct: 110
@@ -63,7 +63,7 @@
   growth: {air: 1, battle: 2, earth: 1, fire: 1, morale: 2, water: 2}
   spells: [venom, drain_life]
 - id: orc
-  name: Orc Raider
+  name: Redcap
   shape: brute
   color: [95, 130, 70]
   hp_pct: 110
@@ -71,7 +71,7 @@
   growth: {air: 1, battle: 3, cunning: 1, earth: 1, fire: 2, morale: 2}
   spells: [frenzy, roar]
 - id: cultist
-  name: Cultist
+  name: Fallen Adept
   shape: humanoid
   color: [150, 60, 110]
   hp_pct: 90
@@ -79,7 +79,7 @@
   growth: {air: 2, battle: 1, cunning: 1, earth: 1, fire: 2, morale: 1, water: 2}
   spells: [dark_pact, mana_burn, firebreath]
 - id: wraith
-  name: Wraith
+  name: Banshee
   shape: ghost
   color: [150, 170, 235]
   hp_pct: 95
@@ -87,7 +87,7 @@
   growth: {air: 2, battle: 1, cunning: 1, fire: 1, morale: 1, water: 3}
   spells: [drain_life, mana_burn]
 - id: troll
-  name: Stone Troll
+  name: Fomorian
   shape: brute
   color: [120, 125, 135]
   hp_pct: 130
@@ -95,7 +95,7 @@
   growth: {battle: 3, earth: 3, fire: 1, morale: 3, water: 1}
   spells: [bone_ward, roar, bite]
 - id: wyvern
-  name: Wyvern
+  name: Salamander
   shape: dragon
   color: [90, 150, 130]
   hp_pct: 115
@@ -113,7 +113,7 @@
   spells: [drain_life, bone_ward, dark_pact]
   card: barrow_hush
 - id: warchief
-  name: Redtusk Warchief
+  name: Redcap Chieftain
   boss: true
   shape: brute
   color: [200, 80, 60]

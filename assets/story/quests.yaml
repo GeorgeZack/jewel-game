@@ -11,8 +11,8 @@
   opens: [stonebridge, greyfen]
   offer_scene: goblins_offer
   done_scene: goblins_done
-  intro: Goblins burned the Harlan farm last night. They've never come this far south. Drive them out of Mossgate before they try the town.
-  outro: The goblins weren't raiding. They were running, from something in the north.
+  intro: Bogles burned the Harlan farm last night. They've never come this far south. Drive them out of Mossgate before they try the town.
+  outro: The bogles weren't raiding. They were running, from something in the north.
 - id: toll
   title: The Toll Road
   main: true
@@ -25,8 +25,8 @@
   gold: 70
   xp: 80
   opens: [barrow]
-  intro: Refugees say the marsh road is closed by bandits. The mayor wants it open, and pays. Find them in Greyfen.
-  outro: 'A dying bandit tells you what they fled: the dead of the Old Barrow have started to walk.'
+  intro: Refugees say the marsh road is closed by resurrection men, digging up what the marsh buried. The mayor wants it open, and pays. Find them in Greyfen.
+  outro: 'A dying resurrection man tells you what they fled: the dead of the Old Barrow have started to walk.'
 - id: barrow_lord
   title: What Walks the Barrow
   main: true
@@ -54,8 +54,8 @@
   gold: 300
   xp: 350
   opens: [silverlake, ironpeak]
-  intro: The Redtusk clans mass on the road, driven from their mountains. Captain Ise will hold the wall if you break their Warchief.
-  outro: The Warchief laughs through his blood. 'We were not attacking. We were leaving. You should too.'
+  intro: The redcap host masses on the road, driven from its hills. Captain Ise will hold the wall if you break their Chieftain.
+  outro: The Chieftain laughs through his blood. 'We were not attacking. We were leaving. You should too.'
 - id: archive
   done_scene: archive_done
   title: The Lake Archive
@@ -70,7 +70,7 @@
   xp: 500
   item: heart_stone
   opens: [sunken]
-  intro: The archivists of Silverlake know the Hollow King's story but their copies are held by the pass-monks of Ironpeak, and trolls have taken the road. Clear it.
+  intro: The archivists of Silverlake know the Hollow King's story but their copies are held by the pass-monks of Ironpeak, and Fomorians have taken the road. Clear it.
   outro: A king traded his heart to outlast death, and it worked. His heart still beats, hidden in the Sunken Temple.
 - id: priest
   title: The Drowned Choir
@@ -124,7 +124,7 @@
   count: 2
   gold: 35
   xp: 40
-  intro: Rats the size of dogs are coming up from the woods and into the grain cellars. A few coins if you thin them out.
+  intro: Corpse-candles are drifting up from the woods and into the grain cellars, and nobody will go down for flour. A few coins if you snuff them out.
   outro: The grain is safe, and the baker is almost grateful.
 - id: spiders
   title: Web Silk
@@ -136,10 +136,10 @@
   count: 3
   gold: 120
   xp: 120
-  intro: The weavers will pay well for cave spider silk, as long as you're the one fetching it.
+  intro: The weavers will pay well for shroud spinner silk, as long as you're the one fetching it.
   outro: You smell terrible but you are rich.
 - id: wolves
-  title: Wolves at the Wall
+  title: Black Dogs at the Wall
   giver: highwatch
   requires: [quest:barrow_lord]
   at: redtusk
@@ -148,7 +148,7 @@
   count: 3
   gold: 260
   xp: 300
-  intro: The dire wolves have followed the clans down. They're taking sentries off the wall.
+  intro: The barghests have followed the redcaps down. They're taking sentries off the wall.
   outro: The sentries sleep a little better. The captain buys you a drink, and only one.
 - id: wyverns
   title: Eggs of Ironpeak
@@ -160,7 +160,7 @@
   count: 2
   gold: 480
   xp: 520
-  intro: A naturalist wants the nests studied. The parents disagree.
+  intro: A naturalist wants the salamander nests studied. The parents disagree.
   outro: The naturalist is thrilled and pays double for the scars.
 - id: cult
   title: Those Who Kneel

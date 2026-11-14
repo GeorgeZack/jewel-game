@@ -7,9 +7,9 @@ opening:
   - text: You wake to smoke. The town still stands, but someone is hammering on your door.
   - who: mayor
     mood: worried
-    text: You're awake. Good. The Harlan farm burned last night, and there were goblin tracks all around it.
+    text: You're awake. Good. The Harlan farm burned last night, and there were bogle tracks all around it.
   - who: hero
-    text: Goblins? This far south?
+    text: Bogles? This far south?
   - who: mayor
     text: That's what worries me. Come and find me in the square. I'll have work for you.
   - set_flag: met_mayor

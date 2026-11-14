@@ -186,11 +186,11 @@ var Spells = []Spell{
 		Cast: func(c Ctx) { hurt(c, 25+c.Me.Stats[Aether]); c.D.Backlash(c.Me, OBLIVION_BACKLASH) } },
 
 	// Monsters
-	{ ID: "bite", Name: "Bite", Level: 1, Cost: cost(0, 0, 0, 5), Cooldown: 3, Desc: "Deal 4 damage.",
+	{ ID: "bite", Name: "Cold Touch", Level: 1, Cost: cost(0, 0, 0, 5), Cooldown: 3, Desc: "Deal 4 damage.",
 		Cast: func(c Ctx) { hurt(c, 4) } },
-	{ ID: "venom", Name: "Venom", Level: 1, Cost: cost(0, 0, 0, 7), Cooldown: 6, Desc: "Poison: 2 per turn for 4 turns.",
+	{ ID: "venom", Name: "Miasma", Level: 1, Cost: cost(0, 0, 0, 7), Cooldown: 6, Desc: "Poison: 2 per turn for 4 turns.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Poison, 4, 2 }) } },
-	{ ID: "firebreath", Name: "Fire Breath", Level: 1, Cost: cost(12, 0, 0, 0), Cooldown: 4, Desc: "Deal 8 + Fire/2 damage.",
+	{ ID: "firebreath", Name: "Balefire", Level: 1, Cost: cost(12, 0, 0, 0), Cooldown: 4, Desc: "Deal 8 + Fire/2 damage.",
 		Cast: func(c Ctx) { hurt(c, 8+c.mastery(Fire, 2)) } },
 	{ ID: "drain_life", Name: "Drain Life", Level: 1, Cost: cost(0, 8, 4, 0), Cooldown: 4, Desc: "Deal 8 and heal 8.",
 		Cast: func(c Ctx) { hurt(c, 8); c.D.Heal(c.Me, 8) } },
@@ -202,9 +202,9 @@ var Spells = []Spell{
 		} },
 	{ ID: "bone_ward", Name: "Bone Ward", Level: 1, Cost: cost(0, 0, 0, 8), Cooldown: 7, Free: true, Desc: "Free. Block 2 per hit for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Shield, 4, 2 }) } },
-	{ ID: "roar", Name: "Terrible Roar", Level: 1, Cost: cost(6, 0, 8, 0), Cooldown: 7, Desc: "Stun the foe for 1 turn.",
+	{ ID: "roar", Name: "Keening", Level: 1, Cost: cost(6, 0, 8, 0), Cooldown: 7, Desc: "Stun the foe for 1 turn.",
 		Cast: func(c Ctx) { c.Foe.AddEffect(Effect{ Stun, 1, 0 }) } },
-	{ ID: "frenzy", Name: "Frenzy", Level: 1, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true, Desc: "Free. Skull matches deal +3 for 4 turns.",
+	{ ID: "frenzy", Name: "Bloodlust", Level: 1, Cost: cost(8, 0, 0, 0), Cooldown: 6, Free: true, Desc: "Free. Skull matches deal +3 for 4 turns.",
 		Cast: func(c Ctx) { c.Me.AddEffect(Effect{ Might, 4, 3 }) } },
 	{ ID: "hollow_hymn", Name: "Hollow Hymn", Level: 1, Cost: cost(0, 4, 0, 0, 8), Cooldown: 5, Desc: "Deal 6 and burn 4 of each foe mana.",
 		Cast: func(c Ctx) {
