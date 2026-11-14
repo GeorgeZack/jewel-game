@@ -117,9 +117,9 @@ func (c *GameController) drawPhoneNav(w float32) float32 {
 	here := rpg.LocationByID(h.Location)
 	items := []item{
 		{ScreenWorld, text.T("ui.map_short", "Map"), true},
-		{ScreenHero, text.T("ui.hero", "Hero"), true},
+		{ScreenHero, text.T("ui.hero", "Adept"), true},
 		{ScreenOrrery, text.T("ui.orrery_nav", "Orrery"), true},
-		{ScreenSpells, text.T("ui.spells", "Spells"), true},
+		{ScreenSpells, text.T("ui.spells", "Rites"), true},
 		{ScreenQuests, text.T("ui.quests_short", "Quests"), true},
 		{ScreenShop, text.T("ui.shop", "Shop"), here.Town},
 		{ScreenAcademy, text.T("ui.academy_short", "Academy"), h.AcademyOpen()},
@@ -211,7 +211,7 @@ func (v *QuestView) drawPhoneEnemy(r rl.Rectangle) {
 	for i, s := range e.Spells {
 		v.drawFoeMove(&col, e, s, i)
 	}
-	col.Heading(text.T("ui.battle_log", "Battle log"))
+	col.Heading(text.T("ui.battle_log", "Duel log"))
 	for _, line := range v.Duel.Log {
 		col.Paragraph(line.Text(), 13, ui.DimText)
 	}

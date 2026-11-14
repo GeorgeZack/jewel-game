@@ -3,16 +3,16 @@
 # Every number is a placeholder.
 
 - id: standard
-  name: Standard duel
-  desc: The usual board, with gems falling down.
+  name: Common duel
+  desc: The usual board, with reagents settling downward.
 
 - id: sideways
   name: Sideways
   gravity: left
-  desc: Gems fall to the left, and new ones arrive from the right.
+  desc: Reagents fall to the left, and new ones arrive from the right.
 
 - id: great_hall
-  name: Great Hall
+  name: Lecture Theatre
   width: 10
   height: 10
   desc: The largest board, ten by ten.
@@ -20,23 +20,23 @@
 # Boss cards: each changes one rule. Early bosses get the gentler ones.
 
 - id: barrow_hush
-  name: Barrow Hush
+  name: Grave Hush
   skull_pct: -25
   mana_pct: 50
-  desc: Skulls hit a quarter softer and mana matches pay half again, so spells carry this fight.
+  desc: Skulls hit a quarter softer and reagent matches pay half again, so rites carry this duel.
 
 - id: war_drums
-  name: War Drums
+  name: Black Powder
   overcharge: true
   desc: Overcharged board, so a +5 skull blasts a five by five square.
 
 - id: updraft
-  name: Updraft
+  name: Levitation
   gravity: up
-  desc: Gems fall upward, and new ones arrive from below.
+  desc: Reagents fall upward, and new ones arrive from below.
 
 - id: hollow_halls
-  name: Hollow Halls
+  name: Long Gallery
   width: 10
   height: 8
   desc: A wide ten by eight board, where moves are plenty and cascades run long.

@@ -198,7 +198,7 @@ func (s *SceneRunner) exec(st rpg.Step) {
 		s.v.route = nil
 	}
 	if a.Levels > 0 {
-		s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
+		s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d.", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
 	}
 	if a.Ending != "" || a.Banked {
 		s.v.save()	// the profile has the ending, or the banked meta currency, now
@@ -454,7 +454,7 @@ func (s *SceneRunner) speaker(who string) (string, rl.Color) {
 	}
 	if who == "hero" {
 		if h := s.v.Hero; h != nil {
-			return h.Class, foeColor(rpg.ClassByName(h.Class).Color)
+			return rpg.ClassByName(h.Class).Label(), foeColor(rpg.ClassByName(h.Class).Color)
 		}
 		return "You", ui.Accent
 	}

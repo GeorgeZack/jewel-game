@@ -63,7 +63,7 @@ func (v *QuestView) menuContent(r rl.Rectangle, gap float32) (*ui.Column, func()
 
 func (v *QuestView) drawClassPicker(r rl.Rectangle) {
 	ui.Panel(r)
-	ui.TextCenteredFit(text.T("ui.choose_class", "Choose your class"), r.X+r.Width/2, r.Y+30, 42, r.Width-24, ui.Accent)
+	ui.TextCenteredFit(text.T("ui.choose_class", "Choose your discipline"), r.X+r.Width/2, r.Y+30, 42, r.Width-24, ui.Accent)
 	grid := rl.Rectangle{X: r.X + 30, Y: r.Y + 100, Width: r.Width - 60, Height: r.Height - 130}
 	w, h := (grid.Width-20)/2, (grid.Height-20)/2
 	for i := range rpg.Classes {
@@ -311,7 +311,7 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	if narrow() {
 		// The New hero button would cover the title, so give it its own row.
 		ui.TextFit(class, title.X, title.Y, 38, title.Width, ui.Accent)
-		if ui.Button(col.Next(38), text.T("ui.new_hero", "New hero..."), false) {
+		if ui.Button(col.Next(38), text.T("ui.new_hero", "New adept..."), false) {
 			v.confirmNewHero()
 		}
 	} else {
@@ -343,7 +343,7 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 	}
 	v.drawStanding(col)
 	v.drawCompanions(col)
-	if !narrow() && ui.Button(rl.Rectangle{X: r.X + r.Width - 210, Y: r.Y + 24, Width: 180, Height: 38}, text.T("ui.new_hero", "New hero..."), false) {
+	if !narrow() && ui.Button(rl.Rectangle{X: r.X + r.Width - 210, Y: r.Y + 24, Width: 180, Height: 38}, text.T("ui.new_hero", "New adept..."), false) {
 		v.confirmNewHero()
 	}
 }
@@ -351,9 +351,9 @@ func (v *QuestView) drawHeroSheet(r rl.Rectangle) {
 func (v *QuestView) confirmNewHero() {
 	v.show(Modal{
 		Title: text.T("ui.start_over", "Start over?"),
-		Body:  text.T("ui.start_over_body", "This deletes your current hero for good. The Grimoire and what it holds are kept."),
+		Body:  text.T("ui.start_over_body", "This deletes your current adept for good. The Grimoire and what it holds are kept."),
 		Buttons: []ModalButton{
-			{text.T("ui.delete_hero", "Delete hero"), func() {
+			{text.T("ui.delete_hero", "Delete adept"), func() {
 				if err := rpg.DeleteRun(rpg.SavePath()); err != nil {
 					ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
 				}
@@ -372,8 +372,8 @@ func (v *QuestView) drawSpellbook(r rl.Rectangle) {
 	col, end := v.menuContent(r, 6)
 	defer end()
 	title := col.Next(44)
-	ui.Text(text.T("ui.spellbook", "Spellbook"), title.X, title.Y, 38, ui.Accent)
-	col.Paragraph(text.Tf("ui.spellbook_help", "Equipped %d / %d. Click to swap. Your class's first rites come with levels; the rest are on the Orrery.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
+	ui.Text(text.T("ui.spellbook", "Rites"), title.X, title.Y, 38, ui.Accent)
+	col.Paragraph(text.Tf("ui.spellbook_help", "Prepared %d / %d. Click to swap. Your discipline's first rites come with levels; the rest are on the Orrery.", len(h.Spells), rpg.MAX_SPELLS), 18, ui.TextColor)
 	col.Y += 8
 	for i := range rpg.Spells {
 		s := &rpg.Spells[i]

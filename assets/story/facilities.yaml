@@ -2,15 +2,15 @@
 # Costs and perks are placeholders for the prototype. Each level adds its perks to the ones below.
 
 - id: quarters
-  name: Staff Quarters
-  desc: Room for more henchmen.
+  name: Agents' Lodgings
+  desc: Room for more agents.
   requires: [flag:academy_founded]
   levels:
     - { cost: 120, henchmen: 1 }
     - { cost: 300, henchmen: 1 }
 
 - id: treasury
-  name: Treasury
+  name: Counting House
   desc: More gold from every duel.
   requires: [quest:toll]
   levels:
@@ -19,7 +19,7 @@
     - { cost: 600, gold_pct: 10 }
 
 - id: library
-  name: Library
+  name: Reading Room
   desc: More XP from every duel.
   requires: [quest:barrow_lord]
   levels:
@@ -28,15 +28,15 @@
     - { cost: 800, xp_pct: 10 }
 
 - id: infirmary
-  name: Infirmary
-  desc: More HP and starting mana.
+  name: Dispensary
+  desc: More HP and starting reagents.
   requires: [quest:warchief]
   levels:
     - { cost: 250, hp: 15 }
     - { cost: 500, hp: 15, start_mana: 2 }
 
 - id: war_room
-  name: War Room
+  name: Map Room
   desc: Harder hits; chapters pay more.
   requires: [quest:archive]
   levels:

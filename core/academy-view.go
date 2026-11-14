@@ -33,7 +33,7 @@ func (v *QuestView) drawAcademy(r rl.Rectangle) {
 		col.Paragraph(text.T("ui.academy_locked", "The academy has not been founded yet."), 18, ui.DimText)
 		return
 	}
-	col.Paragraph(text.T("ui.academy_help", "Gold builds facilities and pays your henchmen. Chapters and dues only move when you win duels."), 18, ui.TextColor)
+	col.Paragraph(text.T("ui.academy_help", "Gold builds facilities and pays your agents. Chapters and dues only move when you win duels."), 18, ui.TextColor)
 	v.drawFacilities(col)
 	v.drawHenchmen(col)
 	v.drawLedger(col)
@@ -116,11 +116,11 @@ func (v *QuestView) drawFacilities(col *ui.Column) {
 
 func (v *QuestView) drawHenchmen(col *ui.Column) {
 	h := v.Hero
-	col.Heading(text.Tf("ui.henchmen", "Henchmen  %d / %d", len(h.Henchmen), h.HenchmenCap()))
+	col.Heading(text.Tf("ui.henchmen", "Agents  %d / %d", len(h.Henchmen), h.HenchmenCap()))
 	if len(h.Henchmen) < h.HenchmenCap() {
 		btn := col.Next(36)
 		btn.Width = min(btn.Width, 200)
-		if costButton(btn, text.Tf("ui.hire", "Hire %d", rpg.HIRE_GOLD), rpg.HIRE_GOLD, h.Gold) {
+		if costButton(btn, text.Tf("ui.hire", "Retain %d", rpg.HIRE_GOLD), rpg.HIRE_GOLD, h.Gold) {
 			h.Hire()
 			v.save()
 		}
@@ -131,7 +131,7 @@ func (v *QuestView) drawHenchmen(col *ui.Column) {
 		box := col.Next(132)
 		plaque(box, false)
 		in := rl.Rectangle{X: box.X + 20, Y: box.Y + 12, Width: box.Width - 40, Height: box.Height - 24}
-		ui.TextFit(text.Tf("ui.henchman", "Rank %d henchman", m.Rank), in.X, in.Y, 22, in.Width, ui.TextColor)
+		ui.TextFit(text.Tf("ui.henchman", "Rank %d agent", m.Rank), in.X, in.Y, 22, in.Width, ui.TextColor)
 		status := text.T("ui.henchman_free", "Free")
 		switch {
 		case m.Report != nil:
@@ -219,7 +219,7 @@ func (v *QuestView) postSites() []*rpg.Location {
 func (v *QuestView) drawLedger(col *ui.Column) {
 	h := v.Hero
 	col.Heading(text.T("ui.chapters", "Chapters and ledger"))
-	col.Paragraph(text.Tf("ui.chapters_help", "A posted henchman's chapter completes after %d of your wins at that site, and pays residue in its color. Recalling one loses its progress. Sites you hold pay %d dues on each win there.", rpg.CHAPTER_WINS, rpg.DUES_PER_WIN), 16, ui.DimText)
+	col.Paragraph(text.Tf("ui.chapters_help", "A posted agent's chapter completes after %d of your wins at that site, and pays residue in its reagent. Recalling one loses its progress. Sites you hold pay %d dues on each win there.", rpg.CHAPTER_WINS, rpg.DUES_PER_WIN), 16, ui.DimText)
 	if sites := v.postSites(); len(sites) > 0 {
 		v.postAt = (v.postAt%len(sites) + len(sites)) % len(sites)
 		site := sites[v.postAt]
@@ -235,7 +235,7 @@ func (v *QuestView) drawLedger(col *ui.Column) {
 		}
 		held = true
 		if holder == rpg.OUR_SOCIETY {
-			holder = text.T("ui.holder_ours", "your academy")
+			holder = text.T("society.ours", "your society")
 		} else {
 			holder = rpg.SocietyName(holder)
 		}
