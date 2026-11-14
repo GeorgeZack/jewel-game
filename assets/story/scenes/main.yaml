@@ -26,6 +26,7 @@ goblins_offer:
           - accept_quest: goblins
           - who: mayor
             text: Mossgate is north along the road. Click it on the map.
+            if: ["!tutorial:done"]   # a hint for the profile's first run only
       - text: Not yet.
         do:
           - who: mayor
@@ -39,6 +40,7 @@ goblins_done:
     text: The old school on the hill has stood empty for years. Take it. You'll need people, and somewhere to keep them.
   - set_flag: academy_founded
   - text: The academy is yours. Open it from the menu.
+    if: ["!tutorial:done"]
 
 # Brings Aether into the run (a placeholder until its story is written). Plays after "The Lake
 # Archive" (quests.yaml: done_scene), so the last third of the slice is fought with it.
@@ -55,10 +57,10 @@ stonebridge_arrival:
   - who: tollkeeper
     text: Half the marsh villages, and more every day. Nobody will say what they're running from.
 
-# The final quest's done_scene. "end: true" marks the story as beaten.
+# The final quest's done_scene. "ending:" marks the story as beaten, and records the ending on the profile.
 king_done:
   - fade_out: 1.0
   - title: The End
     subtitle: Your hero can keep playing; the roads are still full of monsters.
-  - end: true
+  - ending: king_falls
   - fade_in: 1.0

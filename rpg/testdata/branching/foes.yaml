@@ -1,4 +1,4 @@
 - { id: rat, name: Rat, stats: { battle: 1 } }
 - { id: crown_guard, name: Crown Guard, stats: { battle: 2 } }
 - { id: cutpurse, name: Cutpurse, stats: { cunning: 2 } }
-- { id: engine, name: The Engine, card: tight, stats: { fire: 3 } }
+- { id: engine, name: The Engine, boss: true, card: tight, stats: { fire: 3 } }

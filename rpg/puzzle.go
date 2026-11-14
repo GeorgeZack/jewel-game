@@ -426,6 +426,7 @@ func (r *PuzzleRun) Finish(h *Hero) {
 		return
 	}
 	h.Apply(&Step{ SetFlag: r.Route.Flag, Standing: r.Route.Standing })
+	h.earn("route:"+r.P.ID+"/"+r.Route.ID, Grimoire.Pay.Route)
 }
 
 func checkPuzzles() []string {

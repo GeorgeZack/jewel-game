@@ -49,3 +49,16 @@ claim_done:
       - ending: crown_ending
     else:
       - ending: free_ending
+
+tutorial:
+  - text: This is how a board works.
+  - if: ["tutorial:done"]
+    then:
+      - set_flag: tutorial_replayed
+
+the_return:
+  - who: entities
+    text: Again.
+  - if: ["lean:take"]
+    then:
+      - set_flag: leaning_take

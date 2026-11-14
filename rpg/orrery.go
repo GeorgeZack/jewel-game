@@ -205,6 +205,11 @@ func (h *Hero) takeSeat() {
 	if seat := SeatOf(h.Class); seat != nil {
 		h.Nodes = append(h.Nodes, seat.ID)
 	}
+	for _, id := range h.Gifts {
+		if !h.Owns(id) {
+			h.Nodes = append(h.Nodes, id)
+		}
+	}
 }
 
 func (h *Hero) Owns(node string) bool { return slices.Contains(h.Nodes, node) }

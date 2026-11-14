@@ -3,6 +3,9 @@
 title: Fixture
 start: town
 opening: opening
+first_event: opening
+tutorial: tutorial
+return_scene: the_return
 final_quest: claim
 acts:
   - { title: Act I, subtitle: The road }

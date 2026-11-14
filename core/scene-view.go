@@ -200,8 +200,8 @@ func (s *SceneRunner) exec(st rpg.Step) {
 	if a.Levels > 0 {
 		s.v.show(Modal{ Title: text.Tf("ui.level_up", "Level %d!", h.Level), Body: text.T("ui.level_up_short", "Your HP rises. Spend residue in the Orrery.") })
 	}
-	if a.Ending != "" {
-		s.v.save()	// the profile has the ending now
+	if a.Ending != "" || a.Banked {
+		s.v.save()	// the profile has the ending, or the banked meta currency, now
 	}
 
 	// presentation
@@ -457,6 +457,9 @@ func (s *SceneRunner) speaker(who string) (string, rl.Color) {
 			return h.Class, foeColor(rpg.ClassByName(h.Class).Color)
 		}
 		return "You", ui.Accent
+	}
+	if who == rpg.ENTITIES {
+		return text.T("meta.entities", "The Others"), rl.Color{R: 150, G: 150, B: 165, A: 255}
 	}
 	if c := rpg.CharacterByID(who); c != nil {
 		return c.Name, foeColor(c.Color)

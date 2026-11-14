@@ -100,9 +100,15 @@ func playScene(t *testing.T, h *Hero, id, allegiance string) {
 // allegiance belongs to another branch and is passed over.
 func finishMainQuests(t *testing.T, allegiance string) *Hero {
 	t.Helper()
-	h := NewHero("Wizard")
-	if Story.Opening != "" {
-		playScene(t, h, Story.Opening, allegiance)
+	return finishMainQuestsAs(t, NewHero("Wizard"), allegiance)
+}
+
+// finishMainQuestsAs is finishMainQuests for a hero already made, as a run starts: its scenes
+// (RunScenes) play first.
+func finishMainQuestsAs(t *testing.T, h *Hero, allegiance string) *Hero {
+	t.Helper()
+	for _, id := range RunScenes() {
+		playScene(t, h, id, allegiance)
 	}
 	for i := range Quests {
 		q := &Quests[i]
