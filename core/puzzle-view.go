@@ -139,7 +139,7 @@ func (v *QuestView) drawPuzzleTools(col *ui.Column) {
 		col.Paragraph(text.T("ui.no_tools", "You know no rite that helps here."), 15, ui.DimText)
 	}
 	if v.puzzleTool != "" {
-		col.Paragraph(text.T("ui.pick_gem", "Pick the gem to use it on."), 16, ui.Accent)
+		col.Paragraph(text.T("ui.pick_gem", "Pick the reagent to use it on."), 16, ui.Accent)
 	}
 	if ui.ButtonIf(col.Next(34), text.T("ui.leave", "Leave"), !v.TM.Busy()) {
 		v.leavePuzzle()

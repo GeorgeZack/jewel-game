@@ -41,7 +41,7 @@ func TestManaDrainHalvesBothSides(t *testing.T) {
 }
 
 func TestStatBonusUsesTheCurrentValue(t *testing.T) {
-	if got := StatBonus(Fire, 8); got != "+8 max Fire mana, +1 per match" {
+	if got := StatBonus(Fire, 8); got != "+8 max Fire, +1 per match" {
 		t.Fatalf("fire: %s", got)
 	}
 	if got := StatBonus(Battle, 9); got != "+2 damage per skull match" {

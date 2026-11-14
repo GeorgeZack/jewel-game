@@ -269,7 +269,7 @@ func (tm *TileManager) finishResolve() {
 			tm.OnShuffle()
 		}
 		r := tm.Rect()
-		tm.Effects.Popup(text.T("ui.no_moves", "No moves left - shuffling"), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 34, ui.Accent)
+		tm.Effects.Popup(text.T("ui.no_moves", "No moves left - reshuffling"), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 34, ui.Accent)
 		tm.Phase = PhaseFalling
 		return
 	}
@@ -342,7 +342,7 @@ func (tm *TileManager) showStep(res *board.StepResult) {
 		}
 	}
 	if len(res.Created) >= 2 {
-		tm.Effects.Popup(text.Tf("ui.synchro_popup", "Synchro x%d!", len(res.Created)), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 44, rl.SkyBlue)
+		tm.Effects.Popup(text.Tf("ui.synchro_popup", "Sympathy x%d!", len(res.Created)), rl.Vector2{X: r.X + r.Width/2, Y: r.Y + r.Height/2}, 44, rl.SkyBlue)
 	}
 }
 

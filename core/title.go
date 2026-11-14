@@ -36,7 +36,7 @@ func (c *GameController) drawTitle(w, h float32) {
 	head := col.Next(64)
 	ui.TextCenteredFit(rpg.Story.Title, head.X+head.Width/2, head.Y, 56, head.Width, ui.Accent)
 	sub := col.Next(28)
-	ui.TextCentered(text.T("ui.title_sub", "A match-3 adventure"), sub.X+sub.Width/2, sub.Y, 22, ui.DimText)
+	ui.TextCentered(text.T("ui.title_sub", "Reagents, rites and the undercroft"), sub.X+sub.Width/2, sub.Y, 22, ui.DimText)
 	col.Y += 12
 	col.Paragraph(rpg.Story.Blurb, 20, ui.TextColor)
 	col.Y += 18
@@ -52,12 +52,12 @@ func (c *GameController) drawTitle(w, h float32) {
 	}
 	switch {
 	case t.confirm:
-		col.Paragraph(text.T("ui.title_confirm", "Start over? This deletes your current hero for good."), 20, ui.Accent)
+		col.Paragraph(text.T("ui.title_confirm", "Start over? This deletes your current adept for good."), 20, ui.Accent)
 		// Keep comes first, where New game was, so a double click can't delete the hero
-		if button(text.T("ui.keep_hero", "Keep my hero")) {
+		if button(text.T("ui.keep_hero", "Keep my adept")) {
 			t.confirm = false
 		}
-		if button(text.T("ui.delete_hero", "Delete hero")) {
+		if button(text.T("ui.delete_hero", "Delete adept")) {
 			if err := rpg.DeleteRun(rpg.SavePath()); err != nil {
 				ui.AddMessage("%s", text.Tf("log.save_delete", "Could not delete save: %v", err))
 			}
@@ -102,23 +102,23 @@ func (c *GameController) drawHowToPlay(col *ui.Column, box rl.Rectangle) {
 	}
 	col.Heading(text.T("ui.how_duels", "How duels work"))
 	para(text.T("ui.duel_1", "You and your foe take turns on one board."))
-	para(text.T("ui.duel_2", "Colored gems fill your mana, for spells."))
-	para(text.T("ui.duel_3", "Skulls hurt the foe. +5 skulls hit hard and blast the gems around them."))
+	para(text.T("ui.duel_2", "Matched reagents fill your stores of them, which pay for rites."))
+	para(text.T("ui.duel_3", "Skulls hurt the foe. +5 skulls hit hard and blast the reagents around them."))
 	para(text.T("ui.duel_4", "Gold and stars pay out after the duel."))
-	para(text.T("ui.duel_5", "Match 4 for an extra turn. Match 5 for a turn and a Wild, which completes any mana match and multiplies it."))
+	para(text.T("ui.duel_5", "Match 4 for an extra turn. Match 5 for a turn and a Catalyst, which completes any reagent match and multiplies it."))
 	col.Heading(text.T("ui.specials", "Specials"))
 	para(text.T("ui.help_bolt", "4 in a row makes a Bolt. It clears its whole row or column."))
 	para(text.T("ui.help_bomb", "An L or T shape makes a Bomb. It blasts the 3x3 around it."))
-	para(text.T("ui.help_prism", "5 in a row makes a Prism. Swap it with any gem to clear that color."))
+	para(text.T("ui.help_prism", "5 in a row makes a Prism. Swap it with any reagent to clear that kind."))
 	col.Heading(text.T("ui.combos", "Combos"))
 	para(text.T("ui.help_combo_intro", "Swap two specials into each other:"))
 	para(text.T("ui.help_bolt_bolt", "Bolt + Bolt: a full cross."))
 	para(text.T("ui.help_bolt_bomb", "Bolt + Bomb: a cross three lines wide."))
 	para(text.T("ui.help_bomb_bomb", "Bomb + Bomb: a 5x5 blast."))
-	para(text.T("ui.help_prism_mix", "Prism + Bolt/Bomb: every gem of that color turns into one and goes off."))
+	para(text.T("ui.help_prism_mix", "Prism + Bolt/Bomb: every reagent of that kind turns into one and goes off."))
 	para(text.T("ui.help_prism_prism", "Prism + Prism: clears the board."))
 	col.Heading(text.T("ui.controls", "Controls"))
-	para(text.T("ui.help_controls", "Drag a gem, or tap two gems, to swap them. Tap a spell to cast it. On a keyboard, keys 1-6 cast spells and H shows a hint."))
+	para(text.T("ui.help_controls", "Drag a reagent, or tap two reagents, to swap them. Tap a rite to work it. On a keyboard, keys 1-6 work rites and H shows a hint."))
 	c.helpScroll.End(col.Y)
 	if ui.Button(back, text.T("ui.back", "Back"), false) || rl.IsKeyPressed(rl.KeyEscape) {
 		c.title.help = false

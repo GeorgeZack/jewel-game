@@ -83,7 +83,7 @@ func (v *QuestView) drawOrrery(r rl.Rectangle) {
 		cells := ui.Row(col.Next(40), len(regions)+1, 4)
 		labels := []string{text.T("ui.orrery_all", "All")}
 		for _, m := range regions {
-			labels = append(labels, rpg.ManaLabel(m))
+			labels = append(labels, rpg.ManaShort(m))
 		}
 		size := ui.LabelSize(cells[0], labels...)
 		if ui.ButtonSized(cells[0], labels[0], v.orreryZoom == 0, true, size) {
@@ -273,7 +273,7 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 		rl.DrawCircleV(rl.Vector2{X: cell.X + 9, Y: cell.Y + 12}, 8, residueColor(i))
 		ui.TextFit(text.Tf("ui.residue_pool", "%d", h.Residue[i]), cell.X+22, cell.Y+2, 20, cell.Width-22, ui.TextColor)
 	}
-	col.Paragraph(text.T("ui.orrery_help", "Fours, fives and cascades leave residue of their color. Nodes cost their region's color; colorless pays for any."), 15, ui.DimText)
+	col.Paragraph(text.T("ui.orrery_help", "Fours, fives and cascades leave residue of their reagent. Nodes cost their region's reagent; colorless pays for any."), 15, ui.DimText)
 	col.Paragraph(text.T("ui.orrery_legend", "Small: stats. Diamond: a rite. Large: a perk."), 15, ui.DimText)
 	col.Line(text.Tf("ui.orrery_owned", "%d of %d nodes owned", len(h.Nodes), len(rpg.Orrery)), 15, ui.DimText)
 
@@ -309,12 +309,12 @@ func (v *QuestView) drawOrreryInfo(col *ui.Column, h *rpg.Hero) {
 	}
 
 	col.Heading(text.T("ui.convert", "Convert"))
-	col.Paragraph(text.Tf("ui.convert_help", "%d of a color becomes %d colorless.", rpg.CONVERT_STEP, rpg.CONVERT_STEP*rpg.CONVERT_PCT/100), 15, ui.DimText)
+	col.Paragraph(text.Tf("ui.convert_help", "%d of a reagent becomes %d colorless.", rpg.CONVERT_STEP, rpg.CONVERT_STEP*rpg.CONVERT_PCT/100), 15, ui.DimText)
 	mana := h.Mana()
 	cells := ui.Row(col.Next(38), len(mana), 6)
 	labels := make([]string, len(mana))
 	for n, i := range mana {
-		labels[n] = rpg.ManaLabel(i)
+		labels[n] = rpg.ManaShort(i)
 	}
 	size := ui.LabelSize(cells[0], labels...)
 	for n, cell := range cells {
