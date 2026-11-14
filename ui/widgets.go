@@ -11,14 +11,14 @@ import (
 var Font rl.Font
 
 var (
-	PanelColor	= rl.Color{ R: 16, G: 14, B: 30, A: 215 }
-	PanelEdge	= rl.Color{ R: 90, G: 80, B: 140, A: 160 }
-	Accent		= rl.Color{ R: 255, G: 196, B: 64, A: 255 }
-	TextColor	= rl.Color{ R: 236, G: 232, B: 248, A: 255 }
-	DimText		= rl.Color{ R: 160, G: 152, B: 190, A: 255 }
-	buttonIdle	= rl.Color{ R: 48, G: 42, B: 80, A: 255 }
-	buttonHover	= rl.Color{ R: 72, G: 64, B: 118, A: 255 }
-	buttonOn	= rl.Color{ R: 196, G: 140, B: 40, A: 255 }
+	PanelColor	= rl.Color{ R: 22, G: 17, B: 13, A: 222 }	// dark paper
+	PanelEdge	= rl.Color{ R: 150, G: 112, B: 58, A: 170 }	// tarnished brass
+	Accent		= rl.Color{ R: 232, G: 184, B: 92, A: 255 }	// polished brass
+	TextColor	= rl.Color{ R: 238, G: 228, B: 204, A: 255 }	// gaslit paper
+	DimText		= rl.Color{ R: 176, G: 160, B: 134, A: 255 }	// faded ink on paper
+	buttonIdle	= rl.Color{ R: 58, G: 34, B: 30, A: 255 }	// oxblood leather
+	buttonHover	= rl.Color{ R: 92, G: 48, B: 40, A: 255 }
+	buttonOn	= rl.Color{ R: 176, G: 128, B: 52, A: 255 }	// brass
 )
 
 const TEXT_SPACING = 1
@@ -237,7 +237,7 @@ func DisabledButton(r rl.Rectangle, label string, col rl.Color) {
 
 func disabledButton(r rl.Rectangle, label string, col rl.Color, size float32) {
 	ensureTheme()
-	if !nine(themeButton, r, 10, rl.Color{R: 120, G: 115, B: 135, A: 150}) {
+	if !nine(themeButton, r, 10, rl.Color{R: 130, G: 112, B: 96, A: 150}) {
 		rl.DrawRectangleRounded(r, 0.3, 6, rl.Fade(buttonIdle, 0.4))
 	}
 	TextCentered(label, r.X+r.Width/2, r.Y+(r.Height-size)/2, size, col)

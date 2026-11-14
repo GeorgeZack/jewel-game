@@ -47,10 +47,10 @@ func (s *Scroll) End(bottom float32) {
 		return
 	}
 	track := s.track()
-	rl.DrawRectangleRounded(track, 0.8, 6, rl.Color{R: 16, G: 14, B: 28, A: 220})
+	rl.DrawRectangleRounded(track, 0.8, 6, rl.Color{R: 20, G: 15, B: 12, A: 220})
 	col := Accent
 	if s.grab || Hover(s.thumb(track)) {
-		col = rl.Color{R: 255, G: 214, B: 120, A: 255}
+		col = rl.Color{R: 240, G: 200, B: 120, A: 255}
 	}
 	rl.DrawRectangleRounded(s.thumb(track), 0.8, 6, col)
 }

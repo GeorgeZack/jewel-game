@@ -2,7 +2,7 @@ package ui
 
 import "jewel-game/rl"
 
-// Fantasy chrome sliced from one Retro Diffusion UI-panel sheet.
+// Window chrome sliced from one Retro Diffusion UI-panel sheet.
 // A missing texture falls back to the flat rectangles.
 var (
 	themeReady    bool
@@ -38,7 +38,7 @@ func loadTheme(path string) rl.Texture2D {
 // Frame draws the stone window with no banner. Panel adds the banner on wide windows.
 func Frame(r rl.Rectangle) {
 	if !stone(r, false) {
-		rl.DrawRectangleRounded(r, 0.04, 8, rl.Color{R: 32, G: 28, B: 58, A: 240})
+		rl.DrawRectangleRounded(r, 0.04, 8, rl.Color{R: 30, G: 23, B: 18, A: 240})
 		rl.DrawRectangleRoundedLines(r, 0.04, 8, 2, PanelEdge)
 	}
 }
