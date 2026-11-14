@@ -289,7 +289,7 @@ func (v *QuestView) offerQuest(q *rpg.Quest) {
 	}
 	foe := rpg.FoeByID(q.Foe)
 	at := rpg.LocationByID(q.At)
-	body := text.Tf("ui.quest_offer", "%s\n\nDefeat %d x %s (L%d) at %s. Reward: %d gold, %d XP.", q.Intro, q.Count, foe.Name, q.FoeLevel, at.Name, q.Gold, q.XP)
+	body := text.Tf("ui.quest_offer", "%s\n\nDefeat %d x %s (L%d) at %s. Reward: %d gold, %d XP.", rpg.Words(q.Intro), q.Count, foe.Name, q.FoeLevel, at.Name, q.Gold, q.XP)
 	v.show(Modal{
 		Title: q.Title,
 		Body:  body,

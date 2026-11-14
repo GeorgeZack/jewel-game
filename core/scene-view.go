@@ -226,9 +226,12 @@ func (s *SceneRunner) exec(st rpg.Step) {
 		s.title, s.titleT = &rpg.Step{ Title: a.Act.Title, Subtitle: a.Act.Subtitle }, 0
 	}
 	if st.Text != "" || len(st.Choices) > 0 {
-		s.line, s.shown, s.choices = &st, 0, nil
+		line := st
+		line.Text = rpg.Words(st.Text)
+		s.line, s.shown, s.choices = &line, 0, nil
 		for _, c := range st.Choices {
 			if h.Meets(c.If) {
+				c.Text = rpg.Words(c.Text)
 				s.choices = append(s.choices, c)
 			}
 		}
