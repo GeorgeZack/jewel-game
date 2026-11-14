@@ -30,7 +30,12 @@ Anything in the story files (place names, foe names, dialogue, quest text) stays
 translation fall back to `assets/story/`.
 
 Ids do not get translated: class names stored in the save, spell ids, item ids, and the `name`
-of a gem type. Change the words next to those ids. The font is Noto Mono, which covers
+of a gem type. Change the words next to those ids. The ids keep their old fantasy names while
+the player reads the Victorian ones from `en.yaml`: the colours `fire`, `water`, `air`, `earth`
+show as Sulphur, Mercury, Nitre and Salt (with `short` forms for narrow buttons), the stats
+Battle, Cunning and Morale as Force, Wit and Nerve, and the classes Knight, Warrior, Druid and
+Wizard as Exorcist, Pugilist, Herbalist and Theurgist. `stat.aether.name` is a placeholder, and
+any line that says `{aether}` follows it. The font is Noto Mono, which covers
 Latin letters; another script needs a font that has those glyphs.
 
 ```
