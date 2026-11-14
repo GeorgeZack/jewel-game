@@ -20,7 +20,7 @@
   x: 0.24
   y: 0.62
   level: 1
-  desc: Old trees, new goblin trails.
+  desc: Old trees, new bogle trails.
   roads: [emberfield, stonebridge, greyfen]
   foes: [rat, goblin, slime]
 - id: stonebridge
@@ -65,7 +65,7 @@
       requires: [quest:barrow_lord]
   roads: [barrow, ironpeak, redtusk]
 - id: redtusk
-  name: Redtusk Camp
+  name: Redcap Camp
   residue: fire
   x: 0.56
   y: 0.68

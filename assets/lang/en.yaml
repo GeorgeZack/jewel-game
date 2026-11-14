@@ -452,13 +452,13 @@ spell:
     name: Meteor
     desc: Deal 15 + Fire. Destroy a 5x5 area.
   bite:
-    name: Bite
+    name: Cold Touch
     desc: Deal 4 damage.
   venom:
-    name: Venom
+    name: Miasma
     desc: "Poison: 2 per turn for 4 turns."
   firebreath:
-    name: Fire Breath
+    name: Balefire
     desc: Deal 8 + Fire/2 damage.
   drain_life:
     name: Drain Life
@@ -470,10 +470,10 @@ spell:
     name: Bone Ward
     desc: Free. Block 2 per hit for 4 turns.
   roar:
-    name: Terrible Roar
+    name: Keening
     desc: Stun the foe for 1 turn.
   frenzy:
-    name: Frenzy
+    name: Bloodlust
     desc: Free. Skull matches deal +3 for 4 turns.
   dark_pact:
     name: Dark Pact
