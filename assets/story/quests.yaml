@@ -1,6 +1,6 @@
 # Quests. The main quests are listed in the order they are meant to be played (the tests play
-# them in this order). Act 1 runs from goblins to founding; from warchief on is placeholder for
-# Acts 2 and 3, kept from the Hollow King slice. Ids are kept from the slice so saves still load.
+# them in this order). Act 1 runs from goblins to founding; Acts 2 and 3 run from
+# warchief to king, down through the deep undercroft to the Engine. Ids are kept from the slice so saves still load.
 
 # Act 1: Aldermoor. Every society courts the adept: the Royal Society (toll), the Independents
 # (ledger) and the College (reading). The founding quest sets the first lean and opens the academy.
@@ -76,8 +76,8 @@
   item: barrow_mail
   opens: [institute]
   done_scene: barrow_done
-  intro: Every society agrees on one thing. Whatever walks the Necropolis has a crown, and it is waking the dead below the city. Put it back.
-  outro: Before it crumbles, the Lord points north. 'He is hollow, and he is coming. We only went ahead.' Its mail is still good.
+  intro: Every society agrees on one thing. Whatever walks the Necropolis has a crown, and it is not what woke the dead below the city. Put it back anyway.
+  outro: Before it crumbles, the Lord points north. 'He is hollow, and his Engine calls us. We only rose first.' Its mail is still good.
 - id: founding
   title: The Founding
   main: true
@@ -95,9 +95,9 @@
   intro: The Halloran Institute stands empty, and whoever clears it can claim it. Drive out the ghouls that keep house there.
   outro: The last ghoul goes into the furnace. The Institute is quiet, and the keys are yours.
 
-# Acts 2 and 3: placeholder, kept from the Hollow King slice until those acts are written.
+# Acts 2 and 3: the deep undercroft. Whose Engine is waking the dead, and what it runs on.
 - id: warchief
-  title: Spears at Highwatch
+  title: The Red Court
   main: true
   giver: highwatch
   requires: [quest:founding]
@@ -108,11 +108,11 @@
   gold: 300
   xp: 350
   opens: [silverlake, ironpeak]
-  intro: The redcap host masses on the road, driven from its hills. Captain Ise will hold the wall if you break their Chieftain.
+  intro: The stair in your cellar ends at the Shambles, and the redcaps have come up into it in hundreds. Inspector Ise will hold the gate if you break their Chieftain.
   outro: The Chieftain laughs through his blood. 'We were not attacking. We were leaving. You should too.'
 - id: archive
   done_scene: archive_done
-  title: The Lake Archive
+  title: The Halloran Papers
   main: true
   giver: silverlake
   requires: [quest:warchief]
@@ -124,8 +124,8 @@
   xp: 500
   item: heart_stone
   opens: [sunken]
-  intro: The archivists of Silverlake know the Hollow King's story but their copies are held by the pass-monks of Ironpeak, and Fomorians have taken the road. Clear it.
-  outro: A king traded his heart to outlast death, and it worked. His heart still beats, hidden in the Sunken Temple.
+  intro: Your teacher sent his papers to the Athenaeum by pneumatic post the night he died. They never arrived. They are still in the tubes of the Atmospheric Line, and Fomorians nest there.
+  outro: Halloran built an Engine to outlast death, and gave it his heart to run on. It worked. The heart still beats, kept in the Drowned Chapel.
 - id: priest
   title: The Drowned Choir
   main: true
@@ -138,8 +138,8 @@
   gold: 650
   xp: 800
   opens: [ashen]
-  intro: The Drowned Priest guards the King's heart below the water. End the choir and cut the bell-rope.
-  outro: The bells stop. Far away, across the Waste, something turns to look at you.
+  intro: The Institute's second founder went down with the chapel, and keeps Halloran's heart below the water. End his choir and cut the bell-rope.
+  outro: The bells stop. The heart is not here. Far below, past the gasworks, something turns to look at you.
 - id: wyrm
   title: Ash and Ember
   main: true
@@ -153,11 +153,11 @@
   xp: 1100
   item: kingsbane
   opens: [hollow]
-  intro: Only one road crosses the Waste, and the Ember Wyrm has slept across it since it burned the land. Wake it. Kill it.
-  outro: 'The way to Hollow Keep lies open. A forge-master pulls a blade from the Wyrm''s hide, and it fits your hand: Kingsbane.'
+  intro: One way leads down through the Retort House, and the Athanor has slept across it since it burned the works out. Wake it. Put it out.
+  outro: 'The way to the Engine House lies open. In the Athanor''s clinker is a blade of cold iron, and it fits your hand: Heartseeker.'
 - id: king
   done_scene: king_done
-  title: The Hollow King
+  title: The Hollow Man
   main: true
   giver: highwatch
   requires: [quest:wyrm]
@@ -167,8 +167,8 @@
   count: 1
   gold: 2000
   xp: 2500
-  intro: Everything has been walking toward this room. Go and finish it.
-  outro: The King's crown rolls across the floor and stops. Outside, for the first time in a generation, it rains on the Waste. You did it, and Aldermoor will never believe it.
+  intro: Everything dead in Aldermoor has been walking toward this room. The man who wrote your letter is in it. Go and finish it.
+  outro: The Engine stops, and your teacher with it. Above, every lamp in the city gutters once and steadies. You did it, and Aldermoor will never believe it.
 - id: rats
   title: Cellar Trouble
   giver: emberfield
@@ -193,7 +193,7 @@
   intro: The weavers will pay well for shroud spinner silk, as long as you're the one fetching it.
   outro: You smell terrible but you are rich.
 - id: wolves
-  title: Black Dogs at the Wall
+  title: Black Dogs at the Gate
   giver: highwatch
   requires: [quest:barrow_lord]
   at: redtusk
@@ -202,10 +202,10 @@
   count: 3
   gold: 260
   xp: 300
-  intro: The barghests have followed the redcaps down. They're taking sentries off the wall.
-  outro: The sentries sleep a little better. The captain buys you a drink, and only one.
+  intro: The barghests have followed the redcaps down. They're taking constables off the gate.
+  outro: The Watch sleeps a little better. The inspector buys you a drink, and only one.
 - id: wyverns
-  title: Eggs of Ironpeak
+  title: Nests on the Line
   giver: silverlake
   requires: [quest:warchief]
   at: ironpeak
@@ -226,5 +226,5 @@
   count: 3
   gold: 560
   xp: 620
-  intro: Some of the missing scholars weren't taken. They went. Find them in the temple.
+  intro: Some of the Athenaeum's missing readers weren't taken. They went. Find them in the chapel.
   outro: They wouldn't come back. You took their notes instead.

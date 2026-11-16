@@ -1,6 +1,6 @@
 # The story's settings. See docs/story.md for every file in this folder.
-# Act 1 (Aldermoor) is written; Acts 2 and 3 are still the Hollow King slice, as placeholder.
-title: The Hollow King
+# Act 1 is the city of Aldermoor; Acts 2 and 3 go down through its deep undercroft to the Engine.
+title: The Halloran Engine
 map_name: Aldermoor
 start: emberfield              # location a new adept starts in (Saltpetre Row)
 opening: opening               # scene played when an adept is created
@@ -10,10 +10,10 @@ return_scene: the_return       # the entities' scene at the start of a run after
 final_quest: king              # finishing this quest beats the story
 acts:                          # title cards for the act steps
   - { title: Act I, subtitle: Aldermoor }
-  - { title: Act II, subtitle: The academy }
+  - { title: Act II, subtitle: The deep undercroft }
   - { title: Act III, subtitle: The Engine }
 endings:                       # recorded on the profile; each pays meta currency the first time (grimoire.yaml)
-  - { id: king_falls, name: The Hollow King falls }
+  - { id: king_falls, name: The Engine stops }
 blurb: >-
   You come to Aldermoor alone, with a key and a letter. Below the streets the dead are
   waking, and every society in the city wants you to find out why, for them.

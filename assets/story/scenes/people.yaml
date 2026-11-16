@@ -66,12 +66,12 @@ marlow_talk:
       - who: marlow
         text: I told the Provost about the reliquary. He hasn't spoken to me since. It's restful.
 
-# Acts 2 and 3: placeholder.
+# Acts 2 and 3.
 ise_talk:
   - who: ise
-    text: Highwatch has held for two hundred years. It'll hold another week. After that, ask me again.
+    text: The Watch has held the lower gate for two hundred years. It'll hold another week. After that, ask me again.
   - choices:
-      - text: What's coming from the mountains?
+      - text: What's coming up from below?
         do:
           - who: ise
             mood: grim

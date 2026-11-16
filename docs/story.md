@@ -104,7 +104,7 @@ be quoted, `if: ["!flag:met"]`, because a bare `!` means something else in YAML.
 ## story.yaml
 
 ```yaml
-title: The Hollow King
+title: The Halloran Engine
 map_name: The Marches        # heading on the world map
 start: emberfield            # where new heroes begin
 opening: opening             # scene played when a hero is created (read as first_event if that is unset)
@@ -207,9 +207,9 @@ spell ids are in `rpg/spells.go`. Monsters can use any spell, but they're balanc
 ones: bite, venom, frenzy, roar, bone_ward, drain_life, mana_burn, firebreath, dark_pact, and the two
 that cost Aether, hollow_hymn and void_lash. A foe's Aether stat and spells only matter in a run that
 has Aether (see [Aether](#aether)); without it the foe never gets Aether mana. In the slice the
-Drowned Priest and the Hollow King have both.
+Drowned Priest and the Hollow Man have both.
 
-`boss: true` marks a boss: its first defeat pays meta currency (grimoire.yaml). The Hollow King
+`boss: true` marks a boss: its first defeat pays meta currency (grimoire.yaml). The Hollow Man
 marks the five main-quest bosses.
 
 `go test ./rpg` also runs a balance check that duels a geared hero against some of the bosses by
@@ -338,8 +338,8 @@ top of `rpg/orrery.go`.
 ## Aether
 
 Aether is the fifth element, off at the start of every run. The story flag `aether_unlocked`
-turns it on for good (a `set_flag` step; in the slice the done scene of "The Lake Archive",
-`archive_done`, sets it, so the Drowned Priest, the Ember Wyrm and the Hollow King are fought with
+turns it on for good (a `set_flag` step; the done scene of "The Halloran Papers",
+`archive_done`, sets it, so the Drowned Priest, the Athanor and the Hollow Man are fought with
 it). Once it is on, its purple gem falls on every duel board, the standard board grows from 8x8 to
 9x9 so that matches stay about as common with one more color, and its mana pool, Aether stat,
 residue pool and Orrery core show. Before that, none of them appear. Spells cost Aether like any
@@ -699,7 +699,7 @@ Act 1 has checks of its own, in `rpg/act1_test.go`:
 
 ## The shipped story
 
-Act 1 is written; Acts 2 and 3 are still the Hollow King slice, marked as placeholder in each
+Acts 2 and 3 are a first draft, reusing the ids of the old Hollow King slice, noted in each
 file. Ids were kept from the slice so saves still load: `emberfield` is Saltpetre Row,
 `mossgate` the Undercroft Stair, `stonebridge` the Exchange, `greyfen` the Fleet Culvert and
 `barrow` St Ebba's Necropolis; `institute` (the Halloran Institute) is new.

@@ -11,7 +11,8 @@ first_lesson:
   - text: Every duel is alchemy done against someone. You share one table of reagents, and take turns.
   - text: Swap two reagents to make a line of three. Lines fill your stores of Sulphur, Mercury, Nitre and Salt.
   - text: Skulls strike your foe. Four in a line, or a match that sets off another, earns another turn.
-  - text: Full stores pay for rites. Try it on something small.
+  - text: Full stores pay for rites. Tap a rite to work it; it takes your turn.
+  - text: Try it on something small. A corpse-candle has come up the cellar stair.
   - duel: { foe: rat, level: 1, win: first_lesson_won, lose: first_lesson_lost }
 
 first_lesson_won:
@@ -253,4 +254,4 @@ founding_done:
   - act: 2
   - text: The academy is open. Build, hire agents and spend residue from the menu.
     if: ["!tutorial:done"]
-  - text: What follows is placeholder, from an earlier draft, until Act 2 is written.
+  - text: In the cellar, a stair goes down further than the plans show. The Night Watch at Lantern Yard guards the far end of it.

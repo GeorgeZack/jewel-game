@@ -1,5 +1,5 @@
 # The map. Act 1 is the city of Aldermoor and the undercroft below it (the first six places);
-# everything from Highwatch on is placeholder for Acts 2 and 3, kept from the Hollow King slice.
+# from Lantern Yard on is the deep undercroft of Acts 2 and 3.
 # Ids are kept from the slice so saves still load: emberfield is Saltpetre Row, and so on.
 - id: emberfield
   name: Saltpetre Row
@@ -71,47 +71,47 @@
   roads: [barrow]
   foes: [skeleton, ghoul]
 - id: highwatch
-  name: Highwatch
+  name: Lantern Yard
   residue: air
   town: true
   x: 0.56
   y: 0.32
   level: 6
-  desc: "Placeholder for Act 2: the last garrison between the city and the mountains."
+  desc: The Night Watch's station at the lower gate. Below it the city's plans stop, and the undercroft doesn't.
   people:
-    - name: Captain Ise
+    - name: Inspector Ise
       scene: ise_talk
       requires: [quest:barrow_lord]
   roads: [barrow, ironpeak, redtusk]
 - id: redtusk
-  name: Redcap Camp
+  name: The Shambles
   residue: fire
   x: 0.56
   y: 0.68
   level: 7
-  desc: Tents, drums, and a great many spears.
+  desc: Slaughter-yard cellars, long shut. The redcaps hold court here, and keep their caps wet.
   roads: [stonebridge, highwatch, silverlake]
   foes: [orc, wolf, bandit]
 - id: ironpeak
-  name: Ironpeak Pass
+  name: The Atmospheric Line
   residue: air
   x: 0.72
   y: 0.16
   level: 9
-  desc: The wind here cuts deeper than the cold.
+  desc: A pneumatic railway that failed and was bricked up. The wind still runs in the tunnels.
   roads: [highwatch, sunken]
   foes: [troll, wolf, wyvern]
 - id: silverlake
-  name: Silverlake
+  name: The Cistern Athenaeum
   residue: water
   town: true
   x: 0.74
   y: 0.8
   level: 8
-  desc: A city of scholars on a lake that never freezes.
+  desc: A subscription library built over the great cistern. The water below it never freezes.
   roads: [redtusk, sunken]
 - id: sunken
-  name: The Sunken Temple
+  name: The Drowned Chapel
   residue: earth
   x: 0.82
   y: 0.5
@@ -120,20 +120,20 @@
   roads: [ironpeak, silverlake, ashen]
   foes: [wraith, cultist, ghoul]
 - id: ashen
-  name: The Ashen Waste
+  name: The Retort House
   residue: fire
   x: 0.7
   y: 0.4
   level: 13
-  desc: Burned flat, long ago, by something that is still here.
+  desc: The old gasworks under the Institute. Burned out years ago, by something that is still here.
   roads: [sunken, hollow]
   foes: [wyvern, cultist, troll]
 - id: hollow
-  name: Hollow Keep
+  name: The Engine House
   residue: air
   x: 0.9
   y: 0.16
   level: 15
-  desc: 'The throne room faces the wrong way: inward.'
+  desc: Every pipe under Aldermoor runs to this room. None of them runs out again.
   roads: [ashen]
   foes: [wraith, cultist]

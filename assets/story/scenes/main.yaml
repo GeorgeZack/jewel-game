@@ -1,18 +1,18 @@
 # Story scenes. Each key is a scene id; its value is a list of steps, played in order.
-# Act 1 is in act1.yaml. The scenes here are placeholder for Acts 2 and 3, kept from the
-# Hollow King slice until those acts are written.
+# Act 1 is in act1.yaml. The scenes here belong to Acts 2 and 3.
 
-# Brings Aether into the run (a placeholder until its story is written). Plays after "The Lake
-# Archive" (quests.yaml: done_scene), so the last third of the slice is fought with it.
+# Brings Aether into the run Plays after "The Halloran
+# Papers" (quests.yaml: done_scene), so the last third of the story is fought with it.
 archive_done:
-  - text: The last page of the monks' copy is not written in ink. It is a colour, and it was not there a moment ago.
+  - text: The last page of Halloran's papers is not written in ink. It is a colour, and it was not there a moment ago.
   - set_flag: aether_unlocked
+  - act: 3
   - text: "{aether}, the forbidden reagent, now falls on every board, and boards grow to hold it. The Orrery's core has opened."
 
 # The final quest's done_scene. "ending:" marks the story as beaten, and records the ending on the profile.
 king_done:
   - fade_out: 1.0
   - title: The End
-    subtitle: Your adept can keep playing; the undercroft is still full of the dead.
+    subtitle: Your adept can keep playing; the undercroft is not empty yet.
   - ending: king_falls
   - fade_in: 1.0

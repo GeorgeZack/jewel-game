@@ -296,7 +296,7 @@ var Items = []Item{
 	{ "ember_rod", "Brimstone Rod", SlotWeapon, 5, 280, "+6 Sulphur, +5 starting reagents", Bonus{ Stats: stat(Fire, 6), StartMana: 5 }, false },
 	{ "war_axe", "Bone Saw", SlotWeapon, 9, 650, "+4 skull damage", Bonus{ SkullDamage: 4 }, false },
 	{ "tide_scepter", "Quicksilver Rod", SlotWeapon, 10, 700, "+8 Mercury, +8 Nitre", Bonus{ Stats: [NUM_STATS]int{ 0, 8, 8 } }, false },
-	{ "kingsbane", "Kingsbane", SlotWeapon, 12, 0, "+6 skull damage, +4 Force", Bonus{ SkullDamage: 6, Stats: stat(Battle, 4) }, true },
+	{ "kingsbane", "Heartseeker", SlotWeapon, 12, 0, "+6 skull damage, +4 Force", Bonus{ SkullDamage: 6, Stats: stat(Battle, 4) }, true },
 
 	{ "leather", "Oilskin Coat", SlotArmor, 1, 50, "+10 HP", Bonus{ HP: 10 }, false },
 	{ "chain", "Mail Waistcoat", SlotArmor, 4, 240, "+20 HP, blocks 1", Bonus{ HP: 20, Armor: 1 }, false },
