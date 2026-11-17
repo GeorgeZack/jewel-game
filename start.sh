@@ -4,6 +4,11 @@
 #   ./start.sh --watch   rebuild and restart on every save (needs CompileDaemon)
 #   ./start.sh --web     build the public browser version (no editor) and serve it on http://localhost:8000 (PORT to change)
 #   ./start.sh --dev     same as --web, and rebuild the wasm (then reload the page) on save
+#   ./start.sh --master  ignore .start-worktree (below) and run this checkout
+#
+# If the file .start-worktree exists here and names a worktree (a path, or a folder name under
+# .claude/worktrees), every mode runs that worktree's copy of the game instead of this checkout,
+# so a branch can be tried before it is merged. The file is not tracked by git.
 set -e
 
 # assets are loaded relative to the project root
@@ -12,6 +17,18 @@ cd "$(dirname "$0")"
 # A GOROOT left in the environment by a version manager can point at a different Go than the `go`
 # on the PATH, and then nothing compiles. Go finds its own root when this is unset.
 unset GOROOT
+
+if [ "$1" = "--master" ]; then
+	shift
+elif [ -s .start-worktree ]; then
+	tree=$(head -n 1 .start-worktree)
+	[ -d "$tree" ] || tree=".claude/worktrees/$tree"
+	if [ -x "$tree/start.sh" ]; then
+		echo "Running worktree $tree ($(git -C "$tree" branch --show-current)); ./start.sh --master runs this checkout"
+		exec "$tree/start.sh" "$@"
+	fi
+	echo ".start-worktree names a worktree that is gone; running this checkout" >&2
+fi
 
 if ! command -v go >/dev/null; then
 	echo "go is not installed: https://go.dev/doc/install" >&2
@@ -27,7 +44,7 @@ for arg in "$@"; do
 		--web) web=1 ;;
 		--dev) dev=1 ;;
 		*)
-			echo "usage: $0 [--watch | --web | --dev]" >&2
+			echo "usage: $0 [--master] [--watch | --web | --dev]" >&2
 			exit 1
 			;;
 	esac

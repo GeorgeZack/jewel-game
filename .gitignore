@@ -8,3 +8,4 @@ web/wasm_exec.js
 .env
 __pycache__/
 .claude/worktrees/
+.start-worktree
