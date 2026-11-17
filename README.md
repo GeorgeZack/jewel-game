@@ -1,88 +1,19 @@
-# Jewel Game
+# The Hollow King
 
-A Victorian occult RPG where every fight is a match-3 duel. Pick an adept of the alchemists'
-academy, travel the map, take on quests, and duel the things of the undercroft on a shared board
-of reagents.
+A Victorian occult RPG where every fight is a match-3 duel. You walk a map, take quests, and match reagents on a shared board.
 
-**Play it in your browser:** https://georgezack.github.io/jewel-game-web/
+The first arc is playable from the opening through eight main quests to the Hollow King. Some of the pixel art is still placeholder ([attributions.md](attributions.md)).
 
-This is a vertical slice: the first story arc, eight main quests through to the Hollow King,
-playable start to finish. The pixel art was made with the help of an AI image tool (Retro
-Diffusion), and some of it is still placeholder. See [attributions.md](attributions.md).
+Play it in the browser: https://georgezack.github.io/jewel-game-web/
 
-## How to play
+## Run it
 
-- *Duels:* you and a monster take turns on one 8x8 board. Red, blue, yellow and green reagents fill your
-  stores of Sulphur, Mercury, Nitre and Salt. Partway through the story a fifth, forbidden reagent, Aether
-  (purple), joins every board, and boards grow to 9x9 to hold it. Bosses fight on rule cards that
-  change one rule: the gravity, the board's size, overcharged blasts, or what matches pay. Skulls damage the foe, and +5 skulls hit harder and blast the gems
-  around them. Gold and stars pay out after the duel. Whatever the other side's move sets up, they get to use.
-- *Extra turns and Catalysts:* match 4 and you go again. Match 5 and you also get a Catalyst, which completes
-  any reagent match and multiplies it. Running out of moves drains half of every store and reshuffles.
-- *Disciplines:* Exorcist, Pugilist, Herbalist or Theurgist, each starting with a kit of rites (six can be
-  prepared). Levels give HP; stats (Sulphur, Mercury, Nitre, Salt, Force, Wit and Nerve, and Aether once it arrives) and more
-  rites come from the Orrery, bought with the residue good matches leave behind.
-- *World:* walk the map between towns and wilds, take main and side quests, fight roaming foes and
-  road ambushes. Quests open up the map through to the final boss.
-- *Spending gold:* gear in four slots from town shops; then, once the academy is founded, agents
-  to retain, train and equip, and facilities to build and upgrade. Agents posted to a site run a
-  chapter there that completes as you win duels, paying gold and residue, and sites you hold pay
-  dues on every win.
-- *Story:* dialogue with portraits and choices, title cards, people to talk to in towns, and story
-  flags that quests and scenes can check.
-
-
-Losing a duel costs nothing, but you only keep what you picked up on the board. Progress saves
-automatically (in the browser's local storage, or `~/.config/jewel-game/hero.json` on the desktop; what outlasts a
-run goes in `profile.json` beside it).
-
-**Specials:** 4 in a row makes a **Bolt** (clears its row or column), an L or T makes a **Bomb** (3x3),
-and 5 in a row makes a **Prism** (swap it with a reagent to clear that kind). Swapping two specials
-together combines them.
-
-| Input | Action |
-| --- | --- |
-| Left drag, or click two reagents | Swap |
-| 1-6 | Work rites (duels) |
-| H | Hint |
-| F1 | Debug log |
-| Esc | Deselect / quit |
-
-## Building
-
-You need [Go](https://go.dev/doc/install). The game draws with [Ebitengine](https://ebitengine.org),
-so the same code runs on the desktop and in a browser through WebAssembly. Desktop builds on Linux
-need the X11/OpenGL development headers; the web build needs no C compiler.
+[Go 1.25](https://go.dev/doc/install) or newer. On Linux, the desktop build needs the X11 and OpenGL development headers.
 
 ```sh
-./start.sh           # dev build with the map editor (E) and hot reload (or: go run -tags dev .)
-./start.sh --watch   # rebuild and restart on save, needs CompileDaemon
-./start.sh --dev     # browser dev build; rebuilds the wasm and reloads the page on save
-./start.sh --web     # the public browser build (no editor), on http://localhost:8000
-./deploy-web.sh      # publish the public build to GitHub Pages
-go test ./...        # game, RPG and story checks, no window needed
+./start.sh          # desktop, with the map editor
+./start.sh --web    # browser build at http://localhost:8000
+go test ./...
 ```
 
-Images, fonts and `assets/` are embedded in the binary, but files on disk take priority, so dev
-builds pick up edits live.
-
-**Writing the story:** the world, foes, quests, characters, dialogue and cutscenes are YAML files in
-`assets/story/`, with art in its `portraits/`, `backgrounds/` and `foes/` folders. They reload live
-on the desktop. See [docs/story.md](docs/story.md) for the format. The wording of menus, spells,
-items and classes is in `assets/lang/en.yaml` (set the language in `assets/lang.yaml`). The
-numbers behind those spells and items stay in `rpg/`.
-
-Gem looks come from `assets/gemtypes.yaml` and reload live when it changes.
-
-## Layout
-
-- `board/` pure game rules (matching, specials, gravity, locks); unit tested
-- `rpg/` RPG rules (duels, spells, heroes, quests, saves) and the story loader; unit tested
-- `assets/story/` the story as data, documented in `docs/story.md`
-- `assets/lang/` the interface language files
-- `core/` animation, input, and the game loop around a board
-- `entities/` gem drawing
-- `ui/` widgets and the debug log
-- `rl/` the few raylib-style drawing and input calls the game uses, implemented on Ebitengine
-- `web/` the page that loads the WebAssembly build
-
+Go, [Ebitengine](https://ebitengine.org/), and WebAssembly.
