@@ -512,7 +512,7 @@ func (v *QuestView) finishDuel() {
 			v.show(Modal{Title: text.T("ui.chapter_done", "Chapter complete"), Body: text.Tf("ui.chapter_done_body", "%s\n\nClaim the report at the academy.", rep.Line)})
 		}
 		for _, q := range h.RecordKill(v.foeID, v.duelAt) {
-			body := text.Tf("ui.quest_done_body", "%s\n\nReward: %d gold, %d XP.", q.Outro, q.Gold, q.XP)
+			body := text.Tf("ui.quest_done_body", "%s\n\nReward: %d gold, %d XP.", rpg.Words(q.Outro), q.Gold, q.XP)
 			if it := rpg.ItemByID(q.Item); it != nil {
 				body += text.Tf("ui.quest_done_item", " You also gain %s (%s): equip it in the shop.", it.Label(), it.About())
 			}

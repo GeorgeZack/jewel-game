@@ -75,6 +75,7 @@ var hexBiomes = map[string]hexBiome{
 	"stonebridge": {ground: []hexRef{hx(hexSheetTown, 0, 0), hx(hexSheetOver, 4, 2), hx(hexSheetOver, 3, 6)}, mark: hx(hexSheetOver, 3, 5)},
 	"greyfen":     {ground: []hexRef{hx(hexSheetOver, 4, 3), hx(hexSheetOver, 4, 2), hx(hexSheetOver, 3, 6)}, mark: hx(hexSheetOver, 4, 3)},
 	"barrow":      {ground: []hexRef{hx(hexSheetOver, 6, 4), hx(hexSheetOver, 4, 3), hx(hexSheetOver, 2, 0)}, mark: hx(hexSheetOver, 6, 4)},
+	"institute":   {ground: []hexRef{hx(hexSheetOver, 6, 4), hx(hexSheetOver, 2, 0)}, mark: hx(hexSheetTown, 4, 2)},
 	"highwatch":   {ground: []hexRef{hx(hexSheetTown, 0, 0), hx(hexSheetOver, 6, 4)}, mark: hx(hexSheetTown, 5, 2)},
 	"redtusk":     {ground: []hexRef{hx(hexSheetOver, 2, 0), hx(hexSheetOver, 3, 1), hx(hexSheetOver, 0, 4)}, mark: hx(hexSheetOver, 4, 4)},
 	"ironpeak":    {ground: []hexRef{hx(hexSheetOver, 6, 4), hx(hexSheetOver, 5, 3), hx(hexSheetLava, 0, 0)}, mark: hx(hexSheetOver, 6, 4)},

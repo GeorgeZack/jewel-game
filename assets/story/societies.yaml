@@ -1,0 +1,13 @@
+# The societies: who holds sites, standing, the lock. See docs/story.md.
+# Working names from DESIGN.md 5.7. The rival college has no name yet: "the College" is a placeholder.
+- id: crown
+  name: The Royal Society for the Study of Alchemy and Natural Sciences
+  desc: The Crown's society. Charters, fellowships, and the Queen's peace below the streets.
+  allegiance: true
+- id: free
+  name: The Society of Independent Alchemists
+  desc: The forbidden society. No charter, no fees, and work the Royal Society has banned.
+  allegiance: true
+- id: college
+  name: The College
+  desc: A rival college of the old learning, older than the Royal Society and poorer.

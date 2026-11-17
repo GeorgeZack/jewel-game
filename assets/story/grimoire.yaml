@@ -21,13 +21,13 @@ pay:
 entries:
   - id: school_keys
     name: The School's Keys
-    desc: The academy on the hill is yours from the first day of the run.
+    desc: The Halloran Institute is yours from the first day of the run, and the academy opens at once.
     cost: 20
     flags: [academy_founded]
 
   - id: known_road
     name: The Known Road
-    desc: Smoke on the Road counts as done. Its fight is skipped and its roads are open, but it pays nothing.
+    desc: Lights Below counts as done. Its fight is skipped and its roads are open, but it pays nothing.
     cost: 30
     quests: [goblins]
     flags: [academy_founded]
@@ -61,7 +61,7 @@ entries:
 
   - id: borrowed_road
     name: The Borrowed Road
-    desc: The Toll Road counts as done too. Its fight is skipped and its roads are open, but it pays nothing.
+    desc: A Fellow's Errand counts as done too. Its fight is skipped and its roads are open, but it pays nothing.
     stage: 2
     lean: take
     cost: 45

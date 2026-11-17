@@ -19,7 +19,7 @@ ui:
   back: Back
   thanks_title: Thank you for playing.
   thanks_body: "That is the end of this slice of the game. Your adept may go on exploring; more is in preparation."
-  window_title: The Hollow King
+  window_title: The Halloran Engine
   fps: "FPS %.0f"
   specials: Specials
   help_bolt: "4 in a row makes a Bolt. It clears its whole row or column."
@@ -520,7 +520,7 @@ item:
     name: Quicksilver Rod
     desc: "+8 Mercury, +8 Nitre"
   kingsbane:
-    name: Kingsbane
+    name: Heartseeker
     desc: "+6 skull damage, +4 Force"
   leather:
     name: Oilskin Coat

@@ -1,9 +1,10 @@
-# The society vault: open the lock. Its three red tumbler pins (marked a, b and c) sit in the
+# The Royal Society's strongroom, opened for the Independents in Act 1 (scenes/act1.yaml:
+# ledger_done). Its three red tumbler pins (marked a, b and c) sit in the
 # bottom row between locked wards. Matching a pin's column drops what the next pin needs, so the
 # quiet way is left to right; the Lockpick paints one gem red; Force (or the bomb) is loud.
 # A prototype board; see docs/story.md for the format.
 id: vault
-name: The Society Vault
+name: The Royal Society's Strongroom
 objective: Clear the three tumbler pins. Clean, in order from the left, leaves no trace.
 moves: 5
 refill: none
@@ -27,6 +28,7 @@ routes:
   - id: force
     name: Forced the lock
     flag: vault_alarm
+    standing: { crown: -1 }
     when: { blasted: true }
     # Force the bomb above the left ward: it blasts pins a and b; then match c
     solution: ["tool force 2,4", "swap 5,2 5,3"]
@@ -39,6 +41,7 @@ routes:
   - id: quiet
     name: Slipped the lock
     flag: vault_quiet
+    standing: { free: 1 }
     when: { order: [a, b, c] }
     # each pin, once matched, drops what the next one needs: a, then b, then c
     solution: ["swap 1,2 1,3", "swap 2,3 3,3", "swap 5,2 5,3"]

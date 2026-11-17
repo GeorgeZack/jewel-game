@@ -19,14 +19,22 @@ func (c *Class) About() string { return text.T("class."+slug(c.Name)+".desc", c.
 func (s *Spell) Label() string { return text.T("spell."+s.ID+".name", s.Name) }
 func (s *Spell) About() string { return named(text.T("spell."+s.ID+".desc", s.Desc)) }
 
-// named puts the fifth reagent's name, stat.aether.name, where a string says {aether}, so that
-// placeholder name is one key to rename.
+// named puts the placeholder names where a string asks for them: {aether} (stat.aether.name),
+// {entities} (meta.entities) and {currency} (meta.currency). Each is one key to rename.
 func named(s string) string {
-	if !strings.Contains(s, "{aether}") {
+	if !strings.Contains(s, "{") {
 		return s
 	}
-	return strings.ReplaceAll(s, "{aether}", StatLabel(Aether))
+	if strings.Contains(s, "{aether}") {
+		s = strings.ReplaceAll(s, "{aether}", StatLabel(Aether))
+	}
+	s = strings.ReplaceAll(s, "{entities}", text.T("meta.entities", "The Others"))
+	return strings.ReplaceAll(s, "{currency}", text.T("meta.currency", "Marks"))
 }
+
+// Words is story text as the player reads it: scene lines, choices and quest text, with the
+// placeholder names filled in (see named).
+func Words(s string) string { return named(s) }
 
 func (it *Item) Label() string { return text.T("item."+it.ID+".name", it.Name) }
 func (it *Item) About() string { return text.T("item."+it.ID+".desc", it.Desc) }

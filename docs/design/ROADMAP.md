@@ -192,13 +192,18 @@ Grimoire. An early return loses only the current act's unbanked earnings.
 
 **Depends on:** 6, 8.
 
-- [ ] The tutorial, the first event, and Act 1 quests on the shared map, with every society
-      courting the hero. Budget the scene text before writing.
-- [ ] Companions introduced.
-- [ ] Two or three puzzle boards.
-- [ ] The founding quest, which sets the first lean and opens the academy.
+- [x] The tutorial, the first event, and Act 1 quests on the shared map, with every society
+      courting the adept. Budget the scene text before writing. (`scenes/act1.yaml`; see "The
+      shipped story" in `docs/story.md`.)
+- [x] Companions introduced: Clemency Hart (Royal Society), Jory Fitch (Independents) and Ines
+      Marlow (College), one on each society's quest.
+- [x] Two or three puzzle boards: `assay`, `vault` and `reliquary`, each with routes that move
+      standing.
+- [x] The founding quest, which sets the first lean and opens the academy.
 
-**Acceptance:** Act 1 is finishable by every class, on a phone.
+**Acceptance:** Act 1 is finishable by every class, on a phone. Backed by
+`TestActOneByEveryClass` (simulated duels, every class) and `TestStoryTextFitsAPhone`; the
+on-screen phone check is still to do.
 
 ## 10. Act 2
 

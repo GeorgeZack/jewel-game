@@ -151,7 +151,10 @@ func TestShortMapFile(t *testing.T) {
 }
 
 func TestHexRefsStayOnSheet(t *testing.T) {
-	if len(hexBiomes) != 12 {
+	if _, err := rpg.LoadStory(storyFiles{}, "../assets/story"); err != nil {
+		t.Fatal(err)
+	}
+	if len(hexBiomes) != len(rpg.Locations) {
 		t.Fatalf("biomes %d", len(hexBiomes))
 	}
 	for id, bio := range hexBiomes {

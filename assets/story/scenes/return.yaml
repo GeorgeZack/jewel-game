@@ -30,5 +30,5 @@ the_return:
   - if: [ending:king_falls]
     then:
       - who: entities
-        text: The king is whole again, if you were wondering. He always is.
-  - text: Emberfield. Smoke. Someone is hammering on a door, and you already know whose.
+        text: The Engine is running again, if you were wondering. It always is.
+  - text: The night train into Aldermoor. One bag, one key, one letter. You already know what it says.

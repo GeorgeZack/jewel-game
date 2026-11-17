@@ -1,37 +1,26 @@
-# Conversations with people in towns (locations.yaml: people).
+# Conversations with people (locations.yaml: people). They can be had again and again.
 
 bessa_talk:
   - if: [quest:barrow_lord]
     then:
       - who: bessa
-        text: They say you put the Barrow Lord back in his hole. My grandmother would have liked you.
+        text: They say you put something back in its grave at St Ebba's. My late husband's in there. Thank you, I suppose.
     else:
       - who: bessa
-        text: Bogles running from something. In seventy years I've never seen a bogle run.
+        text: Bogles in the coal. In thirty years of letting rooms I've never seen a bogle run.
       - if: ["!flag:bessa_gift"]
         then:
           - who: bessa
-            text: Here, take this. It's not much, but it's more use to you than to me.
+            text: Here. Your teacher paid a year ahead, and I'm not a thief.
           - gold: 25
           - set_flag: bessa_gift
-          - text: Bessa gives you 25 gold.
-
-ise_talk:
-  - who: ise
-    text: Highwatch has held for two hundred years. It'll hold another week. After that, ask me again.
-  - choices:
-      - text: What's coming from the mountains?
-        do:
-          - who: ise
-            mood: grim
-            text: The redcaps. Behind them, something the redcaps are more afraid of than us.
-      - text: Goodbye.
+          - text: Mrs Bessa gives you 25 gold.
 
 # A scene can start a duel. win/lose name the scene to continue with; without them a win
 # carries on with the next step and a loss ends the scene.
 spar_talk:
   - who: sergeant
-    text: Want to practice? I'll set a bogle dummy on you. Nothing gets broken but pride.
+    text: Want to practise? I'll set a bogle dummy on you. Nothing gets broken but pride.
     choices:
       - text: Let's spar.
         do:
@@ -47,3 +36,44 @@ spar_lost:
   - who: sergeant
     mood: amused
     text: The dummy wins again. Come back when you've had some sleep.
+
+tallis_talk:
+  - if: [flag:vault_alarm]
+    then:
+      - who: tallis
+        text: Someone broke into our strongroom on the Culvert. Loudly. I don't suppose you heard the bell.
+    else:
+      - who: tallis
+        text: The Royal Society has a charter from the Crown to study what lies below. Others merely trespass.
+  - if: ["standing:crown>=2"]
+    then:
+      - who: tallis
+        text: The Fellows speak well of you. Keep it that way.
+
+merrow_talk:
+  - who: merrow
+    text: Charters are permission. We don't ask permission. That's the whole of our creed, and it fits on a card.
+  - if: ["standing:free>=1"]
+    then:
+      - who: merrow
+        text: You're one of the few who's done us a good turn. We keep count.
+
+marlow_talk:
+  - who: marlow
+    text: The College kept the old learning when the Royal Society called it superstition. Now they want it back.
+  - if: [flag:reliquary_broken]
+    then:
+      - who: marlow
+        text: I told the Provost about the reliquary. He hasn't spoken to me since. It's restful.
+
+# Acts 2 and 3.
+ise_talk:
+  - who: ise
+    text: The Watch has held the lower gate for two hundred years. It'll hold another week. After that, ask me again.
+  - choices:
+      - text: What's coming up from below?
+        do:
+          - who: ise
+            mood: grim
+            text: The redcaps. Behind them, something the redcaps are more afraid of than us.
+      - text: Goodbye.

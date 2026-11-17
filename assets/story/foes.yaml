@@ -132,7 +132,7 @@
   growth: {aether: 2, air: 2, battle: 2, cunning: 1, earth: 1, fire: 1, morale: 2, water: 3}
   spells: [mana_burn, drain_life, bone_ward, dark_pact, hollow_hymn]
 - id: ember_wyrm
-  name: Ember Wyrm
+  name: The Athanor
   boss: true
   shape: dragon
   color: [225, 90, 40]
@@ -142,7 +142,7 @@
   spells: [firebreath, roar, frenzy]
   card: updraft
 - id: hollow_king
-  name: The Hollow King
+  name: The Hollow Man
   boss: true
   shape: ghost
   color: [175, 80, 220]
