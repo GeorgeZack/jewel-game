@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Ebitengine dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libasound2-dev
+
+      - name: Build
+        run: go build ./...
+
+      - name: Build with dev tools
+        run: go build -tags dev ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Vet with dev tools
+        run: go vet -tags dev ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: WebAssembly build
+        run: GOOS=js GOARCH=wasm go build -o /tmp/jewel-game.wasm .
