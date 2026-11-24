@@ -277,7 +277,7 @@ func colorClusters(cleared []board.Cleared, color int) []cellCluster {
 		}
 	}
 	seen := map[board.Point]bool{}
-	dirs := [...]board.Point{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+	dirs := [...]board.Point{{X: 1, Y: 0}, {X: -1, Y: 0}, {X: 0, Y: 1}, {X: 0, Y: -1}}
 	var out []cellCluster
 	for _, c := range cleared {
 		p := c.Pos
