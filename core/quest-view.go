@@ -269,8 +269,19 @@ func (v *QuestView) updateTravel(dt float32) {
 	}
 	foes := v.Hero.AsHeld(here).Foes
 	if len(foes) > 0 && rand.Float32() < AMBUSH_CHANCE {
+		var known []*rpg.Foe
+		for _, id := range foes {
+			if f := rpg.FoeByID(id); f != nil {
+				known = append(known, f)
+			} else {
+				ui.AddMessage("%s", text.Tf("log.unknown_foe", "Unknown foe %q, skipped.", id))
+			}
+		}
+		if len(known) == 0 {
+			return
+		}
 		v.route = nil
-		foe := rpg.FoeByID(foes[rand.Intn(len(foes))])
+		foe := known[rand.Intn(len(known))]
 		v.show(Modal{
 			Title:   text.T("ui.ambush", "Ambush!"),
 			Body:    text.Tf("ui.ambush_body", "A %s falls on you on the road into %s.", foe.Name, here.Name),
@@ -284,15 +295,27 @@ func roamLevel(l *rpg.Location, h *rpg.Hero) int {
 	return max(l.Level, min(h.Level, l.Level+3))
 }
 
+// foeName is a foe's display name, or the id if the story has no such foe.
+func foeName(id string) string {
+	if f := rpg.FoeByID(id); f != nil {
+		return f.Name
+	}
+	return id
+}
+
 // startDuel fights a foe. card is the duel step's or the quest's rule card, "" for none: it wins
-// over the foe's own.
+// over the foe's own. A missing foe is logged and the duel does not start.
 func (v *QuestView) startDuel(foeID string, level int, at, card string) {
+	foe := rpg.FoeByID(foeID)
+	if foe == nil {
+		ui.AddMessage("%s", text.Tf("log.unknown_foe", "Unknown foe %q, skipped.", foeID))
+		return
+	}
 	v.foeID, v.duelAt = foeID, at
 	v.settled = false
 	v.sideHit = [2]float32{}
 	v.blood = [2]float32{}
 	v.sideFlash = 0
-	foe := rpg.FoeByID(foeID)
 	rule := rpg.CardFor(card, foe.Card)
 	if id := devCard(); id != "" {
 		rule = rpg.RuleCardByID(id)

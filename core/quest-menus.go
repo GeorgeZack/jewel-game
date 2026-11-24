@@ -227,10 +227,11 @@ func (v *QuestView) drawLocation(col *ui.Column) {
 	if len(here) > 0 {
 		col.Heading(text.T("ui.quest_targets", "Quest targets"))
 		for _, q := range here {
-			foe := rpg.FoeByID(q.Foe)
-			if ui.Button(col.Next(40), text.Tf("ui.foe_level", "%s  L%d", foe.Name, q.FoeLevel), false) {
-				v.Screen = ScreenWorld
-				v.startDuel(q.Foe, q.FoeLevel, l.ID, q.Card)
+			if foe := rpg.FoeByID(q.Foe); foe != nil {
+				if ui.Button(col.Next(40), text.Tf("ui.foe_level", "%s  L%d", foe.Name, q.FoeLevel), false) {
+					v.Screen = ScreenWorld
+					v.startDuel(q.Foe, q.FoeLevel, l.ID, q.Card)
+				}
 			}
 			col.Line(text.Tf("ui.quest_progress", "%s  %d / %d", q.Title, h.Active[q.ID], q.Count), 14, ui.DimText)
 		}
@@ -240,6 +241,9 @@ func (v *QuestView) drawLocation(col *ui.Column) {
 		level := roamLevel(l, h)
 		for _, id := range l.Foes {
 			foe := rpg.FoeByID(id)
+			if foe == nil {
+				continue
+			}
 			if ui.Button(col.Next(36), text.Tf("ui.foe_level", "%s  L%d", foe.Name, level), false) {
 				v.startDuel(id, level, l.ID, "")
 			}
@@ -287,9 +291,12 @@ func (v *QuestView) offerQuest(q *rpg.Quest) {
 		v.scenes.Play(q.OfferScene)
 		return
 	}
-	foe := rpg.FoeByID(q.Foe)
 	at := rpg.LocationByID(q.At)
-	body := text.Tf("ui.quest_offer", "%s\n\nDefeat %d x %s (L%d) at %s. Reward: %d gold, %d XP.", q.Intro, q.Count, foe.Name, q.FoeLevel, at.Name, q.Gold, q.XP)
+	place := q.At
+	if at != nil {
+		place = at.Name
+	}
+	body := text.Tf("ui.quest_offer", "%s\n\nDefeat %d x %s (L%d) at %s. Reward: %d gold, %d XP.", q.Intro, q.Count, foeName(q.Foe), q.FoeLevel, place, q.Gold, q.XP)
 	v.show(Modal{
 		Title: q.Title,
 		Body:  body,
@@ -429,7 +436,11 @@ func (v *QuestView) drawQuestLog(r rl.Rectangle) {
 		q := &rpg.Quests[i]
 		if n, ok := h.Active[q.ID]; ok {
 			col.Line(q.Title, 22, ui.TextColor)
-			col.Paragraph(text.Tf("ui.quest_task", "Defeat %s (L%d) at %s: %d / %d", rpg.FoeByID(q.Foe).Name, q.FoeLevel, rpg.LocationByID(q.At).Name, n, q.Count), 16, ui.DimText)
+			place := q.At
+			if loc := rpg.LocationByID(q.At); loc != nil {
+				place = loc.Name
+			}
+			col.Paragraph(text.Tf("ui.quest_task", "Defeat %s (L%d) at %s: %d / %d", foeName(q.Foe), q.FoeLevel, place, n, q.Count), 16, ui.DimText)
 			col.Y += 4
 		}
 	}
