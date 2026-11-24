@@ -32,17 +32,17 @@ Decided: no sound in the first release, and Steam is on hold. The release is the
 - [ ] Verify touch, spell buttons, swaps, dialogue and pause on a real phone against
       `core/phone.go`, `core/game-controller.go`, `rl/app.go`, `core/tile-manager.go`. Fix only
       what is broken. Do not reimplement finger-as-mouse.
-- [ ] Add a save version and a migration path (`rpg/world.go`, `rpg/store_file.go`,
+- [x] Add a save version and a migration path (`rpg/world.go`, `rpg/store_file.go`,
       `rpg/store_js.go`). Old saves load or start fresh without crashing.
-- [ ] Split the save into a profile (Grimoire, endings seen, return count, tutorial done) and a
+- [x] Split the save into a profile (Grimoire, endings seen, return count, tutorial done) and a
       run (today's `Hero`). The profile can be empty for now.
-- [ ] Rule cards (5.1): a named `board.Settings` override plus optional `ApplyStep` payout
+- [x] Rule cards (5.1): a named `board.Settings` override plus optional `ApplyStep` payout
       modifiers, defined in data (**new** YAML under `assets/`), loaded and id-checked with the
       story in `rpg/story.go`.
-- [ ] Plumb a card through `core/quest-view.go` `startDuel` and `rpg/duel.go` `BoardSettings`.
+- [x] Plumb a card through `core/quest-view.go` `startDuel` and `rpg/duel.go` `BoardSettings`.
       The default card is today's 8x8 duel. Test that a non-default gravity, Overcharge or size
       reaches the board.
-- [ ] Progression simulator: extend the duel balance test (`rpg/rpg_test.go`
+- [x] Progression simulator: extend the duel balance test (`rpg/rpg_test.go`
       `TestDuelsFinishAndAreFair`) so the AI plays a scripted quest sequence as the hero and
       reports level, gold and residue per stage.
 
@@ -55,14 +55,14 @@ card. The simulator prints a progression table.
 
 **Depends on:** 0.
 
-- [ ] Coloured residue from match quality in `rpg/duel.go` `ApplyStep`, banked in `Settle`.
-- [ ] A small Orrery of about twenty nodes (**new** `rpg/orrery.go` and YAML), four class seats,
+- [x] Coloured residue from match quality in `rpg/duel.go` `ApplyStep`, banked in `Settle`.
+- [x] A small Orrery of about twenty nodes (**new** `rpg/orrery.go` and YAML), four class seats,
       nodes costing their region's colour. It replaces level-up stat points (`Hero.Points`,
       `RaiseStat`).
-- [ ] Open `KnownSpells` so rites are not locked to `Class` (`rpg/hero.go`, `rpg/spells.go`);
+- [x] Open `KnownSpells` so rites are not locked to `Class` (`rpg/hero.go`, `rpg/spells.go`);
       rites come from Orrery nodes and level gates.
-- [ ] Conversion of coloured residue to colourless at a loss, and respec that refunds nodes.
-- [ ] A plain Orrery screen that works on the narrow layout (`core/quest-menus.go` or **new**
+- [x] Conversion of coloured residue to colourless at a loss, and respec that refunds nodes.
+- [x] A plain Orrery screen that works on the narrow layout (`core/quest-menus.go` or **new**
       view, `core/phone.go`).
 
 **Acceptance:** Two classes start in different seats and can reach the same node. The Hollow
@@ -74,15 +74,15 @@ King slice is finishable. **Stop for George's review** before milestone 4.
 
 **Depends on:** 0.
 
-- [ ] Authored-board loader (**new** `assets/puzzles/` YAML into `board.Paint` or a prefilled
+- [x] Authored-board loader (**new** `assets/puzzles/` YAML into `board.Paint` or a prefilled
       board) with no refill, an authored refill queue, or a fixed seed.
-- [ ] `PuzzleGemTypes` beside `DuelGemTypes` in `core/data-manager.go`.
-- [ ] Objective and route conditions as data, evaluated over `board.StepResult` events: marked
+- [x] `PuzzleGemTypes` beside `DuelGemTypes` in `core/data-manager.go`.
+- [x] Objective and route conditions as data, evaluated over `board.StepResult` events: marked
       gems cleared, by match or blast, order, largest match, move count, tool used. **new** types
       in `rpg/`, wired from `core/quest-view.go`. No `Combatant.HP` win.
-- [ ] Tools are the hero's rites with a per-board allowance. Failure and free retry.
-- [ ] The society vault board with its three routes, each setting a flag.
-- [ ] A test that replays a stored solution for every route and checks the route detected.
+- [x] Tools are the hero's rites with a per-board allowance. Failure and free retry.
+- [x] The society vault board with its three routes, each setting a flag.
+- [x] A test that replays a stored solution for every route and checks the route detected.
 
 **Acceptance:** The vault can be launched from a debug hook and finished three ways, each
 detected correctly. Adversarial duels are unchanged. **Stop for George's review** before more
@@ -94,14 +94,14 @@ boards are authored.
 
 **Depends on:** 0. Uses a founding flag until milestone 9 supplies the quest.
 
-- [ ] Lock academy nav until the founding flag is set (`core/quest-view.go`, `core/phone.go`
+- [x] Lock academy nav until the founding flag is set (`core/quest-view.go`, `core/phone.go`
       `drawPhoneNav`, `core/quest-menus.go` `drawCitadel`).
-- [ ] Facilities replace Buildings (`rpg/hero.go`): made available by a flag, built and upgraded
+- [x] Facilities replace Buildings (`rpg/hero.go`): made available by a flag, built and upgraded
       with gold. Remove mounts and the Stables. Move flat stat bonuses to the Orrery.
-- [ ] Henchmen: hire, train and equip with gold (**new**). No names or portraits.
-- [ ] Field chapters and the dues ledger: send a henchman to a site; it resolves on wins or
+- [x] Henchmen: hire, train and equip with gold (**new**). No names or portraits.
+- [x] Field chapters and the dues ledger: send a henchman to a site; it resolves on wins or
       objectives there, never on real time; claim the report, dues and residue at the academy.
-- [ ] Location holder state (which society holds a site), shown in the ledger.
+- [x] Location holder state (which society holds a site), shown in the ledger.
 
 **Acceptance:** A new hero cannot open the academy. After the flag, gold flows gear, then
 henchmen, then facilities. Closing the game advances nothing.
@@ -112,11 +112,11 @@ henchmen, then facilities. Closing the game advances nothing.
 
 **Depends on:** gate 1 passed, 3.
 
-- [ ] Grow the Orrery to its budgeted size, with regions by element.
-- [ ] Large nodes that carry rule perks, implemented as modifiers on the hero's side of
+- [x] Grow the Orrery to its budgeted size, with regions by element.
+- [x] Large nodes that carry rule perks, implemented as modifiers on the hero's side of
       `ApplyStep` or as card overrides.
-- [ ] One facility makes respec free.
-- [ ] Final Orrery screen for desktop and phone.
+- [x] One facility makes respec free.
+- [x] Final Orrery screen for desktop and phone.
 
 **Acceptance:** Every node is reachable from every seat. Simulated duels stay fair with each
 large node taken.
@@ -127,12 +127,12 @@ large node taken.
 
 **Depends on:** 0.
 
-- [ ] Allow duel boards other than `GRID_LENGTH` (8), up to 10x10 (`utils/constants.go`,
+- [x] Allow duel boards other than `GRID_LENGTH` (8), up to 10x10 (`utils/constants.go`,
       `rpg/duel.go`, `core/tile-manager.go`, `core/phone.go`). Verify gem size on a phone.
-- [ ] Generalise `NUM_MANA` so a fifth element can be enabled by flag: pools, costs, stats,
+- [x] Generalise `NUM_MANA` so a fifth element can be enabled by flag: pools, costs, stats,
       residue colour, an Orrery region. It arrives together with a larger board.
-- [ ] A rule card id on a foe (`assets/story/foes.yaml`) and bosses that use one.
-- [ ] Teach `rpg/ai.go` to value the fifth element, and add a simulated-duel test per card.
+- [x] A rule card id on a foe (`assets/story/foes.yaml`) and bosses that use one.
+- [x] Teach `rpg/ai.go` to value the fifth element, and add a simulated-duel test per card.
 
 **Acceptance:** A boss fight runs on a different card and the campaign returns to the default
 after it. Every card has a passing fairness test.
@@ -144,15 +144,15 @@ after it. Every card has a passing fairness test.
 
 **Depends on:** 0, 2, 3.
 
-- [ ] Standing counters per society, steps to change them, and comparisons in conditions.
-- [ ] A `puzzle:` step beside `duel:`, with a scene per route.
-- [ ] A rule card id on a quest and on a `duel:` step.
-- [ ] Location holders that scenes can change; foes, shop stock and description vary by holder.
-- [ ] Hostile societies: swap a location's roaming foes by flag.
-- [ ] Act markers for title cards and gating.
-- [ ] Companions: favour counters, joining and leaving, the one who comes into a fight and their
+- [x] Standing counters per society, steps to change them, and comparisons in conditions.
+- [x] A `puzzle:` step beside `duel:`, with a scene per route.
+- [x] A rule card id on a quest and on a `duel:` step.
+- [x] Location holders that scenes can change; foes, shop stock and description vary by holder.
+- [x] Hostile societies: swap a location's roaming foes by flag.
+- [x] Act markers for title cards and gating.
+- [x] Companions: favour counters, joining and leaving, the one who comes into a fight and their
       rite or passive.
-- [ ] Conditions on the profile: return count and endings seen.
+- [x] Conditions on the profile: return count and endings seen.
 
 **Acceptance:** `go test ./rpg` validates all of the above and still checks that main quests
 can be finished in order, for each allegiance.
@@ -163,14 +163,14 @@ can be finished in order, for each allegiance.
 
 **Depends on:** 0 (profile save), 6 (profile conditions).
 
-- [ ] Tutorial once per profile. Class choice moves to the first event (`core/title.go`).
-- [ ] Return: reset the run (facilities, Orrery, gold, level, map, quests, standing, staff) and
+- [x] Tutorial once per profile. Class choice moves to the first event (`core/title.go`).
+- [x] Return: reset the run (facilities, Orrery, gold, level, map, quests, standing, staff) and
       restart at the first event. Available at an ending and, at a cost, mid-run.
-- [ ] Meta currency: earned on first times, banked at each act's end, forfeited for the current
+- [x] Meta currency: earned on first times, banked at each act's end, forfeited for the current
       act on an early return.
-- [ ] The Grimoire (**new** data and screen): entries that buy speed and options, and from stage
+- [x] The Grimoire (**new** data and screen): entries that buy speed and options, and from stage
       2 the two kinds of entry that set the meta lean.
-- [ ] An entity scene at each return, varying with return count and endings seen.
+- [x] An entity scene at each return, varying with return count and endings seen.
 
 **Acceptance:** A profile can finish, return, change class and allegiance, and keep its
 Grimoire. An early return loses only the current act's unbanked earnings.
@@ -181,9 +181,9 @@ Grimoire. An early return loses only the current act's unbanked earnings.
 
 **Depends on:** names (working names exist for the two main societies). Systems from 1 to 5 should be in so their strings exist.
 
-- [ ] Gems as reagents, spells as rites and devices, classes, facilities, henchmen
+- [x] Gems as reagents, spells as rites and devices, classes, facilities, henchmen
       (`assets/gemtypes.yaml`, `assets/lang/en.yaml`, display names in `rpg/`).
-- [ ] UI colour and typography in `ui/theme.go` and `ui/widgets.go`; manuscript borders when the
+- [x] UI colour and typography in `ui/theme.go` and `ui/widgets.go`; manuscript borders when the
       art exists.
 
 **Acceptance:** No high-fantasy wording remains in menus. Ids and saves are unaffected.
