@@ -300,6 +300,7 @@ log:
   story_loaded: "Story loaded: %d locations, %d quests, %d scenes, %d problems"
   save_write: "Could not save: %v"
   save_delete: "Could not delete save: %v"
+  unknown_foe: "Unknown foe %q, skipped."
   lang_read: "Could not read %s: %v"
   lang_parse: "Could not read language file: %v"
 
